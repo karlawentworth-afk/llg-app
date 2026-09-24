@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLG App Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2rem;
+      background: #fff;
+      color: #1a1a1a;
+    }
+    #status {
+      font-size: 1.4rem;
+      line-height: 1.8;
+    }
+    .error {
+      color: #c0392b;
+      font-weight: 600;
+    }
+    .label {
+      font-weight: 600;
+    }
+    .booking {
+      margin-left: 1rem;
+      margin-bottom: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">Loading…</div>
+
+  <script>
+    (async function () {
+      const el = document.getElementById("status");
+
+      // Read pass from hash: #p=<pass>
+      const hash = window.location.hash.slice(1); // remove #
+      const params = new URLSearchParams(hash);
+      const pass = params.get("p");
+
+      if (!pass) {
+        el.innerHTML = '<span class="error">No pass provided. Please access this page from the LLG website.</span>';
+        return;
+      }
+
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 9000);
+
+        const res = await fetch("/.netlify/functions/verify-pass", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pass }),
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          const code = err.error || "unknown";
+          const messages = {
+            invalid_signature: "Access denied — pass is invalid.",
+            pass_expired: "Your session has expired. Please reload the page on the LLG website.",
+            invalid_pass_format: "Access denied — pass format is invalid.",
+            missing_pass: "No pass provided.",
+            incomplete_pass: "Access denied — pass is incomplete.",
+            wix_api_failed: "Could not load your data. Please try again shortly.",
+            server_config: "Server configuration error. Please contact LLG.",
+          };
+          el.innerHTML = `<span class="error">${messages[code] || "Something went wrong (" + code + ")."}</span>`;
+          return;
+        }
+
+        const data = await res.json();
+
+        let html = `<span class="label">Hello ${escapeHtml(data.firstName)}.</span><br><br>`;
+
+        // Plan
+        if (data.plan.status === "none" || !data.plan.name) {
+          html += `<span class="label">Plan:</span> None<br>`;
+        } else {
+          html += `<span class="label">Plan:</span> ${escapeHtml(data.plan.name)} (${escapeHtml(data.plan.status)})<br>`;
+        }
+
+        html += "<br>";
+
+        // Bookings
+        if (data.bookings.length === 0) {
+          html += `<span class="label">Next booking:</span> None<br>`;
+        } else {
+          html += `<span class="label">Next bookings:</span><br>`;
+          data.bookings.forEach((b) => {
+            let line = `${escapeHtml(b.name)} — ${escapeHtml(b.date)} ${escapeHtml(b.time)}`;
+            if (b.location) line += ` — ${escapeHtml(b.location)}`;
+            html += `<div class="booking">${line}</div>`;
+          });
+        }
+
+        html += "<br>";
+
+        // Points
+        html += `<span class="label">Points:</span> ${Number(data.points).toLocaleString()}<br>`;
+
+        el.innerHTML = html;
+      } catch (err) {
+        if (err.name === "AbortError") {
+          el.innerHTML = '<span class="error">Request timed out. Please try again.</span>';
+        } else {
+          el.innerHTML = '<span class="error">Could not connect to the server. Please try again.</span>';
+        }
+      }
+    })();
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = String(str);
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

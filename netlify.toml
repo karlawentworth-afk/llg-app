@@ -1,0 +1,8 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors https://www.ladieslovegolf.com https://ladieslovegolf.com https://*.wix.com https://*.wixsite.com https://*.editorx.io"
