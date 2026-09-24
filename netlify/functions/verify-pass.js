@@ -47,7 +47,7 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: "method_not_allowed" }) };
   }
 
-  const secret = process.env.LLG_EMBED_SECRET;
+  const secret = process.env.WIX_EMBED_SECRET;
   const apiKey = process.env.WIX_API_KEY;
   const siteId = process.env.WIX_SITE_ID;
 
