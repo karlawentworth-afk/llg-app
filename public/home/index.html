@@ -61,6 +61,17 @@
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           const code = err.error || "unknown";
+          // TEMPORARY: show debug info for signature mismatch
+          if (code === "invalid_signature" && err.debug) {
+            el.innerHTML = '<span class="error">Signature mismatch debug:<br>' +
+              'Received sig starts: ' + escapeHtml(err.debug.receivedSigStart) + '<br>' +
+              'Expected sig starts: ' + escapeHtml(err.debug.expectedSigStart) + '<br>' +
+              'Received sig length: ' + err.debug.receivedSigLength + '<br>' +
+              'Expected sig length: ' + err.debug.expectedSigLength + '<br>' +
+              'Payload starts: ' + escapeHtml(err.debug.payloadB64Start) + '<br>' +
+              'Secret length: ' + err.debug.secretLength + '</span>';
+            return;
+          }
           const messages = {
             invalid_signature: "Access denied — pass is invalid.",
             pass_expired: "Your session has expired. Please reload the page on the LLG website.",

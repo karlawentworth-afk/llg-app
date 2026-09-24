@@ -81,7 +81,18 @@ exports.handler = async (event) => {
   );
 
   if (!timingSafeEqual(expectedSig, sigB64)) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: "invalid_signature" }) };
+    // TEMPORARY DEBUG — remove after testing
+    return { statusCode: 401, headers, body: JSON.stringify({
+      error: "invalid_signature",
+      debug: {
+        receivedSigLength: sigB64.length,
+        expectedSigLength: expectedSig.length,
+        receivedSigStart: sigB64.substring(0, 8),
+        expectedSigStart: expectedSig.substring(0, 8),
+        payloadB64Start: payloadB64.substring(0, 20),
+        secretLength: secret.length,
+      }
+    }) };
   }
 
   let payload;
