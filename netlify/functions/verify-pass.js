@@ -52,7 +52,10 @@ exports.handler = async (event) => {
   const siteId = process.env.WIX_SITE_ID;
 
   if (!secret || !apiKey || !siteId) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: "server_config" }) };
+    return { statusCode: 500, headers, body: JSON.stringify({
+      error: "server_config",
+      debug: { hasSecret: !!secret, hasApiKey: !!apiKey, hasSiteId: !!siteId }
+    }) };
   }
 
   let pass;
