@@ -50,6 +50,7 @@ exports.handler = async (event) => {
   const secret = process.env.WIX_EMBED_SECRET;
   const apiKey = process.env.WIX_API_KEY;
   const siteId = process.env.WIX_SITE_ID;
+  const accountId = process.env.WIX_ACCOUNT_ID;
 
   if (!secret || !apiKey || !siteId) {
     return { statusCode: 500, headers, body: JSON.stringify({
@@ -121,6 +122,7 @@ exports.handler = async (event) => {
   const wixHeaders = {
     Authorization: apiKey,
     "wix-site-id": siteId,
+    ...(accountId ? { "wix-account-id": accountId } : {}),
     "Content-Type": "application/json",
   };
 
