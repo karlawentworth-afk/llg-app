@@ -178,15 +178,25 @@ exports.handler = async (event) => {
     ]);
 
     // Process plan
-    if (planRes.status === "fulfilled" && planRes.value.ok) {
-      const planData = await planRes.value.json();
-      if (planData.orders && planData.orders.length > 0) {
-        const latestOrder = planData.orders[0];
-        planResult = {
-          name: latestOrder.planName || latestOrder.planDetails?.name || "Unknown Plan",
-          status: (latestOrder.status || "unknown").toLowerCase(),
-        };
+    let planDebug = {};
+    if (planRes.status === "fulfilled") {
+      planDebug.httpStatus = planRes.value.status;
+      const planBody = await planRes.value.text();
+      planDebug.body = planBody.substring(0, 500);
+      if (planRes.value.ok) {
+        try {
+          const planData = JSON.parse(planBody);
+          if (planData.orders && planData.orders.length > 0) {
+            const latestOrder = planData.orders[0];
+            planResult = {
+              name: latestOrder.planName || latestOrder.planDetails?.name || "Unknown Plan",
+              status: (latestOrder.status || "unknown").toLowerCase(),
+            };
+          }
+        } catch {}
       }
+    } else {
+      planDebug.error = planRes.reason?.message || "rejected";
     }
 
     // Process bookings (extended bookings response)
@@ -244,6 +254,7 @@ exports.handler = async (event) => {
       plan: planResult,
       bookings,
       points,
+      _debug: { planDebug },
     }),
   };
 };

@@ -119,6 +119,11 @@
         // Points
         html += `<span class="label">Points:</span> ${Number(data.points).toLocaleString()}<br>`;
 
+        // TEMPORARY DEBUG
+        if (data._debug) {
+          html += `<br><span class="label">API Debug:</span><br><pre style="font-size:0.8rem;white-space:pre-wrap">${escapeHtml(JSON.stringify(data._debug, null, 2))}</pre>`;
+        }
+
         el.innerHTML = html;
       } catch (err) {
         if (err.name === "AbortError") {
