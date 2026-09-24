@@ -28,11 +28,12 @@ export const listTriggers = async () => {
 };
 
 export const getEligibleTriggers = async (options, context) => {
-  // Log context shape once so we can verify the real field path
+  // Log shapes on first run so we can verify real field paths
   console.log("SPI context keys:", JSON.stringify(Object.keys(context || {})));
   if (context?.identity) {
     console.log("SPI identity keys:", JSON.stringify(Object.keys(context.identity)));
   }
+  console.log("SPI options.triggers:", JSON.stringify(options?.triggers));
 
   // Docs-inferred path: context.identity.memberId
   // If this is wrong, the log above will reveal the real shape
