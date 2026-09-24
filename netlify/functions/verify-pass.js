@@ -154,7 +154,7 @@ exports.handler = async (event) => {
           body: JSON.stringify({
             query: {
               filter: {
-                "bookedEntity.contactId": contactId,
+                "contactDetails.contactId": contactId,
                 "status": "CONFIRMED",
                 "startDate": { "$gte": new Date().toISOString() },
               },
