@@ -8,7 +8,7 @@ values (
   'a0000000-0000-0000-0000-000000000001',
   'The Beeches',
   '0a312a54-8235-4aad-a56b-2931d5b02a2d',
-  null  -- fill in town when known
+  'Cheshire'
 )
 on conflict (id) do nothing;
 
