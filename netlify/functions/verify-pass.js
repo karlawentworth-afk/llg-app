@@ -199,49 +199,66 @@ exports.handler = async (event) => {
     }
 
     // Process bookings (extended bookings response)
-    if (bookingsRes.status === "fulfilled" && bookingsRes.value.ok) {
-      const bookData = await bookingsRes.value.json();
-      const items = bookData.extendedBookings || [];
-      if (items.length > 0) {
-        bookings = items.map((eb) => {
-          const b = eb.booking || eb;
-          const slot = b.bookedEntity?.slot || {};
-          const startDate = slot.startDate || b.startDate;
-          return {
-            name: b.bookedEntity?.title || "Session",
-            date: startDate
-              ? new Date(startDate).toLocaleDateString("en-GB", {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })
-              : "TBC",
-            time: startDate
-              ? new Date(startDate).toLocaleTimeString("en-GB", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "TBC",
-            location: slot.location?.name || "",
-          };
-        });
+    let bookingsDebug = {};
+    try {
+      if (bookingsRes.status === "fulfilled") {
+        bookingsDebug.httpStatus = bookingsRes.value.status;
+        const bookBody = await bookingsRes.value.text();
+        bookingsDebug.body = bookBody.substring(0, 500);
+        if (bookingsRes.value.ok) {
+          const bookData = JSON.parse(bookBody);
+          const items = bookData.extendedBookings || [];
+          if (items.length > 0) {
+            bookings = items.map((eb) => {
+              const b = eb.booking || eb;
+              const slot = b.bookedEntity?.slot || {};
+              const startDate = slot.startDate || b.startDate;
+              return {
+                name: b.bookedEntity?.title || "Session",
+                date: startDate
+                  ? new Date(startDate).toLocaleDateString("en-GB", {
+                      weekday: "short", day: "numeric", month: "short",
+                    })
+                  : "TBC",
+                time: startDate
+                  ? new Date(startDate).toLocaleTimeString("en-GB", {
+                      hour: "2-digit", minute: "2-digit",
+                    })
+                  : "TBC",
+                location: slot.location?.name || "",
+              };
+            });
+          }
+        }
+      } else {
+        bookingsDebug.error = bookingsRes.reason?.message || "rejected";
       }
-    }
+    } catch (e) { bookingsDebug.parseError = e.message; }
 
     // Process loyalty
-    if (loyaltyRes.status === "fulfilled" && loyaltyRes.value.ok) {
-      const loyalData = await loyaltyRes.value.json();
-      if (loyalData.accounts && loyalData.accounts.length > 0) {
-        points = loyalData.accounts[0].points?.balance || 0;
-      } else if (loyalData.account) {
-        points = loyalData.account.points?.balance || 0;
+    let loyaltyDebug = {};
+    try {
+      if (loyaltyRes.status === "fulfilled") {
+        loyaltyDebug.httpStatus = loyaltyRes.value.status;
+        const loyalBody = await loyaltyRes.value.text();
+        loyaltyDebug.body = loyalBody.substring(0, 500);
+        if (loyaltyRes.value.ok) {
+          const loyalData = JSON.parse(loyalBody);
+          if (loyalData.accounts && loyalData.accounts.length > 0) {
+            points = loyalData.accounts[0].points?.balance || 0;
+          } else if (loyalData.account) {
+            points = loyalData.account.points?.balance || 0;
+          }
+        }
+      } else {
+        loyaltyDebug.error = loyaltyRes.reason?.message || "rejected";
       }
-    }
+    } catch (e) { loyaltyDebug.parseError = e.message; }
   } catch (err) {
     return {
       statusCode: 502,
       headers,
-      body: JSON.stringify({ error: "wix_api_failed" }),
+      body: JSON.stringify({ error: "wix_api_failed", debug: err.message }),
     };
   }
 
@@ -253,7 +270,7 @@ exports.handler = async (event) => {
       plan: planResult,
       bookings,
       points,
-      _debug: { planDebug },
+      _debug: { planDebug, bookingsDebug, loyaltyDebug },
     }),
   };
 };
