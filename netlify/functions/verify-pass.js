@@ -1,6 +1,10 @@
 const crypto = require("crypto");
 
 const TIMEOUT_MS = 9000;
+const CACHE_TTL_MS = 60_000;
+
+// In-memory cache: memberId → { data, expires }
+const memberCache = new Map();
 
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -20,11 +24,96 @@ async function fetchWithTimeout(url, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return res;
+    return await fetch(url, { ...options, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchMemberData(memberId, contactId, wixHeaders) {
+  const [planRes, bookingsRes, loyaltyRes] = await Promise.all([
+    fetchWithTimeout(
+      `https://www.wixapis.com/pricing-plans/v2/orders?buyerIds=${encodeURIComponent(memberId)}&orderStatuses=ACTIVE&limit=5&sorting.fieldName=createdDate&sorting.order=DESC`,
+      { method: "GET", headers: wixHeaders }
+    ),
+    fetchWithTimeout(
+      "https://www.wixapis.com/_api/bookings-reader/v2/extended-bookings/query",
+      {
+        method: "POST",
+        headers: wixHeaders,
+        body: JSON.stringify({
+          query: {
+            filter: {
+              "contactDetails.contactId": contactId,
+              "status": "CONFIRMED",
+              "startDate": { "$gte": new Date().toISOString() },
+            },
+            sort: [{ fieldName: "startDate", order: "ASC" }],
+            cursorPaging: { limit: 3 },
+          },
+        }),
+      }
+    ),
+    fetchWithTimeout(
+      "https://www.wixapis.com/loyalty-accounts/v1/accounts/search",
+      {
+        method: "POST",
+        headers: wixHeaders,
+        body: JSON.stringify({
+          search: {
+            filter: { "contact.id": { "$eq": contactId } },
+            cursorPaging: { limit: 1 },
+          },
+        }),
+      }
+    ),
+  ]);
+
+  let plan = { name: null, status: "none" };
+  let bookings = [];
+  let points = 0;
+
+  try {
+    if (planRes.ok) {
+      const planData = await planRes.json();
+      if (planData.orders?.length > 0) {
+        const active = planData.orders.find(o => o.status === "ACTIVE") || planData.orders[0];
+        plan = { name: active.planName || "Unknown Plan", status: (active.status || "unknown").toLowerCase() };
+      }
+    }
+  } catch {}
+
+  try {
+    if (bookingsRes.ok) {
+      const bookData = await bookingsRes.json();
+      bookings = (bookData.extendedBookings || []).map((eb) => {
+        const b = eb.booking || eb;
+        const slot = b.bookedEntity?.slot || {};
+        const startDate = slot.startDate || b.startDate;
+        return {
+          name: b.bookedEntity?.title || "Session",
+          date: startDate
+            ? new Date(startDate).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+            : "TBC",
+          time: startDate
+            ? new Date(startDate).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+            : "TBC",
+          location: slot.location?.name || "",
+        };
+      });
+    }
+  } catch {}
+
+  try {
+    if (loyaltyRes.ok) {
+      const loyalData = await loyaltyRes.json();
+      if (loyalData.accounts?.length > 0) {
+        points = loyalData.accounts[0].points?.balance || 0;
+      }
+    }
+  } catch {}
+
+  return { plan, bookings, points };
 }
 
 exports.handler = async (event) => {
@@ -64,7 +153,6 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_pass" }) };
   }
 
-  // --- Verify the pass ---
   const parts = pass.split(".");
   if (parts.length !== 2) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: "invalid_pass_format" }) };
@@ -105,104 +193,25 @@ exports.handler = async (event) => {
     "Content-Type": "application/json",
   };
 
-  // --- Fetch data in parallel ---
-  let planResult = { name: null, status: "none" };
-  let bookings = [];
-  let points = 0;
+  // Check cache
+  const cached = memberCache.get(memberId);
+  if (cached && Date.now() < cached.expires) {
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ firstName: firstName || "Member", ...cached.data }),
+    };
+  }
 
-  const [planRes, bookingsRes, loyaltyRes] = await Promise.allSettled([
-    fetchWithTimeout(
-      `https://www.wixapis.com/pricing-plans/v2/orders?buyerIds=${encodeURIComponent(memberId)}&orderStatuses=ACTIVE&limit=5&sorting.fieldName=createdDate&sorting.order=DESC`,
-      { method: "GET", headers: wixHeaders }
-    ),
-    fetchWithTimeout(
-      "https://www.wixapis.com/_api/bookings-reader/v2/extended-bookings/query",
-      {
-        method: "POST",
-        headers: wixHeaders,
-        body: JSON.stringify({
-          query: {
-            filter: {
-              "contactDetails.contactId": contactId,
-              "status": "CONFIRMED",
-              "startDate": { "$gte": new Date().toISOString() },
-            },
-            sort: [{ fieldName: "startDate", order: "ASC" }],
-            cursorPaging: { limit: 3 },
-          },
-        }),
-      }
-    ),
-    fetchWithTimeout(
-      "https://www.wixapis.com/loyalty-accounts/v1/accounts/search",
-      {
-        method: "POST",
-        headers: wixHeaders,
-        body: JSON.stringify({
-          search: {
-            filter: { "contact.id": { "$eq": contactId } },
-            cursorPaging: { limit: 1 },
-          },
-        }),
-      }
-    ),
-  ]);
+  // Fetch fresh data (all three calls in parallel)
+  const data = await fetchMemberData(memberId, contactId, wixHeaders);
 
-  // Process plan
-  try {
-    if (planRes.status === "fulfilled" && planRes.value.ok) {
-      const planData = await planRes.value.json();
-      if (planData.orders && planData.orders.length > 0) {
-        const activeOrder = planData.orders.find(o => o.status === "ACTIVE") || planData.orders[0];
-        planResult = {
-          name: activeOrder.planName || "Unknown Plan",
-          status: (activeOrder.status || "unknown").toLowerCase(),
-        };
-      }
-    }
-  } catch {}
-
-  // Process bookings
-  try {
-    if (bookingsRes.status === "fulfilled" && bookingsRes.value.ok) {
-      const bookData = await bookingsRes.value.json();
-      const items = bookData.extendedBookings || [];
-      bookings = items.map((eb) => {
-        const b = eb.booking || eb;
-        const slot = b.bookedEntity?.slot || {};
-        const startDate = slot.startDate || b.startDate;
-        return {
-          name: b.bookedEntity?.title || "Session",
-          date: startDate
-            ? new Date(startDate).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
-            : "TBC",
-          time: startDate
-            ? new Date(startDate).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-            : "TBC",
-          location: slot.location?.name || "",
-        };
-      });
-    }
-  } catch {}
-
-  // Process loyalty
-  try {
-    if (loyaltyRes.status === "fulfilled" && loyaltyRes.value.ok) {
-      const loyalData = await loyaltyRes.value.json();
-      if (loyalData.accounts && loyalData.accounts.length > 0) {
-        points = loyalData.accounts[0].points?.balance || 0;
-      }
-    }
-  } catch {}
+  // Cache for 60 seconds
+  memberCache.set(memberId, { data, expires: Date.now() + CACHE_TTL_MS });
 
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({
-      firstName: firstName || "Member",
-      plan: planResult,
-      bookings,
-      points,
-    }),
+    body: JSON.stringify({ firstName: firstName || "Member", ...data }),
   };
 };
