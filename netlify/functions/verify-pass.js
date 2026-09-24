@@ -138,7 +138,7 @@ exports.handler = async (event) => {
     const [planRes, bookingsRes, loyaltyRes] = await Promise.allSettled([
       // a) Pricing Plans - list orders for this member (GET with query params)
       fetchWithTimeout(
-        `https://www.wixapis.com/pricing-plans/v2/orders?buyerIds=${encodeURIComponent(memberId)}&limit=5&sorting.fieldName=createdDate&sorting.order=DESC`,
+        `https://www.wixapis.com/pricing-plans/v2/orders?buyerIds=${encodeURIComponent(memberId)}&orderStatuses=ACTIVE&limit=5&sorting.fieldName=createdDate&sorting.order=DESC`,
         {
           method: "GET",
           headers: wixHeaders,
@@ -154,7 +154,7 @@ exports.handler = async (event) => {
           body: JSON.stringify({
             query: {
               filter: {
-                "contactId": contactId,
+                "bookedEntity.contactId": contactId,
                 "status": "CONFIRMED",
                 "startDate": { "$gte": new Date().toISOString() },
               },
@@ -190,10 +190,11 @@ exports.handler = async (event) => {
         try {
           const planData = JSON.parse(planBody);
           if (planData.orders && planData.orders.length > 0) {
-            const latestOrder = planData.orders[0];
+            // Prefer ACTIVE order, fall back to most recent
+            const activeOrder = planData.orders.find(o => o.status === "ACTIVE") || planData.orders[0];
             planResult = {
-              name: latestOrder.planName || latestOrder.planDetails?.name || "Unknown Plan",
-              status: (latestOrder.status || "unknown").toLowerCase(),
+              name: activeOrder.planName || activeOrder.planDetails?.name || "Unknown Plan",
+              status: (activeOrder.status || "unknown").toLowerCase(),
             };
           }
         } catch {}
