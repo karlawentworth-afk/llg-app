@@ -128,6 +128,9 @@ exports.handler = async (event) => {
   let planResult = { name: null, status: "none" };
   let bookings = [];
   let points = 0;
+  let planDebug = {};
+  let bookingsDebug = {};
+  let loyaltyDebug = {};
 
   try {
     const [planRes, bookingsRes, loyaltyRes] = await Promise.allSettled([
@@ -177,7 +180,6 @@ exports.handler = async (event) => {
     ]);
 
     // Process plan
-    let planDebug = {};
     if (planRes.status === "fulfilled") {
       planDebug.httpStatus = planRes.value.status;
       const planBody = await planRes.value.text();
@@ -199,7 +201,6 @@ exports.handler = async (event) => {
     }
 
     // Process bookings (extended bookings response)
-    let bookingsDebug = {};
     try {
       if (bookingsRes.status === "fulfilled") {
         bookingsDebug.httpStatus = bookingsRes.value.status;
@@ -236,7 +237,6 @@ exports.handler = async (event) => {
     } catch (e) { bookingsDebug.parseError = e.message; }
 
     // Process loyalty
-    let loyaltyDebug = {};
     try {
       if (loyaltyRes.status === "fulfilled") {
         loyaltyDebug.httpStatus = loyaltyRes.value.status;
