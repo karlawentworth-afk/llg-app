@@ -5,7 +5,8 @@
 //   src/backend/__spi__/ecom-discounts-trigger/custom-triggers.js
 // ────────────────────────────────────────────────────────────
 
-import { orders } from "wix-pricing-plans-backend";
+import { orders } from "@wix/pricing-plans";
+import { auth } from "@wix/essentials";
 
 // Plan IDs that qualify for the £7.50 group coaching discount
 const ELIGIBLE_PLAN_IDS = [
@@ -27,28 +28,45 @@ export const listTriggers = async () => {
 };
 
 export const getEligibleTriggers = async (options, context) => {
+  // Log context shape once so we can verify the real field path
+  console.log("SPI context keys:", JSON.stringify(Object.keys(context || {})));
+  if (context?.identity) {
+    console.log("SPI identity keys:", JSON.stringify(Object.keys(context.identity)));
+  }
+
+  // Docs-inferred path: context.identity.memberId
+  // If this is wrong, the log above will reveal the real shape
   const memberId = context?.identity?.memberId;
 
-  // Not logged in — no discount
   if (!memberId) {
+    console.log("SPI: no memberId found, skipping discount");
     return { eligibleTriggers: [] };
   }
 
+  console.log("SPI: checking plans for member", memberId);
+
   try {
-    // Fetch member's pricing plan orders, active only
-    const result = await orders.memberOrdersList(memberId, {
+    const elevatedList = auth.elevate(orders.managementListOrders);
+    const result = await elevatedList({
+      buyerIds: [memberId],
       orderStatuses: ["ACTIVE"],
+      limit: 10,
     });
 
-    const hasEligiblePlan = (result.orders || []).some((order) =>
+    const memberOrders = result.orders || [];
+    const hasEligiblePlan = memberOrders.some((order) =>
       ELIGIBLE_PLAN_IDS.includes(order.planId)
+    );
+
+    console.log(
+      "SPI: found", memberOrders.length, "active orders,",
+      "eligible:", hasEligiblePlan
     );
 
     if (!hasEligiblePlan) {
       return { eligibleTriggers: [] };
     }
 
-    // Return all requested triggers that match our ID
     const eligible = (options.triggers || [])
       .filter((t) => t.customTrigger?._id === TRIGGER_ID)
       .map((t) => ({
@@ -57,8 +75,8 @@ export const getEligibleTriggers = async (options, context) => {
       }));
 
     return { eligibleTriggers: eligible };
-  } catch {
-    // On any error, don't block checkout — just skip the discount
+  } catch (err) {
+    console.error("SPI getEligibleTriggers error:", err.message || err);
     return { eligibleTriggers: [] };
   }
 };
