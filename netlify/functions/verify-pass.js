@@ -91,6 +91,7 @@ exports.handler = async (event) => {
         expectedSigStart: expectedSig.substring(0, 8),
         payloadB64Start: payloadB64.substring(0, 20),
         secretLength: secret.length,
+        secretStart: secret.substring(0, 4),
       }
     }) };
   }

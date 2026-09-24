@@ -7,34 +7,10 @@
 import { Permissions, webMethod } from "wix-web-module";
 import { currentMember } from "wix-members-backend";
 import { getSecret } from "wix-secrets-backend";
+import CryptoJS from "crypto-js";
 
-// Base64url encode helper
-function base64urlEncode(str) {
-  // Wix backend runs Node-like JS, btoa is available
-  return btoa(str)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-// HMAC-SHA256 using SubtleCrypto (available in Wix backend)
-async function hmacSha256(secret, message) {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-  // Convert ArrayBuffer to base64url
-  const bytes = new Uint8Array(sig);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return base64urlEncode(binary);
+function toBase64url(b64) {
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export const getEmbedPass = webMethod(
@@ -61,12 +37,18 @@ export const getEmbedPass = webMethod(
         exp: now + 300, // 5 minutes
       };
 
-      const payloadB64 = base64urlEncode(JSON.stringify(payload));
-      const signature = await hmacSha256(secret, payloadB64);
+      const jsonStr = JSON.stringify(payload);
+      const wordArray = CryptoJS.enc.Utf8.parse(jsonStr);
+      const payloadB64 = toBase64url(CryptoJS.enc.Base64.stringify(wordArray));
+      const sig = CryptoJS.HmacSHA256(payloadB64, secret);
+      const signature = toBase64url(CryptoJS.enc.Base64.stringify(sig));
 
+      // TEMPORARY DEBUG — remove after testing
+      console.log("VELO SECRET STARTS:", secret.substring(0, 4));
+      console.log("VELO SIG:", signature.substring(0, 8));
       return payloadB64 + "." + signature;
     } catch (err) {
-      console.error("embedPass error");
+      console.error("embedPass error:", err.message);
       return null;
     }
   }
