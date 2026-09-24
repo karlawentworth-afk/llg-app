@@ -1,8 +1,14 @@
 // ────────────────────────────────────────────────────────────
 // FILE: src/backend/__spi__/ecom-discounts-trigger/custom-triggers.js
 //
-// In the Wix Editor, enable Dev Mode, then create this file at:
-//   src/backend/__spi__/ecom-discounts-trigger/custom-triggers.js
+// In the Wix Editor, create this file at:
+//   backend/__spi__/ecom-discounts-trigger/custom-triggers.js
+//
+// Verified by live test 2026-09-24:
+//   context.identity.memberId ✓
+//   @wix/pricing-plans + auth.elevate() ✓
+//   Fires in Wix app checkout ✓
+//   Stacks with manual coupon codes ✓
 // ────────────────────────────────────────────────────────────
 
 import { orders } from "@wix/pricing-plans";
@@ -28,23 +34,11 @@ export const listTriggers = async () => {
 };
 
 export const getEligibleTriggers = async (options, context) => {
-  // Log shapes on first run so we can verify real field paths
-  console.log("SPI context keys:", JSON.stringify(Object.keys(context || {})));
-  if (context?.identity) {
-    console.log("SPI identity keys:", JSON.stringify(Object.keys(context.identity)));
-  }
-  console.log("SPI options.triggers:", JSON.stringify(options?.triggers));
-
-  // Docs-inferred path: context.identity.memberId
-  // If this is wrong, the log above will reveal the real shape
   const memberId = context?.identity?.memberId;
 
   if (!memberId) {
-    console.log("SPI: no memberId found, skipping discount");
     return { eligibleTriggers: [] };
   }
-
-  console.log("SPI: checking plans for member", memberId);
 
   try {
     const elevatedList = auth.elevate(orders.managementListOrders);
@@ -54,14 +48,8 @@ export const getEligibleTriggers = async (options, context) => {
       limit: 10,
     });
 
-    const memberOrders = result.orders || [];
-    const hasEligiblePlan = memberOrders.some((order) =>
+    const hasEligiblePlan = (result.orders || []).some((order) =>
       ELIGIBLE_PLAN_IDS.includes(order.planId)
-    );
-
-    console.log(
-      "SPI: found", memberOrders.length, "active orders,",
-      "eligible:", hasEligiblePlan
     );
 
     if (!hasEligiblePlan) {
