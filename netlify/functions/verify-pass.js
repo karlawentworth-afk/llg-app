@@ -272,7 +272,7 @@ exports.handler = async (event) => {
       plan: planResult,
       bookings,
       points,
-      _debug: { planDebug, bookingsDebug, loyaltyDebug },
+      _debug: { siteIdUsed: siteId, accountIdUsed: accountId || "none", planDebug, bookingsDebug, loyaltyDebug },
     }),
   };
 };
