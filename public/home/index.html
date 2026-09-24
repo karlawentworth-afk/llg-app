@@ -61,7 +61,11 @@
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           const code = err.error || "unknown";
-          // TEMPORARY: show debug info for signature mismatch
+          // TEMPORARY: show debug info
+          if (err.debug) {
+            el.innerHTML = '<span class="error">Debug: ' + escapeHtml(JSON.stringify(err.debug)) + '</span>';
+            return;
+          }
           if (code === "invalid_signature" && err.debug) {
             el.innerHTML = '<span class="error">Signature mismatch debug:<br>' +
               'Received sig starts: ' + escapeHtml(err.debug.receivedSigStart) + '<br>' +
