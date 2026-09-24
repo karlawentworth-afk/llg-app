@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLG Admin - Upload Topics</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, sans-serif; padding: 2rem; max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; margin-bottom: 1rem; }
+    label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
+    input, button { font-size: 1rem; padding: 0.5rem; }
+    input[type="password"] { width: 300px; margin-bottom: 1rem; }
+    input[type="file"] { margin-bottom: 1rem; }
+    button { cursor: pointer; background: #2d6a4f; color: #fff; border: none; border-radius: 4px; padding: 0.5rem 1.2rem; margin-right: 0.5rem; }
+    button:disabled { background: #aaa; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #ddd; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #f5f5f5; }
+    .error { color: #c0392b; }
+    .ok { color: #27ae60; }
+    #status { margin: 1rem 0; font-weight: 600; }
+    .help { color: #666; font-size: 0.85rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Upload Session Topics</h1>
+
+  <label for="password">Admin password</label>
+  <input type="password" id="password" placeholder="Enter admin password">
+
+  <label for="csvFile">CSV file</label>
+  <p class="help">Columns: venue, date (YYYY-MM-DD), start_time (HH:MM), title, description</p>
+  <input type="file" id="csvFile" accept=".csv">
+
+  <div>
+    <button id="previewBtn" onclick="preview()">Preview</button>
+    <button id="saveBtn" onclick="save()" disabled>Save</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="previewTable"></div>
+
+  <script>
+    let previewedRows = null;
+
+    function parseCSV(text) {
+      const lines = text.trim().split("\n");
+      if (lines.length < 2) return [];
+      const headerLine = lines[0].toLowerCase();
+      const headers = headerLine.split(",").map(h => h.trim());
+      return lines.slice(1).map(line => {
+        const values = line.split(",").map(v => v.trim());
+        const row = {};
+        headers.forEach((h, i) => { row[h] = values[i] || ""; });
+        return row;
+      });
+    }
+
+    async function preview() {
+      const password = document.getElementById("password").value;
+      const file = document.getElementById("csvFile").files[0];
+      const status = document.getElementById("status");
+      const table = document.getElementById("previewTable");
+
+      if (!password) { status.innerHTML = '<span class="error">Enter password</span>'; return; }
+      if (!file) { status.innerHTML = '<span class="error">Choose a CSV file</span>'; return; }
+
+      status.textContent = "Loading...";
+      table.innerHTML = "";
+      document.getElementById("saveBtn").disabled = true;
+      previewedRows = null;
+
+      const text = await file.text();
+      const rows = parseCSV(text);
+
+      if (rows.length === 0) { status.innerHTML = '<span class="error">No data rows found</span>'; return; }
+
+      try {
+        const res = await fetch("/.netlify/functions/upload-topics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Password": password },
+          body: JSON.stringify({ action: "preview", rows }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          status.innerHTML = `<span class="error">Error: ${data.error} ${data.detail || ""}</span>`;
+          return;
+        }
+
+        previewedRows = data.preview;
+        renderPreview(previewedRows);
+
+        const okCount = previewedRows.filter(r => r.status === "ok").length;
+        const errCount = previewedRows.filter(r => r.status === "error").length;
+        status.innerHTML = `<span class="ok">${okCount} ready</span>` +
+          (errCount ? ` <span class="error">${errCount} errors</span>` : "");
+
+        if (okCount > 0) document.getElementById("saveBtn").disabled = false;
+      } catch (err) {
+        status.innerHTML = `<span class="error">Request failed: ${err.message}</span>`;
+      }
+    }
+
+    function renderPreview(rows) {
+      let html = "<table><tr><th>#</th><th>Status</th><th>Venue</th><th>Date/Time</th><th>Title</th><th>Description</th></tr>";
+      rows.forEach(r => {
+        const cls = r.status === "ok" ? "ok" : "error";
+        const display = r.status === "ok"
+          ? `<td>${r.venue_name}</td><td>${r.start_local}</td><td>${r.title}</td><td>${r.description}</td>`
+          : `<td colspan="4" class="error">${r.message}</td>`;
+        html += `<tr><td>${r.row}</td><td class="${cls}">${r.status}</td>${display}</tr>`;
+      });
+      html += "</table>";
+      document.getElementById("previewTable").innerHTML = html;
+    }
+
+    async function save() {
+      const password = document.getElementById("password").value;
+      const status = document.getElementById("status");
+
+      if (!previewedRows) return;
+
+      document.getElementById("saveBtn").disabled = true;
+      status.textContent = "Saving...";
+
+      try {
+        const res = await fetch("/.netlify/functions/upload-topics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Password": password },
+          body: JSON.stringify({ action: "save", rows: previewedRows }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          status.innerHTML = `<span class="error">Save failed: ${data.error} ${data.detail || ""}</span>`;
+          document.getElementById("saveBtn").disabled = false;
+          return;
+        }
+
+        status.innerHTML = `<span class="ok">Saved ${data.saved} topic(s)</span>`;
+        previewedRows = null;
+      } catch (err) {
+        status.innerHTML = `<span class="error">Save failed: ${err.message}</span>`;
+        document.getElementById("saveBtn").disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
