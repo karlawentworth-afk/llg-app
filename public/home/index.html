@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LLG App Test</title>
+  <title>LLG App</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -36,8 +36,7 @@
     (async function () {
       const el = document.getElementById("status");
 
-      // Read pass from hash: #p=<pass>
-      const hash = window.location.hash.slice(1); // remove #
+      const hash = window.location.hash.slice(1);
       const params = new URLSearchParams(hash);
       const pass = params.get("p");
 
@@ -61,21 +60,6 @@
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           const code = err.error || "unknown";
-          // TEMPORARY: show debug info
-          if (err.debug) {
-            el.innerHTML = '<span class="error">Debug: ' + escapeHtml(JSON.stringify(err.debug)) + '</span>';
-            return;
-          }
-          if (code === "invalid_signature" && err.debug) {
-            el.innerHTML = '<span class="error">Signature mismatch debug:<br>' +
-              'Received sig starts: ' + escapeHtml(err.debug.receivedSigStart) + '<br>' +
-              'Expected sig starts: ' + escapeHtml(err.debug.expectedSigStart) + '<br>' +
-              'Received sig length: ' + err.debug.receivedSigLength + '<br>' +
-              'Expected sig length: ' + err.debug.expectedSigLength + '<br>' +
-              'Payload starts: ' + escapeHtml(err.debug.payloadB64Start) + '<br>' +
-              'Secret length: ' + err.debug.secretLength + '</span>';
-            return;
-          }
           const messages = {
             invalid_signature: "Access denied — pass is invalid.",
             pass_expired: "Your session has expired. Please reload the page on the LLG website.",
@@ -85,7 +69,7 @@
             wix_api_failed: "Could not load your data. Please try again shortly.",
             server_config: "Server configuration error. Please contact LLG.",
           };
-          el.innerHTML = `<span class="error">${messages[code] || "Something went wrong (" + code + ")."}</span>`;
+          el.innerHTML = `<span class="error">${messages[code] || "Something went wrong. Please try again."}</span>`;
           return;
         }
 
@@ -93,7 +77,6 @@
 
         let html = `<span class="label">Hello ${escapeHtml(data.firstName)}.</span><br><br>`;
 
-        // Plan
         if (data.plan.status === "none" || !data.plan.name) {
           html += `<span class="label">Plan:</span> None<br>`;
         } else {
@@ -102,7 +85,6 @@
 
         html += "<br>";
 
-        // Bookings
         if (data.bookings.length === 0) {
           html += `<span class="label">Next booking:</span> None<br>`;
         } else {
@@ -116,13 +98,7 @@
 
         html += "<br>";
 
-        // Points
         html += `<span class="label">Points:</span> ${Number(data.points).toLocaleString()}<br>`;
-
-        // TEMPORARY DEBUG
-        if (data._debug) {
-          html += `<br><span class="label">API Debug:</span><br><pre style="font-size:0.8rem;white-space:pre-wrap">${escapeHtml(JSON.stringify(data._debug, null, 2))}</pre>`;
-        }
 
         el.innerHTML = html;
       } catch (err) {

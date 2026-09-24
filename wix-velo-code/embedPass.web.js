@@ -43,9 +43,6 @@ export const getEmbedPass = webMethod(
       const sig = CryptoJS.HmacSHA256(payloadB64, secret);
       const signature = toBase64url(CryptoJS.enc.Base64.stringify(sig));
 
-      // TEMPORARY DEBUG — remove after testing
-      console.log("VELO SECRET STARTS:", secret.substring(0, 4));
-      console.log("VELO SIG:", signature.substring(0, 8));
       return payloadB64 + "." + signature;
     } catch (err) {
       console.error("embedPass error:", err.message);
