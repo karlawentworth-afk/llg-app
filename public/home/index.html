@@ -563,7 +563,7 @@
       document.getElementById("skeleton").style.display = "block";
 
       try {
-        const fetchBody = PASS ? { pass: PASS } : {};
+        const fetchBody = PASS ? { pass: PASS, skipCache: true } : { skipCache: true };
         const res = await fetch("/.netlify/functions/home-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

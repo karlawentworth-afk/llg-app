@@ -349,7 +349,12 @@ exports.handler = async (event) => {
   // Try pass from body first, then session cookie
   let pass = null;
   let setCookie = null;
-  try { pass = JSON.parse(event.body).pass; } catch {}
+  let skipCache = false;
+  try {
+    const body = JSON.parse(event.body);
+    pass = body.pass;
+    skipCache = !!body.skipCache;
+  } catch {}
 
   let payload;
 
@@ -371,9 +376,9 @@ exports.handler = async (event) => {
 
   const { memberId, contactId, firstName } = payload;
 
-  // Check cache
+  // Check cache (skip after venue change)
   const cached = cache.get(memberId);
-  if (cached && Date.now() < cached.expires) {
+  if (!skipCache && cached && Date.now() < cached.expires) {
     const respHeaders = { ...headers };
     if (setCookie) respHeaders["Set-Cookie"] = setCookie;
     return { statusCode: 200, headers: respHeaders, body: JSON.stringify(cached.data) };
