@@ -1,14 +1,15 @@
 // ────────────────────────────────────────────────────────────
 // FILE: backend/__spi__/ecom-discounts-trigger/custom-triggers.js
 //
-// Two triggers:
+// Two independent triggers:
 // 1. llg-member-coaching-discount: £7.50 off for Physical/Complete
 // 2. llg-points-redemption: 100% off when member has a points flag
 //
-// Packages needed (Velo Package Manager):
-//   @wix/pricing-plans, @wix/essentials
-// Secrets needed (Wix Secrets Manager):
-//   LLG_SPI_SECRET (same value as SPI_SECRET in Netlify env vars)
+// Each trigger fails safely without affecting the other.
+// The points fetch times out after 2 seconds.
+//
+// Packages: @wix/pricing-plans, @wix/essentials
+// Secrets: LLG_SPI_SECRET
 // ────────────────────────────────────────────────────────────
 
 import { orders } from "@wix/pricing-plans";
@@ -39,8 +40,8 @@ export const getEligibleTriggers = async (options, context) => {
 
   const eligible = [];
 
+  // Trigger 1: Member coaching discount (independent)
   try {
-    // Trigger 1: Member coaching discount
     const elevatedList = auth.elevate(orders.managementListOrders);
     const result = await elevatedList({
       buyerIds: [memberId],
@@ -53,25 +54,33 @@ export const getEligibleTriggers = async (options, context) => {
     );
 
     if (hasEligiblePlan) {
-      const memberTrigger = (options.triggers || []).find(
+      const t = (options.triggers || []).find(
         (t) => t.customTrigger?._id === TRIGGER_MEMBER
       );
-      if (memberTrigger) {
+      if (t) {
         eligible.push({
-          customTriggerId: memberTrigger.customTrigger._id,
-          identifier: memberTrigger.identifier,
+          customTriggerId: t.customTrigger._id,
+          identifier: t.identifier,
         });
       }
     }
+  } catch (err) {
+    console.error("SPI member trigger error:", err.message || err);
+  }
 
-    // Trigger 2: Points redemption
+  // Trigger 2: Points redemption (independent, 2s timeout)
+  try {
     const pointsTrigger = (options.triggers || []).find(
       (t) => t.customTrigger?._id === TRIGGER_POINTS
     );
 
     if (pointsTrigger) {
+      const spiSecret = await getSecret("LLG_SPI_SECRET");
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2000);
+
       try {
-        const spiSecret = await getSecret("LLG_SPI_SECRET");
         const res = await fetch(
           "https://llg-app-test.netlify.app/.netlify/functions/check-points-flag",
           {
@@ -81,8 +90,10 @@ export const getEligibleTriggers = async (options, context) => {
               "X-SPI-Secret": spiSecret,
             },
             body: JSON.stringify({ memberId }),
+            signal: controller.signal,
           }
         );
+        clearTimeout(timer);
 
         if (res.ok) {
           const data = await res.json();
@@ -93,12 +104,13 @@ export const getEligibleTriggers = async (options, context) => {
             });
           }
         }
-      } catch (err) {
-        console.error("SPI points flag check error:", err.message || err);
+      } catch (fetchErr) {
+        clearTimeout(timer);
+        console.error("SPI points fetch error:", fetchErr.message || fetchErr);
       }
     }
   } catch (err) {
-    console.error("SPI getEligibleTriggers error:", err.message || err);
+    console.error("SPI points trigger error:", err.message || err);
   }
 
   return { eligibleTriggers: eligible };
