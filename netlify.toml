@@ -2,7 +2,9 @@
   publish = "public"
   functions = "netlify/functions"
 
+# CSP frame-ancestors temporarily removed to allow Wix app web view.
+# Will restore with correct origin once we identify it from logs.
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "frame-ancestors https://www.ladieslovegolf.com https://ladieslovegolf.com https://*.wix.com https://*.wixsite.com https://*.editorx.io"
+    Cache-Control = "no-cache, no-store, must-revalidate"

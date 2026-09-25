@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>LLG Home</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,8 +19,7 @@
       --radius: 18px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { height: 100%; }
-    body { height: 100%; overflow: hidden; }
+    body { min-height: 100vh; -webkit-font-smoothing: antialiased; }
     body {
       font-family: 'Mulish', 'Segoe UI', sans-serif;
       background: var(--bg);
@@ -33,9 +32,6 @@
       max-width: 480px;
       margin: 0 auto;
       padding: 1.25rem 1rem 3rem;
-      height: 100%;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
     }
 
     /* Typography */
@@ -287,6 +283,9 @@
     let selectedDay = 0;
 
     (async function () {
+      // Temporary: log web view origin so we can restore CSP
+      console.log("ORIGIN:", location.origin, "REFERRER:", document.referrer, "ANCESTORS:", window.location.ancestorOrigins ? [...window.location.ancestorOrigins] : "n/a");
+
       // Read pass from hash if present
       const hash = window.location.hash.slice(1);
       const params = new URLSearchParams(hash);
