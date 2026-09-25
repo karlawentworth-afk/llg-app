@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan your golf trip</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --mg: #DE0082; --mg-dark: #B8006B; --charcoal: #2B2A29; --bg: #F7F4F0; --card: #fff; --border: #E6E1DA; --muted: #5E5D5B; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { min-height: 100vh; font-family: 'Mulish','Segoe UI',sans-serif; background: var(--bg); color: var(--charcoal); font-size: 16px; line-height: 1.5; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    h1 { font-family: 'Poppins',sans-serif; font-size: 1.3rem; margin-bottom: 0.5rem; }
+    .back { display: inline-flex; align-items: center; background: none; border: none; color: var(--mg-dark); font-weight: 700; font-size: 0.95rem; cursor: pointer; padding: 0.5rem 0; min-height: 44px; margin-bottom: 0.75rem; }
+    .intro { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.25rem; }
+    label { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; margin-top: 1rem; }
+    input, select, textarea { width: 100%; font-size: 1rem; padding: 0.65rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; background: var(--card); color: var(--charcoal); }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--mg); border-color: var(--mg); }
+    input[readonly] { background: #f0ede8; color: var(--muted); }
+    textarea { resize: vertical; height: 80px; }
+    select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235E5D5B' fill='none' stroke-width='2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+    .check-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+    .check-row input { width: auto; min-height: 20px; min-width: 20px; }
+    .check-row label { margin: 0; font-weight: 400; font-size: 0.95rem; }
+    .btn { display: flex; align-items: center; justify-content: center; width: 100%; background: var(--mg); color: #fff; border: none; border-radius: 12px; padding: 0 1.25rem; font-family: 'Mulish',sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; min-height: 48px; margin-top: 1.5rem; }
+    .btn:active { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .error { color: #c0392b; font-weight: 600; font-size: 0.9rem; margin-top: 0.5rem; }
+    .success { text-align: center; padding: 2rem 0; }
+    .success h2 { font-family: 'Poppins',sans-serif; font-size: 1.2rem; margin-bottom: 0.75rem; }
+    .points-note { color: var(--mg-dark); font-weight: 600; font-size: 0.9rem; margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <button class="back" onclick="window.history.back()">← Back</button>
+    <h1>Planning your own golf trip?</h1>
+    <p class="intro">Don't worry if you're not sure yet. Rough dates and numbers are perfect. They just help the Golf Breaks team get your prices ready.</p>
+
+    <div id="formArea">
+      <label for="fname">Name</label>
+      <input type="text" id="fname" autocomplete="name">
+
+      <label for="fphone">Phone</label>
+      <input type="tel" id="fphone" autocomplete="tel">
+
+      <label for="femail">Email</label>
+      <input type="email" id="femail" readonly>
+
+      <label for="fdest">Where would you like to go? *</label>
+      <select id="fdest">
+        <option value="">Choose a destination</option>
+      </select>
+      <div id="destError" class="error" style="display:none">Please choose a destination, even a rough one.</div>
+
+      <label for="fdate">When would you like to travel?</label>
+      <input type="date" id="fdate">
+      <div class="check-row">
+        <input type="checkbox" id="fflex">
+        <label for="fflex">My dates are flexible</label>
+      </div>
+
+      <label for="fparty">How many travelling in your party?</label>
+      <select id="fparty">
+        <option value="">Not sure yet</option>
+      </select>
+
+      <label for="fnights">How many nights will you be staying?</label>
+      <select id="fnights">
+        <option value="">Not sure yet</option>
+      </select>
+
+      <label for="frounds">How many rounds would you like to play?</label>
+      <select id="frounds">
+        <option value="">Not sure yet</option>
+      </select>
+
+      <label for="fnotes">Anything else we should know?</label>
+      <textarea id="fnotes" placeholder="Special requests, accessibility needs, anything at all"></textarea>
+
+      <button class="btn" id="submitBtn" onclick="submitForm()">Send enquiry</button>
+    </div>
+
+    <div id="successArea" class="success" style="display:none">
+      <h2>Thanks, <span id="thankName"></span></h2>
+      <p>The Golf Breaks team will be in touch soon to talk it through.</p>
+      <p class="points-note">You'll earn 1 point for every £1 you spend on your trip.</p>
+      <button class="back" style="margin-top:1.5rem" onclick="window.history.back()">← Back to Home</button>
+    </div>
+  </div>
+
+  <script>
+    const DESTINATIONS = [
+      "Abu Dhabi","Barbados","Belgium","Bulgaria","Canary Islands",
+      "Cyprus","Czech Republic","Dominican Republic","Dubai","Egypt",
+      "England & Wales","France","Greece","Holland","Ireland","Italy",
+      "Jamaica","Malaysia","Mauritius","Mexico","Morocco","Portugal",
+      "Qatar","Scotland","Slovenia","South Africa","Spain","Sweden",
+      "Switzerland","Thailand","Tunisia","Turkey","USA","Vietnam"
+    ];
+
+    // Populate dropdowns
+    const destSel = document.getElementById("fdest");
+    DESTINATIONS.forEach(d => { const o = document.createElement("option"); o.value = d; o.textContent = d; destSel.appendChild(o); });
+
+    const partySel = document.getElementById("fparty");
+    for (let i = 1; i <= 12; i++) { const o = document.createElement("option"); o.value = String(i); o.textContent = String(i); partySel.appendChild(o); }
+    partySel.innerHTML += '<option value="13+">13+</option>';
+
+    const nightsSel = document.getElementById("fnights");
+    for (let i = 1; i <= 14; i++) { const o = document.createElement("option"); o.value = String(i); o.textContent = String(i); nightsSel.appendChild(o); }
+    nightsSel.innerHTML += '<option value="15+">15+</option>';
+
+    const roundsSel = document.getElementById("frounds");
+    for (let i = 0; i <= 10; i++) { const o = document.createElement("option"); o.value = String(i); o.textContent = String(i); roundsSel.appendChild(o); }
+    roundsSel.innerHTML += '<option value="10+">10+</option>';
+
+    // Pre-fill from hash params (passed from Home)
+    const hash = window.location.hash.slice(1);
+    const params = new URLSearchParams(hash);
+    const PASS = params.get("p") || null;
+    if (params.get("name")) document.getElementById("fname").value = params.get("name");
+    if (params.get("email")) document.getElementById("femail").value = params.get("email");
+    if (params.get("phone")) document.getElementById("fphone").value = params.get("phone") || "";
+    if (PASS && window.history.replaceState) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+
+    async function submitForm() {
+      const dest = document.getElementById("fdest").value;
+      const errEl = document.getElementById("destError");
+      if (!dest) { errEl.style.display = "block"; return; }
+      errEl.style.display = "none";
+
+      const btn = document.getElementById("submitBtn");
+      btn.textContent = "Sending...";
+      btn.disabled = true;
+
+      const body = {
+        pass: PASS,
+        name: document.getElementById("fname").value,
+        email: document.getElementById("femail").value,
+        phone: document.getElementById("fphone").value,
+        destination: dest,
+        travelDate: document.getElementById("fdate").value,
+        datesFlexible: document.getElementById("fflex").checked,
+        partySize: document.getElementById("fparty").value,
+        nights: document.getElementById("fnights").value,
+        rounds: document.getElementById("frounds").value,
+        notes: document.getElementById("fnotes").value,
+      };
+
+      try {
+        const res = await fetch("/.netlify/functions/golf-breaks-enquiry", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          btn.textContent = "Send enquiry";
+          btn.disabled = false;
+          alert("Could not send: " + (err.error || "please try again"));
+          return;
+        }
+
+        document.getElementById("formArea").style.display = "none";
+        document.getElementById("thankName").textContent = (body.name || "").split(" ")[0] || "you";
+        document.getElementById("successArea").style.display = "block";
+      } catch {
+        btn.textContent = "Send enquiry";
+        btn.disabled = false;
+        alert("Could not connect. Please try again.");
+      }
+    }
+  </script>
+</body>
+</html>
