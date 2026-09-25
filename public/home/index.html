@@ -533,19 +533,15 @@
             actionHtml = `<a class="btn btn-sm" href="${bookUrl}" onclick="tapBookBtn(this)">Book</a>`;
           }
 
-          // Description with More/Less toggle
+          // Long description behind More/Less
           const descId = `desc-${selectedDay}-${i}`;
           let descHtml = "";
           if (s.topic?.description) {
             const desc = esc(s.topic.description);
-            if (desc.length > 80) {
-              descHtml = `<div class="small" style="margin:0.2rem 0 0.3rem">
-                <span id="${descId}-short">${desc.substring(0, 80)}... <a class="link" style="font-size:0.85rem" onclick="toggleDesc('${descId}');return false" href="#">More</a></span>
-                <span id="${descId}-full" style="display:none">${desc} <a class="link" style="font-size:0.85rem" onclick="toggleDesc('${descId}');return false" href="#">Less</a></span>
-              </div>`;
-            } else {
-              descHtml = `<div class="small" style="margin:0.2rem 0 0.3rem">${desc}</div>`;
-            }
+            descHtml = `<div class="small" style="margin:0.2rem 0 0.3rem">
+              <a class="link" style="font-size:0.85rem" id="${descId}-more" onclick="toggleDesc('${descId}');return false" href="#">More</a>
+              <div id="${descId}-full" style="display:none">${desc} <a class="link" style="font-size:0.85rem" onclick="toggleDesc('${descId}');return false" href="#">Less</a></div>
+            </div>`;
           }
 
           html += `<div class="session-row">
@@ -696,14 +692,14 @@
     }
 
     function toggleDesc(id) {
-      const short = document.getElementById(id + "-short");
+      const moreLink = document.getElementById(id + "-more");
       const full = document.getElementById(id + "-full");
-      if (short.style.display === "none") {
-        short.style.display = "";
-        full.style.display = "none";
-      } else {
-        short.style.display = "none";
+      if (full.style.display === "none") {
         full.style.display = "";
+        moreLink.style.display = "none";
+      } else {
+        full.style.display = "none";
+        moreLink.style.display = "";
       }
     }
 
