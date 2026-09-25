@@ -1,0 +1,74 @@
+const crypto = require("crypto");
+const { createClient } = require("@supabase/supabase-js");
+
+function base64urlDecode(str) {
+  return Buffer.from(str.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+}
+function base64urlEncode(buf) {
+  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function verifyPass(pass, secret) {
+  if (!pass || typeof pass !== "string") return { error: "missing_pass" };
+  const parts = pass.split(".");
+  if (parts.length !== 2) return { error: "invalid_pass_format" };
+  const [payloadB64, sigB64] = parts;
+  const expected = base64urlEncode(crypto.createHmac("sha256", secret).update(payloadB64).digest());
+  if (expected.length !== sigB64.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sigB64))) {
+    return { error: "invalid_signature" };
+  }
+  let payload;
+  try { payload = JSON.parse(base64urlDecode(payloadB64).toString("utf8")); } catch { return { error: "invalid_payload" }; }
+  const now = Math.floor(Date.now() / 1000);
+  if (!payload.exp || now > payload.exp) return { error: "pass_expired" };
+  if (!payload.memberId) return { error: "incomplete_pass" };
+  return { payload };
+}
+
+exports.handler = async (event) => {
+  const headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json",
+  };
+
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers, body: "" };
+  if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "method_not_allowed" }) };
+
+  const secret = process.env.WIX_EMBED_SECRET;
+  if (!secret) return { statusCode: 500, headers, body: JSON.stringify({ error: "server_config" }) };
+
+  let body;
+  try { body = JSON.parse(event.body); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "bad_request" }) }; }
+
+  const result = verifyPass(body.pass, secret);
+  if (result.error) return { statusCode: 401, headers, body: JSON.stringify({ error: result.error }) };
+
+  const { memberId } = result.payload;
+  const venueId = body.venueId;
+
+  if (!venueId || typeof venueId !== "string") {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_venue_id" }) };
+  }
+
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return { statusCode: 500, headers, body: JSON.stringify({ error: "supabase_not_configured" }) };
+
+  const supabase = createClient(url, key);
+
+  const { error } = await supabase
+    .from("member_prefs")
+    .upsert({
+      wix_member_id: memberId,
+      home_venue_id: venueId,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "wix_member_id" });
+
+  if (error) {
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "save_failed", detail: error.message }) };
+  }
+
+  return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+};

@@ -3,122 +3,642 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LLG App</title>
+  <title>LLG Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --magenta: #DE0082;
+      --magenta-dark: #B8006B;
+      --charcoal: #2B2A29;
+      --bg: #F7F4F0;
+      --card-bg: #fff;
+      --card-border: #E6E1DA;
+      --muted: #5E5D5B;
+      --radius: 18px;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      height: 100%;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
+    html, body { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      padding: 2rem;
-      background: #fff;
-      color: #1a1a1a;
+      font-family: 'Mulish', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--charcoal);
+      font-size: 16px;
+      line-height: 1.5;
+      padding: 0;
     }
-    #status {
-      font-size: 1.4rem;
-      line-height: 1.8;
+    .container { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+
+    /* Typography */
+    h1, h2, h3 { font-family: 'Poppins', 'Segoe UI', sans-serif; }
+    h1 { font-size: 1.5rem; font-weight: 700; }
+    h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.75rem; }
+    .subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 0.15rem; }
+    .small { font-size: 0.875rem; color: var(--muted); }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
     }
-    .error {
-      color: #c0392b;
+    .card-dark {
+      background: var(--charcoal);
+      color: #fff;
+      border: none;
+    }
+    .card-dark .small { color: #b0afad; }
+    .card-dark .topic { color: var(--magenta); font-weight: 700; font-size: 1.1rem; }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      background: var(--magenta);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-family: 'Mulish', sans-serif;
+      font-size: 1rem;
       font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      min-height: 48px;
+      text-align: center;
     }
-    .label {
+    .btn:active { opacity: 0.85; }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--magenta);
+      color: var(--magenta);
+    }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.875rem; min-height: 40px; }
+
+    /* Tiles row */
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+    .tile {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.1rem;
+      text-align: center;
+      cursor: pointer;
+      min-height: 48px;
+    }
+    .tile-value { font-family: 'Poppins', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--charcoal); }
+    .tile-label { font-size: 0.875rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* Day strip */
+    .day-strip { display: flex; gap: 0.4rem; overflow-x: auto; margin-bottom: 1rem; padding-bottom: 0.25rem; -webkit-overflow-scrolling: touch; }
+    .day-strip::-webkit-scrollbar { display: none; }
+    .day-chip {
+      flex-shrink: 0;
+      padding: 0.5rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
       font-weight: 600;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      cursor: pointer;
+      text-align: center;
+      min-width: 56px;
+      min-height: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-    .booking {
-      margin-left: 1rem;
-      margin-bottom: 0.3rem;
+    .day-chip.active { background: var(--magenta); color: #fff; border-color: var(--magenta); }
+    .day-chip .day-name { font-size: 0.75rem; font-weight: 400; }
+
+    /* Session rows */
+    .session-row {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
+    .session-info { flex: 1; }
+    .session-time { font-weight: 700; }
+    .session-topic { color: var(--charcoal); font-weight: 600; }
+    .session-meta { font-size: 0.875rem; color: var(--muted); }
+    .session-action { flex-shrink: 0; margin-left: 0.75rem; }
+    .badge-booked {
+      background: #e8f5e9;
+      color: #2e7d32;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+    }
+    .badge-full {
+      background: #fff3e0;
+      color: #e65100;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+    }
+
+    /* Trips */
+    .trips-scroll { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; }
+    .trips-scroll::-webkit-scrollbar { display: none; }
+    .trip-card {
+      flex-shrink: 0;
+      width: 220px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .trip-title { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; }
+    .trip-meta { font-size: 0.875rem; color: var(--muted); }
+
+    /* Perks */
+    .perk-item { padding: 0.5rem 0; border-bottom: 1px solid var(--card-border); font-size: 0.95rem; }
+    .perk-item:last-child { border-bottom: none; }
+
+    /* Membership card overlay */
+    .card-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .card-overlay.show { display: flex; }
+    .member-card {
+      background: var(--charcoal);
+      color: #fff;
+      border-radius: 20px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+    .member-card .llg-mark { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .member-card .tier { color: var(--magenta); font-weight: 700; font-size: 1.1rem; }
+    .member-card .name { font-size: 1.25rem; font-weight: 700; margin: 0.75rem 0 0.25rem; }
+    .member-card .venue { color: #b0afad; }
+    .member-card .dates { margin: 1rem 0; font-size: 0.9rem; color: #b0afad; }
+    .member-card .live-clock { font-family: 'Mulish', monospace; font-size: 0.85rem; color: var(--magenta); margin: 0.75rem 0; }
+    .member-card .points-line { margin: 0.75rem 0; }
+    .member-card .earn-info { font-size: 0.85rem; color: #b0afad; }
+    .member-card .perk-list { margin: 0.75rem 0; font-size: 0.9rem; }
+    .member-card .perk-list li { margin-bottom: 0.3rem; list-style: none; }
+    .member-card .perk-list li::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--magenta); margin-right: 0.5rem; vertical-align: middle; }
+    .member-card .close-card { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; min-height: 48px; min-width: 48px; }
+    .member-card .renew-note { font-size: 0.85rem; color: #b0afad; margin-top: 1rem; }
+    .sheen {
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+      animation: sheen 4s infinite;
+    }
+    @keyframes sheen { 0% { left: -50%; } 100% { left: 150%; } }
+
+    /* Venue picker */
+    .venue-picker { margin-bottom: 1rem; }
+    .venue-option {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 14px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Mulish', sans-serif;
+      color: var(--charcoal);
+      min-height: 48px;
+    }
+    .venue-option .venue-town { font-weight: 400; color: var(--muted); font-size: 0.875rem; }
+
+    /* Link style */
+    a.link { color: var(--magenta-dark); text-decoration: underline; font-weight: 600; }
+
+    /* Skeleton */
+    .skeleton { background: #e0ddd8; border-radius: var(--radius); animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .skel-greeting { height: 2rem; width: 60%; margin-bottom: 0.5rem; }
+    .skel-subtitle { height: 1.2rem; width: 45%; margin-bottom: 1rem; }
+    .skel-card { height: 140px; margin-bottom: 1rem; }
+    .skel-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+    .skel-tile { height: 90px; }
+    .skel-section { height: 200px; margin-bottom: 1rem; }
+
+    /* Error */
+    .error-msg { color: #c0392b; font-weight: 600; padding: 2rem 0; text-align: center; }
+
+    /* Holding view */
+    .holding { text-align: center; padding: 2rem 0; }
+    .holding h1 { margin-bottom: 1rem; }
   </style>
 </head>
 <body>
-  <div id="status">Loading…</div>
+  <div class="container" id="app">
+    <!-- Skeleton loading -->
+    <div id="skeleton">
+      <div class="skeleton skel-greeting"></div>
+      <div class="skeleton skel-subtitle"></div>
+      <div class="skeleton skel-card"></div>
+      <div class="skel-tiles">
+        <div class="skeleton skel-tile"></div>
+        <div class="skeleton skel-tile"></div>
+      </div>
+      <div class="skeleton skel-section"></div>
+    </div>
+
+    <div id="content" style="display:none"></div>
+    <div id="error" style="display:none"></div>
+  </div>
+
+  <!-- Membership card overlay -->
+  <div class="card-overlay" id="cardOverlay" onclick="if(event.target===this)closeCard()">
+    <div class="member-card" id="memberCard"></div>
+  </div>
 
   <script>
-    (async function () {
-      const el = document.getElementById("status");
+    let DATA = null;
+    let PASS = null;
+    let selectedDay = 0;
 
+    (async function () {
       const hash = window.location.hash.slice(1);
       const params = new URLSearchParams(hash);
-      const pass = params.get("p");
+      PASS = params.get("p");
 
-      if (!pass) {
-        el.innerHTML = '<span class="error">No pass provided. Please access this page from the LLG website.</span>';
-        return;
-      }
+      if (!PASS) { showError("No pass provided. Please access this page from the LLG website."); return; }
 
       try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 9000);
-
-        const res = await fetch("/.netlify/functions/verify-pass", {
+        const res = await fetch("/.netlify/functions/home-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pass }),
+          body: JSON.stringify({ pass: PASS }),
           signal: controller.signal,
         });
         clearTimeout(timer);
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          const code = err.error || "unknown";
-          const messages = {
-            invalid_signature: "Access denied — pass is invalid.",
+          const msgs = {
+            invalid_signature: "Access denied.",
             pass_expired: "Your session has expired. Please reload the page on the LLG website.",
-            invalid_pass_format: "Access denied — pass format is invalid.",
-            missing_pass: "No pass provided.",
-            incomplete_pass: "Access denied — pass is incomplete.",
-            wix_api_failed: "Could not load your data. Please try again shortly.",
             server_config: "Server configuration error. Please contact LLG.",
           };
-          el.innerHTML = `<span class="error">${messages[code] || "Something went wrong. Please try again."}</span>`;
+          showError(msgs[err.error] || "Something went wrong. Please try again.");
           return;
         }
 
-        const data = await res.json();
-
-        let html = `<span class="label">Hello ${escapeHtml(data.firstName)}.</span><br><br>`;
-
-        if (data.plan.status === "none" || !data.plan.name) {
-          html += `<span class="label">Plan:</span> None<br>`;
-        } else {
-          html += `<span class="label">Plan:</span> ${escapeHtml(data.plan.name)} (${escapeHtml(data.plan.status)})<br>`;
-        }
-
-        html += "<br>";
-
-        if (data.bookings.length === 0) {
-          html += `<span class="label">Next booking:</span> None<br>`;
-        } else {
-          html += `<span class="label">Next bookings:</span><br>`;
-          data.bookings.forEach((b) => {
-            let line = `${escapeHtml(b.name)} — ${escapeHtml(b.date)} ${escapeHtml(b.time)}`;
-            if (b.location) line += ` — ${escapeHtml(b.location)}`;
-            html += `<div class="booking">${line}</div>`;
-          });
-        }
-
-        html += "<br>";
-
-        html += `<span class="label">Points:</span> ${Number(data.points).toLocaleString()}<br>`;
-
-        el.innerHTML = html;
+        DATA = await res.json();
+        render();
       } catch (err) {
-        if (err.name === "AbortError") {
-          el.innerHTML = '<span class="error">Request timed out. Please try again.</span>';
-        } else {
-          el.innerHTML = '<span class="error">Could not connect to the server. Please try again.</span>';
-        }
+        showError(err.name === "AbortError" ? "Request timed out. Please try again." : "Could not connect. Please try again.");
       }
     })();
 
-    function escapeHtml(str) {
-      const div = document.createElement("div");
-      div.textContent = String(str);
-      return div.innerHTML;
+    function showError(msg) {
+      document.getElementById("skeleton").style.display = "none";
+      document.getElementById("error").style.display = "block";
+      document.getElementById("error").innerHTML = `<p class="error-msg">${esc(msg)}</p>`;
+    }
+
+    function render() {
+      document.getElementById("skeleton").style.display = "none";
+      const el = document.getElementById("content");
+      el.style.display = "block";
+
+      if (!DATA.plan.eligible) {
+        renderHolding(el);
+        return;
+      }
+
+      renderHome(el);
+    }
+
+    function renderHolding(el) {
+      const planText = DATA.plan.name ? `${esc(DATA.plan.name)} (${esc(DATA.plan.status)})` : "No active plan";
+      const money = (DATA.points / 100).toFixed(2);
+      el.innerHTML = `
+        <div class="holding">
+          <h1>${greeting()}, ${esc(DATA.firstName)}.</h1>
+          <p class="subtitle">${planText}</p>
+          <p style="margin-top:1rem;font-size:1.1rem"><strong>${Number(DATA.points).toLocaleString()} points</strong></p>
+          <p class="small">Worth £${money}</p>
+        </div>`;
+    }
+
+    function renderHome(el) {
+      let html = "";
+
+      // 1. Greeting
+      html += `<h1>${greeting()}, ${esc(DATA.firstName)}.</h1>`;
+      html += `<p class="subtitle">${formatDateLong(new Date())}</p>`;
+      html += `<p style="margin:0.3rem 0 1rem;font-weight:600">Here's your golf week.</p>`;
+
+      // 2. Next session
+      html += renderNextSession();
+
+      // 3. Points + membership tiles
+      const money = (DATA.points / 100).toFixed(2);
+      html += `<div class="tiles">
+        <div class="tile">
+          <div class="tile-value">£${money}</div>
+          <div class="tile-label">to spend</div>
+          <div class="small">${Number(DATA.points).toLocaleString()} points</div>
+        </div>
+        <div class="tile" onclick="showCard()">
+          <div class="tile-value" style="font-size:1rem">${esc(DATA.plan.name)}</div>
+          <div class="tile-label" style="color:var(--magenta-dark);font-weight:600">Show my card</div>
+        </div>
+      </div>`;
+
+      // 4. Book at venue
+      html += renderBookSection();
+
+      // 5. Perks
+      if (DATA.perks?.length > 0) {
+        const venueName = DATA.homeVenue?.name || "your venue";
+        html += `<h2>Your ${esc(venueName)} perks</h2>`;
+        html += `<div class="card">`;
+        DATA.perks.forEach(p => { html += `<div class="perk-item">${esc(p)}</div>`; });
+        html += `<div style="margin-top:0.75rem"><a class="link" href="#" onclick="showCard();return false">Show card</a></div>`;
+        html += `</div>`;
+      }
+
+      // 6. Trips
+      if (DATA.events?.length > 0) {
+        html += `<h2>Trips worth a look</h2>`;
+        html += `<div class="trips-scroll">`;
+        DATA.events.forEach(e => {
+          html += `<div class="trip-card">
+            <div class="trip-title">${sentenceCase(esc(e.title))}</div>
+            <div class="trip-meta">${e.startDate ? formatDateLong(new Date(e.startDate)) : ""}</div>
+            <div class="trip-meta">${esc(e.location)}</div>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+
+      el.innerHTML = html;
+    }
+
+    function renderNextSession() {
+      const next = DATA.bookings?.[0];
+      if (!next) {
+        return `<div class="card card-dark">
+          <p style="font-weight:600">Nothing booked yet</p>
+          <p class="small" style="margin:0.5rem 0">Check out the sessions below and book your next one.</p>
+        </div>`;
+      }
+      const start = next.startDate ? new Date(next.startDate) : null;
+      const end = next.endDate ? new Date(next.endDate) : null;
+      const topic = findTopicForBooking(next);
+      return `<div class="card card-dark">
+        ${topic ? `<div class="topic">${sentenceCase(esc(topic.title))}</div>` : ""}
+        <p style="font-weight:700;font-size:1.05rem;margin:0.3rem 0">${esc(next.title)}</p>
+        <p>${start ? formatDateLong(start) : "Date TBC"}</p>
+        <p>${start ? formatTime(start) : ""}${end ? " to " + formatTime(end) : ""} | ${esc(next.locationName)}</p>
+        <div style="margin-top:1rem">
+          <a class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3)" href="https://www.ladieslovegolf.com/bookings" target="_top">Can't make it?</a>
+        </div>
+        <p class="small" style="margin-top:0.5rem">You can move or cancel up to 24 hours before.</p>
+      </div>`;
+    }
+
+    function renderBookSection() {
+      // No home venue
+      if (!DATA.homeVenue) {
+        let html = `<h2>Where do you usually play?</h2><div class="venue-picker">`;
+        (DATA.allVenues || []).forEach(v => {
+          html += `<button class="venue-option" onclick="pickVenue('${v.id}')">
+            ${esc(v.name)} <span class="venue-town">${v.town ? esc(v.town) : ""}</span>
+          </button>`;
+        });
+        html += `</div>`;
+        return html;
+      }
+
+      // Build 7-day strip
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        days.push(d);
+      }
+
+      let html = `<h2>Book at ${esc(DATA.homeVenue.name)}</h2>`;
+
+      // Day strip
+      html += `<div class="day-strip" id="dayStrip">`;
+      days.forEach((d, i) => {
+        const dayName = d.toLocaleDateString("en-GB", { weekday: "short" });
+        const dayNum = d.getDate();
+        html += `<div class="day-chip ${i === selectedDay ? "active" : ""}" onclick="selectDay(${i})">
+          <span class="day-name">${dayName}</span>
+          <span>${dayNum}</span>
+        </div>`;
+      });
+      html += `</div>`;
+
+      // Sessions for selected day
+      const selDate = days[selectedDay];
+      const selDateStr = selDate.toISOString().substring(0, 10);
+      const daySessions = (DATA.sessions || []).filter(s => {
+        if (!s.startDate) return false;
+        return s.startDate.substring(0, 10) === selDateStr;
+      });
+
+      if (daySessions.length === 0) {
+        html += `<p class="small" style="padding:1rem 0">No sessions on this day.</p>`;
+      } else {
+        daySessions.forEach(s => {
+          const start = new Date(s.startDate);
+          const end = s.endDate ? new Date(s.endDate) : null;
+          const topicTitle = s.topic?.title ? sentenceCase(s.topic.title) : "";
+          const placesLeft = s.remainingCapacity;
+          const isFull = placesLeft === 0;
+
+          let actionHtml;
+          if (s.isBooked) {
+            actionHtml = `<span class="badge-booked">You're booked</span>`;
+          } else if (isFull) {
+            actionHtml = `<span class="badge-full">Full (Waitlist)</span>`;
+          } else {
+            actionHtml = `<a class="btn btn-sm" href="https://www.ladieslovegolf.com/bookings" target="_top">Book</a>`;
+          }
+
+          html += `<div class="session-row">
+            <div class="session-info">
+              <div class="session-time">${formatTime(start)}${end ? " to " + formatTime(end) : ""}</div>
+              ${topicTitle ? `<div class="session-topic">${esc(topicTitle)}</div>` : ""}
+              ${s.topic?.description ? `<div class="small" style="margin:0.2rem 0 0.3rem">${esc(s.topic.description)}</div>` : ""}
+              <div class="session-meta">${placesLeft} place${placesLeft !== 1 ? "s" : ""} left | £12.50 member price</div>
+            </div>
+            <div class="session-action">${actionHtml}</div>
+          </div>`;
+        });
+      }
+
+      html += `<p style="margin-top:0.5rem"><a class="link" href="#" onclick="showVenuePicker();return false">Other venues</a></p>`;
+
+      return html;
+    }
+
+    function findTopicForBooking(booking) {
+      if (!booking.startDate || !DATA.sessions) return null;
+      const bookingStart = new Date(booking.startDate);
+      for (const s of DATA.sessions) {
+        if (s.topic && s.startDate) {
+          const sStart = new Date(s.startDate);
+          if (Math.abs(sStart.getTime() - bookingStart.getTime()) < 2 * 60 * 60 * 1000) {
+            return s.topic;
+          }
+        }
+      }
+      return null;
+    }
+
+    function selectDay(i) {
+      selectedDay = i;
+      render();
+    }
+
+    function showVenuePicker() {
+      DATA.homeVenue = null;
+      DATA.homeVenueSource = "none";
+      render();
+    }
+
+    async function pickVenue(venueId) {
+      const venue = (DATA.allVenues || []).find(v => v.id === venueId);
+      if (!venue) return;
+
+      // Save preference
+      try {
+        await fetch("/.netlify/functions/set-home-venue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pass: PASS, venueId }),
+        });
+      } catch {}
+
+      // Reload to get venue-specific data
+      document.getElementById("content").style.display = "none";
+      document.getElementById("skeleton").style.display = "block";
+
+      try {
+        const res = await fetch("/.netlify/functions/home-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pass: PASS }),
+        });
+        if (res.ok) {
+          DATA = await res.json();
+          selectedDay = 0;
+          render();
+        }
+      } catch {}
+    }
+
+    // --- Membership card ---
+
+    function showCard() {
+      const card = document.getElementById("memberCard");
+      const renewDate = DATA.plan.endDate ? formatDateLong(new Date(DATA.plan.endDate)) : "N/A";
+      const sinceDate = DATA.plan.startDate ? formatDateLong(new Date(DATA.plan.startDate)) : "N/A";
+      const money = (DATA.points / 100).toFixed(2);
+      const venueName = DATA.homeVenue?.name || "";
+
+      let perksHtml = "";
+      if (DATA.perks?.length > 0) {
+        perksHtml = `<ul class="perk-list">${DATA.perks.map(p => `<li>${esc(p)}</li>`).join("")}</ul>`;
+      }
+
+      card.innerHTML = `
+        <div class="sheen"></div>
+        <button class="close-card" onclick="closeCard()">&times;</button>
+        <div class="llg-mark">llg</div>
+        <div class="tier">${esc(DATA.plan.name)}</div>
+        <div class="name">${esc(DATA.firstName)}</div>
+        <div class="venue">${esc(venueName)}</div>
+        <div class="dates">Member since ${sinceDate}<br>Renews ${renewDate}</div>
+        <div class="live-clock" id="liveClock"></div>
+        <div class="points-line">
+          <strong>£${money}</strong> to spend <span class="small">(${Number(DATA.points).toLocaleString()} points)</span>
+        </div>
+        <div class="earn-info">Earn: 15 points per session, 1 point per £1 on events and Golf Breaks holidays</div>
+        ${perksHtml}
+        <div class="renew-note">Renews on ${renewDate}. Manage or cancel up to 7 days before.</div>
+      `;
+
+      document.getElementById("cardOverlay").classList.add("show");
+      updateClock();
+      window._clockInterval = setInterval(updateClock, 1000);
+    }
+
+    function closeCard() {
+      document.getElementById("cardOverlay").classList.remove("show");
+      if (window._clockInterval) clearInterval(window._clockInterval);
+    }
+
+    function updateClock() {
+      const el = document.getElementById("liveClock");
+      if (!el) return;
+      const now = new Date();
+      const day = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+      const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      el.textContent = `Valid today, ${day}, ${time}`;
+    }
+
+    // --- Formatting ---
+
+    function greeting() {
+      const h = new Date().getHours();
+      if (h < 12) return "Morning";
+      if (h < 17) return "Afternoon";
+      return "Evening";
+    }
+
+    function formatDateLong(d) {
+      return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+    }
+
+    function formatTime(d) {
+      let h = d.getHours();
+      let m = d.getMinutes();
+      const ampm = h >= 12 ? "pm" : "am";
+      if (h > 12) h -= 12;
+      if (h === 0) h = 12;
+      return m === 0 ? `${h}${ampm}` : `${h}.${String(m).padStart(2, "0")}${ampm}`;
+    }
+
+    function sentenceCase(str) {
+      if (!str) return "";
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+
+    function esc(str) {
+      const d = document.createElement("div");
+      d.textContent = String(str || "");
+      return d.innerHTML;
     }
   </script>
 </body>
