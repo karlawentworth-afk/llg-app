@@ -458,7 +458,7 @@
           } else {
             action = `<a class="btn btn-sm" href="${bookUrl}" onclick="tapBookBtn(this)">Book</a>`;
             if (canUsePoints) {
-              action += `<button class="more-btn" style="font-size:0.8rem;margin-top:0.3rem;white-space:nowrap" onclick="usePoints('${s.serviceId}','${s.startDate || ""}',${ptsNeeded},${priceNum},'${bookUrl}',this)">Use ${pts(ptsNeeded)} pts (£${priceNum.toFixed(2)})</button>`;
+              action += `<button class="btn btn-sm btn-outline" style="margin-top:0.4rem;font-size:0.8rem;white-space:nowrap" onclick="usePoints('${s.serviceId}','${s.startDate || ""}',${ptsNeeded},${priceNum},'${bookUrl}',this)">Use points (£${priceNum.toFixed(2)})</button>`;
             }
           }
 
@@ -633,23 +633,30 @@
 
     async function usePoints(serviceId, sessionStart, ptsAmount, moneyAmount, bookUrl, el) {
       el.textContent = "Setting up...";
+      el.disabled = true;
       el.style.opacity = "0.6";
-      el.style.pointerEvents = "none";
       try {
-        const body = { pass: PASS, action: "set", serviceId, sessionStart, pointsAmount: ptsAmount, moneyAmount };
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 9000);
+        const body = { action: "set", serviceId, sessionStart, pointsAmount: ptsAmount, moneyAmount };
         const res = await fetch("/.netlify/functions/redeem-points", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify(body),
+          signal: controller.signal,
         });
-        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || "failed"); }
+        clearTimeout(timer);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "failed");
+        }
         trackEvent("points_redemption_set");
         window.location.href = bookUrl;
       } catch (err) {
-        el.textContent = "Could not set up. Try again.";
+        el.textContent = "Could not set up: " + (err.message || "try again");
+        el.disabled = false;
         el.style.opacity = "1";
-        el.style.pointerEvents = "auto";
       }
     }
     function tapWaitlist(el) { el.textContent = "Opening..."; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("waitlist_tapped"); }
