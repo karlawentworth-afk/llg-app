@@ -1,8 +1,9 @@
 // Import topic library from 800claude.xlsx into Supabase
-// Run: node scripts/import-topic-library.js
+// Run: SUPABASE_URL=... SUPABASE_SERVICE_KEY=... node scripts/import-topic-library.js
 //
-// Requires env vars: SUPABASE_URL, SUPABASE_SERVICE_KEY
-// Or pass them inline: SUPABASE_URL=... SUPABASE_SERVICE_KEY=... node scripts/import-topic-library.js
+// Duplicate rule: only skip if title AND description are exactly
+// the same (after trimming whitespace). Different descriptions
+// with the same title are separate entries.
 
 const path = require("path");
 const XLSX = require("xlsx");
@@ -16,9 +17,9 @@ function sentenceCase(str) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-function cleanDescription(desc) {
-  if (!desc) return null;
-  return String(desc).replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim() || null;
+function clean(str) {
+  if (!str) return "";
+  return String(str).replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 async function main() {
@@ -34,62 +35,40 @@ async function main() {
   // Read spreadsheet
   const wb = XLSX.readFile(FILE);
   const ws = wb.Sheets[SHEET];
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }).slice(1); // skip header
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }).slice(1);
 
   console.log(`Read ${rows.length} rows from sheet "${SHEET}"`);
 
-  // Group by lowercase title
-  const byTitle = new Map();
-  rows.forEach((row, i) => {
-    const rawTitle = String(row[0] || "").trim();
-    const desc = cleanDescription(row[1]);
-    if (!rawTitle) return;
-
-    const key = rawTitle.toLowerCase();
-    if (!byTitle.has(key)) {
-      byTitle.set(key, []);
-    }
-    byTitle.get(key).push({ rawTitle, desc, rowNum: i + 2 });
-  });
-
-  // Separate unique vs duplicates
+  // Deduplicate: same title AND same description = duplicate
+  const seen = new Map();
   const toImport = [];
-  const duplicates = [];
+  let dupeCount = 0;
+  let emptyCount = 0;
 
-  for (const [key, entries] of byTitle) {
-    // Pick the entry with the longest description
-    const best = entries.reduce((a, b) =>
-      (a.desc || "").length >= (b.desc || "").length ? a : b
-    );
+  rows.forEach((row, i) => {
+    const rawTitle = clean(row[0]);
+    if (!rawTitle) { emptyCount++; return; }
+    const desc = clean(row[1]) || null;
+    const key = rawTitle.toLowerCase() + "|||" + (desc || "").toLowerCase();
 
-    toImport.push({
-      title: sentenceCase(best.rawTitle),
-      description: best.desc,
-    });
-
-    if (entries.length > 1) {
-      duplicates.push({
-        title: sentenceCase(entries[0].rawTitle),
-        count: entries.length,
-        rows: entries.map(e => e.rowNum),
-        descLengths: entries.map(e => (e.desc || "").length),
+    if (seen.has(key)) {
+      dupeCount++;
+    } else {
+      seen.set(key, true);
+      toImport.push({
+        title: sentenceCase(rawTitle),
+        description: desc,
       });
     }
-  }
+  });
 
-  console.log(`\nUnique titles: ${toImport.length}`);
-  console.log(`Duplicate titles: ${duplicates.length}`);
-
-  if (duplicates.length > 0) {
-    console.log(`\n--- DUPLICATES (kept longest description) ---`);
-    duplicates.forEach(d => {
-      console.log(`  "${d.title}" x${d.count} (rows: ${d.rows.join(", ")}, desc lengths: ${d.descLengths.join(", ")})`);
-    });
-  }
+  console.log(`\nUnique entries: ${toImport.length}`);
+  console.log(`True duplicates (same title + description): ${dupeCount}`);
+  console.log(`Empty rows skipped: ${emptyCount}`);
 
   // Insert in batches of 50
   let imported = 0;
-  let skipped = 0;
+  let errors = 0;
   const batchSize = 50;
 
   for (let i = 0; i < toImport.length; i += batchSize) {
@@ -101,7 +80,7 @@ async function main() {
 
     if (error) {
       console.error(`Batch ${Math.floor(i / batchSize) + 1} error:`, error.message);
-      skipped += batch.length;
+      errors += batch.length;
     } else {
       imported += data.length;
     }
@@ -109,8 +88,8 @@ async function main() {
 
   console.log(`\n--- RESULT ---`);
   console.log(`Imported: ${imported}`);
-  console.log(`Skipped: ${skipped}`);
-  console.log(`Duplicates in source: ${duplicates.length} titles (${duplicates.reduce((s, d) => s + d.count - 1, 0)} extra rows)`);
+  console.log(`Errors: ${errors}`);
+  console.log(`True duplicates skipped: ${dupeCount}`);
 }
 
 main().catch(err => {
