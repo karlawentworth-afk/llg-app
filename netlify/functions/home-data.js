@@ -559,8 +559,8 @@ exports.handler = async (event) => {
   };
 
   const data = {
-    firstName: contactInfo.fullName?.split(" ")[0] || firstName || "Member",
-    fullName: contactInfo.fullName || firstName || "Member",
+    firstName: contactInfo.fullName?.split(" ")[0] || firstName || "",
+    fullName: contactInfo.fullName || firstName || "",
     email: contactInfo.email || "",
     phone: contactInfo.phone || "",
     plan,

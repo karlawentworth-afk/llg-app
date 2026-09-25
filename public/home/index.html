@@ -243,7 +243,7 @@
       const planText = DATA.plan.name ? `${esc(DATA.plan.name)} (${esc(DATA.plan.status)})` : "No active plan";
       const money = (DATA.points / 100).toFixed(2);
       el.innerHTML = `<div class="holding">
-        <h1>${timeGreeting()}, ${firstName()}</h1>
+        <h1>${timeGreeting()}${firstName()}</h1>
         <p class="small">${planText}</p>
         <p style="margin-top:1rem;font-size:1.1rem"><strong>${pts(DATA.points)} points</strong></p>
         <p class="small">Worth £${money}</p>
@@ -277,7 +277,7 @@
       // Greeting
       const now = new Date();
       const dateStr = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-      h += `<h1 style="font-size:1.4rem;margin-bottom:0.15rem">${timeGreeting()}, ${firstName()}</h1>`;
+      h += `<h1 style="font-size:1.4rem;margin-bottom:0.15rem">${timeGreeting()}${firstName()}</h1>`;
       h += `<p class="small" style="margin-bottom:1rem">${dateStr} · Here's your golf week</p>`;
 
       // Tiles
@@ -651,7 +651,7 @@
     }
 
     function timeGreeting() { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; }
-    function firstName() { return esc((DATA?.firstName || "").split(" ")[0]); }
+    function firstName() { const n = (DATA?.firstName || "").split(" ")[0].trim(); return n ? ", " + esc(n) : ""; }
     function fmtLong(d) { return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }); }
     function fmtShort(d) { return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
     function fmtTime(d) { let h = d.getHours(), m = d.getMinutes(); const a = h >= 12 ? "pm" : "am"; if (h > 12) h -= 12; if (h === 0) h = 12; return m === 0 ? `${h}${a}` : `${h}.${String(m).padStart(2,"0")}${a}`; }
