@@ -457,9 +457,13 @@
             action = `<span class="badge badge-full">Full</span>`;
           } else {
             action = `<a class="btn btn-sm" href="${bookUrl}" onclick="tapBookBtn(this)">Book</a>`;
-            if (canUsePoints) {
-              action += `<button class="btn btn-sm btn-outline" style="margin-top:0.4rem;font-size:0.8rem;white-space:nowrap" onclick="usePoints('${s.serviceId}','${s.startDate || ""}',${ptsNeeded},${priceNum},'${bookUrl}',this)">Use points (£${priceNum.toFixed(2)})</button>`;
-            }
+          }
+
+          let pointsHtml = "";
+          if (canUsePoints) {
+            pointsHtml = `<div style="margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid var(--border)">
+              <button class="btn btn-sm btn-outline" style="width:100%;font-size:0.85rem" onclick="usePoints('${s.serviceId}','${s.startDate || ""}',${ptsNeeded},${priceNum},'${bookUrl}',this)">Or use ${pts(ptsNeeded)} points (£${priceNum.toFixed(2)})</button>
+            </div>`;
           }
 
           const descId = `d${selectedDay}${i}`;
@@ -469,7 +473,7 @@
               <button class="more-btn" id="${descId}b" onclick="toggleDesc('${descId}')">More</button>`;
           }
 
-          h += `<div class="sess">
+          h += `<div class="sess" style="flex-wrap:wrap">
             <div class="sess-info">
               <div class="sess-time">${fmtTime(start)}${end ? " to " + fmtTime(end) : ""}</div>
               ${topic ? `<div class="sess-topic">${esc(topic)}</div>` : ""}
@@ -477,6 +481,7 @@
               <div class="sess-meta">${lowPlaces ? `<span class="low">${places} place${places !== 1 ? "s" : ""} left</span>` : `${places} place${places !== 1 ? "s" : ""} left`} · £${price} member price</div>
             </div>
             <div style="flex-shrink:0;margin-left:0.4rem">${action}</div>
+            ${pointsHtml}
           </div>`;
         });
       }
