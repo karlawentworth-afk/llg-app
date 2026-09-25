@@ -32,10 +32,7 @@ export const getEmbedPass = webMethod(
       const payload = {
         memberId: member._id,
         contactId: member.contactId,
-        firstName: member.profile?.nickname || member.profile?.firstName || "Member",
-        fullName: (member.profile?.firstName || "") + (member.profile?.lastName ? " " + member.profile.lastName : ""),
-        email: member.loginEmail || "",
-        phone: member.profile?.phones?.[0] || "",
+        firstName: member.profile?.firstName || member.profile?.nickname || "Member",
         iat: now,
         exp: now + 300, // 5 minutes
       };

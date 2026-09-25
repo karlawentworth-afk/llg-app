@@ -47,9 +47,6 @@ function makeSessionToken(payload, secret) {
     memberId: payload.memberId,
     contactId: payload.contactId,
     firstName: payload.firstName,
-    fullName: payload.fullName || "",
-    email: payload.email || "",
-    phone: payload.phone || "",
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECS,
   };
@@ -98,6 +95,24 @@ function wixHeaders() {
 }
 
 // --- Data fetchers ---
+
+async function fetchContactInfo(contactId, headers) {
+  try {
+    const res = await fetchWithTimeout(
+      `https://www.wixapis.com/contacts/v4/contacts/${encodeURIComponent(contactId)}?fieldsets=FULL`,
+      { method: "GET", headers }
+    );
+    if (!res.ok) return { fullName: "", email: "", phone: "" };
+    const data = await res.json();
+    const c = data.contact || {};
+    const fn = c.info?.name?.first || "";
+    const ln = c.info?.name?.last || "";
+    const fullName = (fn + (ln ? " " + ln : "")).trim();
+    const email = c.primaryInfo?.email || "";
+    const phone = c.primaryInfo?.phone || "";
+    return { fullName, email, phone };
+  } catch { return { fullName: "", email: "", phone: "" }; }
+}
 
 async function fetchPlan(memberId, headers) {
   try {
@@ -458,7 +473,7 @@ exports.handler = async (event) => {
     payload = result.payload;
   }
 
-  const { memberId, contactId, firstName, fullName, email, phone } = payload;
+  const { memberId, contactId, firstName } = payload;
 
   // Check cache (skip after venue change)
   const cached = cache.get(memberId);
@@ -471,12 +486,13 @@ exports.handler = async (event) => {
   const wixH = wixHeaders();
   const supabase = getSupabase();
   // Parallel fetch: Wix data + Supabase home venue
-  const [plan, bookings, points, allEvents, memberEventIds, homeVenueResult, allVenues] = await Promise.all([
+  const [plan, bookings, points, allEvents, memberEventIds, contactInfo, homeVenueResult, allVenues] = await Promise.all([
     fetchPlan(memberId, wixH),
     fetchBookings(contactId, wixH),
     fetchPoints(contactId, wixH),
     fetchEvents(wixH),
     fetchMemberEventOrders(contactId, wixH),
+    fetchContactInfo(contactId, wixH),
     supabase ? getHomeVenue(supabase, memberId, contactId, wixH) : { venue: null, source: "none" },
     supabase ? getAllVenues(supabase) : [],
   ]);
@@ -544,9 +560,9 @@ exports.handler = async (event) => {
 
   const data = {
     firstName: firstName || "Member",
-    fullName: fullName || firstName || "Member",
-    email: email || "",
-    phone: phone || "",
+    fullName: contactInfo.fullName || firstName || "Member",
+    email: contactInfo.email || "",
+    phone: contactInfo.phone || "",
     plan,
     memberType: plan.memberType || "non_member",
     bookings,
