@@ -20,6 +20,7 @@
   "homepage": "https://github.com/karlawentworth-afk/llg-app#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
-    "crypto-js": "^4.2.0"
+    "crypto-js": "^4.2.0",
+    "xlsx": "^0.18.5"
   }
 }
