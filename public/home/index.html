@@ -19,7 +19,10 @@
       --r: 18px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { touch-action: manipulation; }
     body { min-height: 100vh; font-family: 'Mulish','Segoe UI',sans-serif; background: var(--bg); color: var(--charcoal); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    button, a, input, select, textarea { touch-action: manipulation; }
+    input, select, textarea { font-size: 16px; }
     h1,h2,h3 { font-family: 'Poppins','Segoe UI',sans-serif; }
     .wrap { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
     .small { font-size: 0.875rem; color: var(--muted); }

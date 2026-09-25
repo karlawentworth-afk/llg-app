@@ -10,7 +10,9 @@
   <style>
     :root { --mg: #DE0082; --mg-dark: #B8006B; --charcoal: #2B2A29; --bg: #F7F4F0; --card: #fff; --border: #E6E1DA; --muted: #5E5D5B; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { touch-action: manipulation; }
     body { min-height: 100vh; font-family: 'Mulish','Segoe UI',sans-serif; background: var(--bg); color: var(--charcoal); font-size: 16px; line-height: 1.5; }
+    button, a, input, select, textarea { touch-action: manipulation; }
     .wrap { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
     h1 { font-family: 'Poppins',sans-serif; font-size: 1.3rem; margin-bottom: 0.5rem; }
     .back { display: inline-flex; align-items: center; background: none; border: none; color: var(--mg-dark); font-weight: 700; font-size: 0.95rem; cursor: pointer; padding: 0.5rem 0; min-height: 44px; margin-bottom: 0.75rem; }
