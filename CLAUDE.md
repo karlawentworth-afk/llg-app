@@ -55,5 +55,12 @@
 - Don't change this set-up without a reason and a test. If it
   breaks, check the Wix page code matches this first.
 
+## Velo file names
+- The SPI trigger file in Velo is called discount-trigger.js (not
+  custom-triggers.js). The repo keeps a copy at
+  wix-velo-code/spi-custom-discount-trigger/custom-triggers.js for
+  version control, but the Velo file name is discount-trigger.js.
+  Always tell Karla to paste into discount-trigger.js.
+
 ## Style
 - UK English. No em dashes. Plain language.

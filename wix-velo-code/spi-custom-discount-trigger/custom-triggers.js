@@ -1,12 +1,10 @@
 // ────────────────────────────────────────────────────────────
-// FILE: backend/__spi__/ecom-discounts-trigger/custom-triggers.js
-//
 // Two independent triggers:
 // 1. llg-member-coaching-discount: £7.50 off for Physical/Complete
 // 2. llg-points-redemption: 100% off when member has a points flag
 //
 // Each trigger fails safely without affecting the other.
-// The points fetch times out after 2 seconds.
+// The points fetch times out after 2 seconds via Promise.race.
 //
 // Packages: @wix/pricing-plans, @wix/essentials
 // Secrets: LLG_SPI_SECRET
@@ -18,12 +16,18 @@ import { getSecret } from "wix-secrets-backend";
 import { fetch } from "wix-fetch";
 
 const ELIGIBLE_PLAN_IDS = [
-  "530c7704-3e17-4f8f-bc5a-5ceec84ae16c", // Physical membership
-  "00478766-f484-40f0-9d4a-1fb329b54da5", // Complete membership
+  "530c7704-3e17-4f8f-bc5a-5ceec84ae16c",
+  "00478766-f484-40f0-9d4a-1fb329b54da5",
 ];
 
 const TRIGGER_MEMBER = "llg-member-coaching-discount";
 const TRIGGER_POINTS = "llg-points-redemption";
+
+function timeout(ms) {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("timeout")), ms)
+  );
+}
 
 export const listTriggers = async () => {
   return {
@@ -40,7 +44,7 @@ export const getEligibleTriggers = async (options, context) => {
 
   const eligible = [];
 
-  // Trigger 1: Member coaching discount (independent)
+  // Trigger 1: Member coaching discount
   try {
     const elevatedList = auth.elevate(orders.managementListOrders);
     const result = await elevatedList({
@@ -55,7 +59,7 @@ export const getEligibleTriggers = async (options, context) => {
 
     if (hasEligiblePlan) {
       const t = (options.triggers || []).find(
-        (t) => t.customTrigger?._id === TRIGGER_MEMBER
+        (tr) => tr.customTrigger?._id === TRIGGER_MEMBER
       );
       if (t) {
         eligible.push({
@@ -68,45 +72,49 @@ export const getEligibleTriggers = async (options, context) => {
     console.error("SPI member trigger error:", err.message || err);
   }
 
-  // Trigger 2: Points redemption (independent, 2s timeout)
+  // Trigger 2: Points redemption (2s timeout, fully independent)
   try {
     const pointsTrigger = (options.triggers || []).find(
-      (t) => t.customTrigger?._id === TRIGGER_POINTS
+      (tr) => tr.customTrigger?._id === TRIGGER_POINTS
     );
 
     if (pointsTrigger) {
-      const spiSecret = await getSecret("LLG_SPI_SECRET");
-
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2000);
-
+      let spiSecret;
       try {
-        const res = await fetch(
-          "https://llg-app-test.netlify.app/.netlify/functions/check-points-flag",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-SPI-Secret": spiSecret,
-            },
-            body: JSON.stringify({ memberId }),
-            signal: controller.signal,
-          }
-        );
-        clearTimeout(timer);
+        spiSecret = await getSecret("LLG_SPI_SECRET");
+      } catch (err) {
+        console.error("SPI secret error:", err.message || err);
+      }
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.hasFlag) {
-            eligible.push({
-              customTriggerId: pointsTrigger.customTrigger._id,
-              identifier: pointsTrigger.identifier,
-            });
+      if (spiSecret) {
+        try {
+          const res = await Promise.race([
+            fetch(
+              "https://llg-app-test.netlify.app/.netlify/functions/check-points-flag",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-SPI-Secret": spiSecret,
+                },
+                body: JSON.stringify({ memberId }),
+              }
+            ),
+            timeout(2000),
+          ]);
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.hasFlag) {
+              eligible.push({
+                customTriggerId: pointsTrigger.customTrigger._id,
+                identifier: pointsTrigger.identifier,
+              });
+            }
           }
+        } catch (err) {
+          console.error("SPI points fetch error:", err.message || err);
         }
-      } catch (fetchErr) {
-        clearTimeout(timer);
-        console.error("SPI points fetch error:", fetchErr.message || fetchErr);
       }
     }
   } catch (err) {
