@@ -1,7 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
 
 const TIMEOUT_MS = 9000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -37,9 +36,10 @@ exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers, body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "method_not_allowed" }) };
 
+  const adminPwd = process.env.ADMIN_PASSWORD;
   const password = event.headers["x-admin-password"];
-  if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: "unauthorized" }) };
+  if (!adminPwd || password !== adminPwd) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: "unauthorized", debug: { hasEnv: !!adminPwd, hasHeader: !!password } }) };
   }
 
   const supabase = getSupabase();
