@@ -242,9 +242,9 @@ async function fetchEvents(headers) {
         method: "POST", headers,
         body: JSON.stringify({
           query: {
-            filter: { status: "UPCOMING" },
+            filter: { status: { "$in": ["UPCOMING", "STARTED"] } },
             sort: [{ fieldName: "dateAndTimeSettings.startDate", order: "ASC" }],
-            paging: { limit: 3 },
+            paging: { limit: 20 },
           },
         }),
       }
@@ -255,9 +255,24 @@ async function fetchEvents(headers) {
       id: e.id,
       title: e.title || "",
       startDate: e.dateAndTimeSettings?.startDate || null,
+      endDate: e.dateAndTimeSettings?.endDate || null,
       location: e.location?.name || e.location?.address?.formattedAddress || "",
       slug: e.slug || "",
+      status: e.status || "",
+      soldOut: e.summaries?.soldOut || false,
     }));
+  } catch { return []; }
+}
+
+async function fetchMemberEventOrders(contactId, headers) {
+  try {
+    const res = await fetchWithTimeout(
+      `https://www.wixapis.com/events/v1/orders?contactId=${encodeURIComponent(contactId)}&limit=50`,
+      { method: "GET", headers }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.orders || []).map(o => o.eventId).filter(Boolean);
   } catch { return []; }
 }
 
@@ -389,11 +404,12 @@ exports.handler = async (event) => {
   const t0 = Date.now();
 
   // Parallel fetch: Wix data + Supabase home venue
-  const [plan, bookings, points, events, homeVenueResult, allVenues] = await Promise.all([
+  const [plan, bookings, points, allEvents, memberEventIds, homeVenueResult, allVenues] = await Promise.all([
     fetchPlan(memberId, wixH),
     fetchBookings(contactId, wixH),
     fetchPoints(contactId, wixH),
     fetchEvents(wixH),
+    fetchMemberEventOrders(contactId, wixH),
     supabase ? getHomeVenue(supabase, memberId, contactId, wixH) : { venue: null, source: "none" },
     supabase ? getAllVenues(supabase) : [],
   ]);
@@ -442,6 +458,15 @@ exports.handler = async (event) => {
     isBooked: bookedEventIds.has(s.eventId),
   }));
 
+  // Split events into "your trips" and "trips worth a look"
+  const bookedEventIdSet = new Set(memberEventIds);
+  const yourTrips = allEvents
+    .filter(e => bookedEventIdSet.has(e.id))
+    .map(e => ({ ...e, isBooked: true }));
+  const tripsWorthALook = allEvents
+    .filter(e => !bookedEventIdSet.has(e.id) && !e.soldOut && e.status === "UPCOMING")
+    .slice(0, 5);
+
   const data = {
     firstName: firstName || "Member",
     plan,
@@ -452,7 +477,8 @@ exports.handler = async (event) => {
     allVenues,
     sessions,
     perks,
-    events,
+    yourTrips,
+    events: tripsWorthALook,
     _timing: { batch1: t1 - t0, batch2: t2 - t1, total: t2 - t0 },
   };
 

@@ -382,6 +382,21 @@
     function renderHome(el) {
       let html = "";
 
+      // Check for imminent trip (within 14 days or happening now)
+      const imminentTrip = (DATA.yourTrips || []).find(t => {
+        if (!t.startDate) return false;
+        const start = new Date(t.startDate);
+        const end = t.endDate ? new Date(t.endDate) : start;
+        const now = new Date();
+        const daysUntil = (start - now) / (1000 * 60 * 60 * 24);
+        return daysUntil <= 14 || now <= end;
+      });
+
+      // 0. Imminent trip card at the very top
+      if (imminentTrip) {
+        html += renderTripCard(imminentTrip, true);
+      }
+
       // 1. Greeting
       html += `<h1>${greeting()}, ${esc(DATA.firstName.split(" ")[0])}.</h1>`;
       html += `<p class="subtitle">${formatDateLong(new Date())}</p>`;
@@ -407,7 +422,16 @@
       // 4. Book at venue
       html += renderBookSection();
 
-      // 5. Perks
+      // 5. Your trips (excluding the one already shown at top)
+      const otherTrips = (DATA.yourTrips || []).filter(t => !imminentTrip || t.id !== imminentTrip.id);
+      if (otherTrips.length > 0) {
+        html += `<h2>Your trips</h2>`;
+        html += `<div class="trips-scroll">`;
+        otherTrips.forEach(t => { html += renderTripCard(t, false); });
+        html += `</div>`;
+      }
+
+      // 6. Perks
       if (DATA.perks?.length > 0) {
         const venueName = DATA.homeVenue?.name || "your venue";
         html += `<h2>Your ${esc(venueName)} perks</h2>`;
@@ -417,12 +441,13 @@
         html += `</div>`;
       }
 
-      // 6. Trips
+      // 7. Trips worth a look (not booked, not sold out)
       if (DATA.events?.length > 0) {
         html += `<h2>Trips worth a look</h2>`;
         html += `<div class="trips-scroll">`;
         DATA.events.forEach(e => {
-          html += `<div class="trip-card">
+          const eventUrl = `https://www.ladieslovegolf.com/events/event/${esc(e.slug)}`;
+          html += `<div class="trip-card" style="cursor:pointer" onclick="tapTrip(this,'${eventUrl}')">
             <div class="trip-title">${sentenceCase(esc(e.title))}</div>
             <div class="trip-meta">${e.startDate ? formatDateLong(new Date(e.startDate)) : ""}</div>
             <div class="trip-meta">${esc(e.location)}</div>
@@ -432,6 +457,49 @@
       }
 
       el.innerHTML = html;
+    }
+
+    function renderTripCard(trip, isImminent) {
+      const start = trip.startDate ? new Date(trip.startDate) : null;
+      const end = trip.endDate ? new Date(trip.endDate) : start;
+      const now = new Date();
+
+      let countdown = "";
+      if (start) {
+        const msUntil = start - now;
+        const daysUntil = Math.ceil(msUntil / (1000 * 60 * 60 * 24));
+        if (end && now >= start && now <= end) {
+          countdown = "Happening now";
+        } else if (daysUntil === 0) {
+          countdown = "Today";
+        } else if (daysUntil === 1) {
+          countdown = "Tomorrow";
+        } else if (daysUntil > 0) {
+          countdown = `In ${daysUntil} day${daysUntil !== 1 ? "s" : ""}`;
+        }
+      }
+
+      const tripUrl = trip.slug ? `https://www.ladieslovegolf.com/events/event/${trip.slug}` : "#";
+      const cardStyle = isImminent ? "background:var(--magenta);color:#fff;border:none;margin-bottom:1rem;" : "";
+      const countdownStyle = isImminent ? "color:#fff;font-weight:700" : "color:var(--magenta);font-weight:700";
+      const metaStyle = isImminent ? "color:rgba(255,255,255,0.8)" : "";
+      const titleStyle = isImminent ? "color:#fff" : "";
+
+      if (isImminent) {
+        return `<div class="card" style="${cardStyle}cursor:pointer" onclick="tapTrip(this,'${tripUrl}')">
+          ${countdown ? `<div style="${countdownStyle};font-size:0.9rem;margin-bottom:0.3rem">${countdown}</div>` : ""}
+          <div class="trip-title" style="${titleStyle}">${sentenceCase(esc(trip.title))}</div>
+          <div class="trip-meta" style="${metaStyle}">${start ? formatDateLong(start) : ""}</div>
+          <div class="trip-meta" style="${metaStyle}">${esc(trip.location)}</div>
+        </div>`;
+      }
+
+      return `<div class="trip-card" style="cursor:pointer" onclick="tapTrip(this,'${tripUrl}')">
+        ${countdown ? `<div style="${countdownStyle};font-size:0.85rem;margin-bottom:0.2rem">${countdown}</div>` : ""}
+        <div class="trip-title">${sentenceCase(esc(trip.title))}</div>
+        <div class="trip-meta">${start ? formatDateLong(start) : ""}</div>
+        <div class="trip-meta">${esc(trip.location)}</div>
+      </div>`;
     }
 
     function renderNextSession() {
@@ -704,6 +772,12 @@
       el.textContent = "Opening booking...";
       el.style.opacity = "0.6";
       el.style.pointerEvents = "none";
+    }
+
+    function tapTrip(el, url) {
+      el.style.opacity = "0.6";
+      el.style.pointerEvents = "none";
+      window.location.href = url;
     }
 
     function toggleDesc(id) {
