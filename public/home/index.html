@@ -426,9 +426,7 @@
       const otherTrips = (DATA.yourTrips || []).filter(t => !imminentTrip || t.id !== imminentTrip.id);
       if (otherTrips.length > 0) {
         html += `<h2>Your trips</h2>`;
-        html += `<div class="trips-scroll">`;
         otherTrips.forEach(t => { html += renderTripCard(t, false); });
-        html += `</div>`;
       }
 
       // 6. Perks
@@ -475,30 +473,29 @@
         } else if (daysUntil === 1) {
           countdown = "Tomorrow";
         } else if (daysUntil > 0) {
-          countdown = `In ${daysUntil} day${daysUntil !== 1 ? "s" : ""}`;
+          countdown = `In ${daysUntil} days`;
         }
       }
 
       const tripUrl = trip.slug ? `https://www.ladieslovegolf.com/event-details/${trip.slug}` : "#";
-      const cardStyle = isImminent ? "background:var(--magenta);color:#fff;border:none;margin-bottom:1rem;" : "";
-      const countdownStyle = isImminent ? "color:#fff;font-weight:700" : "color:var(--magenta);font-weight:700";
-      const metaStyle = isImminent ? "color:rgba(255,255,255,0.8)" : "";
-      const titleStyle = isImminent ? "color:#fff" : "";
 
       if (isImminent) {
-        return `<div class="card" style="${cardStyle}cursor:pointer" onclick="tapTrip(this,'${tripUrl}')">
-          ${countdown ? `<div style="${countdownStyle};font-size:0.9rem;margin-bottom:0.3rem">${countdown}</div>` : ""}
-          <div class="trip-title" style="${titleStyle}">${sentenceCase(esc(trip.title))}</div>
-          <div class="trip-meta" style="${metaStyle}">${start ? formatDateLong(start) : ""}</div>
-          <div class="trip-meta" style="${metaStyle}">${esc(trip.location)}</div>
+        return `<div style="background:var(--magenta);color:#fff;border-radius:12px;padding:0.75rem 1rem;margin-bottom:0.75rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;min-height:48px" onclick="tapTrip(this,'${tripUrl}')">
+          <div>
+            <span style="font-weight:700;font-size:0.95rem">${sentenceCase(esc(trip.title))}</span>
+            <span style="color:rgba(255,255,255,0.8);font-size:0.85rem;margin-left:0.5rem">${esc(trip.location)}</span>
+          </div>
+          <span style="font-weight:700;font-size:0.85rem;white-space:nowrap;margin-left:0.75rem">${countdown}</span>
         </div>`;
       }
 
-      return `<div class="trip-card" style="cursor:pointer" onclick="tapTrip(this,'${tripUrl}')">
-        ${countdown ? `<div style="${countdownStyle};font-size:0.85rem;margin-bottom:0.2rem">${countdown}</div>` : ""}
-        <div class="trip-title">${sentenceCase(esc(trip.title))}</div>
-        <div class="trip-meta">${start ? formatDateLong(start) : ""}</div>
-        <div class="trip-meta">${esc(trip.location)}</div>
+      // Compact row for "Your trips" list
+      return `<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:0.65rem 1rem;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;min-height:48px" onclick="tapTrip(this,'${tripUrl}')">
+        <div style="min-width:0">
+          <span style="font-weight:600;font-size:0.95rem">${sentenceCase(esc(trip.title))}</span>
+          <span class="small" style="margin-left:0.4rem">${start ? formatDateShort(start) : ""}</span>
+        </div>
+        <span style="color:var(--magenta);font-weight:700;font-size:0.85rem;white-space:nowrap;margin-left:0.75rem">${countdown}</span>
       </div>`;
     }
 
@@ -764,6 +761,10 @@
 
     function formatDateLong(d) {
       return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+    }
+
+    function formatDateShort(d) {
+      return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
     }
 
     // Build Wix booking form deep link for a specific session
