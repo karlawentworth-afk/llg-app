@@ -116,7 +116,10 @@
       justify-content: center;
     }
     .day-chip.active { background: var(--magenta); color: #fff; border-color: var(--magenta); }
+    .day-chip.day-empty { opacity: 0.4; }
     .day-chip .day-name { font-size: 0.75rem; font-weight: 400; }
+    .day-dot { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--magenta); margin: 0.15rem auto 0; }
+    .day-chip.active .day-dot { background: #fff; }
 
     /* Session rows */
     .session-row {
@@ -460,16 +463,32 @@
         days.push(d);
       }
 
+      // Find which days have sessions
+      const sessionDates = new Set((DATA.sessions || []).map(s => s.startDate?.substring(0, 10)).filter(Boolean));
+
+      // Auto-select next day with sessions if current day has none
+      if (selectedDay === 0) {
+        for (let i = 0; i < days.length; i++) {
+          if (sessionDates.has(days[i].toISOString().substring(0, 10))) {
+            selectedDay = i;
+            break;
+          }
+        }
+      }
+
       let html = `<h2>Book at ${esc(DATA.homeVenue.name)}</h2>`;
 
-      // Day strip
+      // Day strip with dots for days that have sessions
       html += `<div class="day-strip" id="dayStrip">`;
       days.forEach((d, i) => {
         const dayName = d.toLocaleDateString("en-GB", { weekday: "short" });
         const dayNum = d.getDate();
-        html += `<div class="day-chip ${i === selectedDay ? "active" : ""}" onclick="selectDay(${i})">
+        const dateStr = d.toISOString().substring(0, 10);
+        const hasSessions = sessionDates.has(dateStr);
+        html += `<div class="day-chip ${i === selectedDay ? "active" : ""} ${!hasSessions ? "day-empty" : ""}" onclick="selectDay(${i})">
           <span class="day-name">${dayName}</span>
           <span>${dayNum}</span>
+          ${hasSessions ? '<span class="day-dot"></span>' : ""}
         </div>`;
       });
       html += `</div>`;
@@ -483,7 +502,17 @@
       });
 
       if (daySessions.length === 0) {
-        html += `<p class="small" style="padding:1rem 0">No sessions on this day.</p>`;
+        // Find next available
+        let nextAvail = null;
+        for (const s of (DATA.sessions || [])) {
+          if (s.startDate && new Date(s.startDate) > selDate) { nextAvail = s; break; }
+        }
+        if (nextAvail) {
+          const nd = new Date(nextAvail.startDate);
+          html += `<p class="small" style="padding:1rem 0">No sessions on this day. Next session: ${formatDateLong(nd)} at ${formatTime(nd)}.</p>`;
+        } else {
+          html += `<p class="small" style="padding:1rem 0">No sessions on this day.</p>`;
+        }
       } else {
         daySessions.forEach((s, i) => {
           const start = new Date(s.startDate);
