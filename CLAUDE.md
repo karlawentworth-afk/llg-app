@@ -41,5 +41,19 @@
   the brain and stores what Wix can't.
 - Karla knows Wix's limits. Trust her on what Wix can't do.
 
+## Working app set-up (proven)
+- Wix app builder page with a web view element, "fit to screen",
+  pointing at ladieslovegolf.com/app-home-test.
+- That Wix page has no embed box, just a #loginMessage text element.
+  Its code gets the pass from backend embedPass.web.js and redirects
+  the whole web view with wixLocation.to() to
+  https://llg-app-test.netlify.app/home/#p=<pass>.
+- /home/ verifies the pass, sets a first-party session cookie and
+  clears the hash.
+- Result, verified on iPhone: full page, one scroll, Wix icons at
+  the bottom.
+- Don't change this set-up without a reason and a test. If it
+  breaks, check the Wix page code matches this first.
+
 ## Style
 - UK English. No em dashes. Plain language.

@@ -1,7 +1,11 @@
 // ────────────────────────────────────────────────────────────
 // PAGE CODE for the app-home-test page
-// Paste this into the page code panel (click the page in the
-// editor, click the { } code icon at the bottom)
+//
+// This is the working version (proven on iPhone, 2026-09-25).
+// The page has no embed box, just a #loginMessage text element.
+// It gets the pass and redirects the whole web view to Netlify.
+//
+// Paste into: Wix Editor → app-home-test page → { } code panel
 // ────────────────────────────────────────────────────────────
 
 import { getEmbedPass } from "backend/embedPass.web";
@@ -10,7 +14,6 @@ import wixLocation from "wix-location";
 $w.onReady(async function () {
   const loginMsg = $w("#loginMessage");
 
-  // Show loading message
   loginMsg.text = "Loading your golf...";
   loginMsg.show();
 
