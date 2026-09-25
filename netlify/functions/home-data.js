@@ -47,6 +47,9 @@ function makeSessionToken(payload, secret) {
     memberId: payload.memberId,
     contactId: payload.contactId,
     firstName: payload.firstName,
+    fullName: payload.fullName || "",
+    email: payload.email || "",
+    phone: payload.phone || "",
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECS,
   };
@@ -455,7 +458,7 @@ exports.handler = async (event) => {
     payload = result.payload;
   }
 
-  const { memberId, contactId, firstName } = payload;
+  const { memberId, contactId, firstName, fullName, email, phone } = payload;
 
   // Check cache (skip after venue change)
   const cached = cache.get(memberId);
@@ -541,6 +544,9 @@ exports.handler = async (event) => {
 
   const data = {
     firstName: firstName || "Member",
+    fullName: fullName || firstName || "Member",
+    email: email || "",
+    phone: phone || "",
     plan,
     memberType: plan.memberType || "non_member",
     bookings,

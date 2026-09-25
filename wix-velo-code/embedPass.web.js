@@ -33,6 +33,9 @@ export const getEmbedPass = webMethod(
         memberId: member._id,
         contactId: member.contactId,
         firstName: member.profile?.nickname || member.profile?.firstName || "Member",
+        fullName: (member.profile?.firstName || "") + (member.profile?.lastName ? " " + member.profile.lastName : ""),
+        email: member.loginEmail || "",
+        phone: member.profile?.phones?.[0] || "",
         iat: now,
         exp: now + 300, // 5 minutes
       };
