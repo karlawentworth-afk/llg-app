@@ -32,6 +32,9 @@
 - Stop before paying unless Karla says otherwise.
 - Agree a time limit per test. If the key test fails, stop and
   report. Don't troubleshoot Wix.
+- If a layout problem appears only inside the Wix app, check the
+  Wix embed settings before changing any code. The embed must be
+  set to "fit to screen", not "fit to webpage".
 
 ## Architecture
 - Wix is the till and the diary. Our layer (Netlify + Supabase) is
