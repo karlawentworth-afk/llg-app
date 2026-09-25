@@ -3,295 +3,171 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LLG Home</title>
+  <title>LLG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --magenta: #DE0082;
-      --magenta-dark: #B8006B;
+      --mg: #DE0082;
+      --mg-dark: #B8006B;
       --charcoal: #2B2A29;
       --bg: #F7F4F0;
-      --card-bg: #fff;
-      --card-border: #E6E1DA;
+      --card: #fff;
+      --border: #E6E1DA;
       --muted: #5E5D5B;
-      --radius: 18px;
+      --r: 18px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { min-height: 100vh; -webkit-font-smoothing: antialiased; }
-    body {
-      font-family: 'Mulish', 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--charcoal);
-      font-size: 16px;
-      line-height: 1.5;
-      padding: 0;
-    }
-    .container {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 1.25rem 1rem 3rem;
-    }
-
-    /* Typography */
-    h1, h2, h3 { font-family: 'Poppins', 'Segoe UI', sans-serif; }
-    h1 { font-size: 1.5rem; font-weight: 700; }
-    h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.75rem; }
-    .subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 0.15rem; }
+    body { min-height: 100vh; font-family: 'Mulish','Segoe UI',sans-serif; background: var(--bg); color: var(--charcoal); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    h1,h2,h3 { font-family: 'Poppins','Segoe UI',sans-serif; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
     .small { font-size: 0.875rem; color: var(--muted); }
+    .mg { color: var(--mg-dark); font-weight: 700; }
 
     /* Cards */
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-    }
-    .card-dark {
-      background: var(--charcoal);
-      color: #fff;
-      border: none;
-    }
-    .card-dark .small { color: #b0afad; }
-    .card-dark .topic { color: var(--magenta); font-weight: 700; font-size: 1.1rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 1.1rem; margin-bottom: 0.75rem; }
+    .card-dark { background: var(--charcoal); color: #fff; border: none; }
 
     /* Buttons */
-    .btn {
-      display: inline-block;
-      background: var(--magenta);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 0.75rem 1.5rem;
-      font-family: 'Mulish', sans-serif;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      min-height: 48px;
-      text-align: center;
-    }
+    .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--mg); color: #fff; border: none; border-radius: 12px; padding: 0 1.25rem; font-family: 'Mulish',sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; min-height: 44px; }
     .btn:active { opacity: 0.85; }
-    .btn-outline {
-      background: transparent;
-      border: 2px solid var(--magenta);
-      color: var(--magenta);
-    }
-    .btn-sm { padding: 0.5rem 1rem; font-size: 0.875rem; min-height: 40px; }
+    .btn-sm { min-height: 40px; padding: 0 1rem; font-size: 0.875rem; }
+    .btn-dark { background: var(--charcoal); }
+    .btn-outline { background: transparent; border: 2px solid var(--mg); color: var(--mg); }
+    .pill { display: inline-flex; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 0.35rem 0.85rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; min-height: 36px; color: var(--charcoal); }
+    .pill-mg { background: #fff; color: #fff; font-weight: 700; border: none; }
 
-    /* Tiles row */
-    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
-    .tile {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 1.1rem;
-      text-align: center;
-      cursor: pointer;
-      min-height: 48px;
-    }
-    .tile-value { font-family: 'Poppins', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--charcoal); }
-    .tile-label { font-size: 0.875rem; color: var(--muted); margin-top: 0.2rem; }
+    /* Trip banner */
+    .trip-banner { background: var(--mg); color: #fff; border-radius: 14px; padding: 0.7rem 1rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; min-height: 44px; text-decoration: none; }
+    .trip-banner:active { opacity: 0.85; }
+
+    /* Tiles */
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.75rem; }
+    .tile { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 1rem; cursor: pointer; min-height: 44px; }
+    .tile:active { background: #f0ede8; }
+    .tile-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.3rem; }
+    .tile-value { font-family: 'Poppins',sans-serif; font-size: 1.3rem; font-weight: 700; }
+    .tile-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.1rem; }
 
     /* Day strip */
-    .day-strip { display: flex; gap: 0.4rem; overflow-x: auto; margin-bottom: 1rem; padding-bottom: 0.25rem; -webkit-overflow-scrolling: touch; }
+    .day-strip { display: flex; gap: 0.35rem; overflow-x: auto; margin-bottom: 0.75rem; padding-bottom: 0.2rem; -webkit-overflow-scrolling: touch; }
     .day-strip::-webkit-scrollbar { display: none; }
-    .day-chip {
-      flex-shrink: 0;
-      padding: 0.5rem 0.75rem;
-      border-radius: 12px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      cursor: pointer;
-      text-align: center;
-      min-width: 56px;
-      min-height: 48px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    .day-chip.active { background: var(--magenta); color: #fff; border-color: var(--magenta); }
-    .day-chip.day-empty { opacity: 0.4; }
-    .day-chip .day-name { font-size: 0.75rem; font-weight: 400; }
-    .day-dot { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--magenta); margin: 0.15rem auto 0; }
+    .day-chip { flex-shrink: 0; padding: 0.4rem 0.6rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; background: var(--card); border: 1px solid var(--border); cursor: pointer; text-align: center; min-width: 52px; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .day-chip.active { background: var(--mg); color: #fff; border-color: var(--mg); }
+    .day-chip.empty { opacity: 0.35; }
+    .day-chip .dn { font-size: 0.7rem; font-weight: 400; }
+    .day-dot { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--mg); margin: 0.1rem auto 0; }
     .day-chip.active .day-dot { background: #fff; }
 
     /* Session rows */
-    .session-row {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 1rem;
-      margin-bottom: 0.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .session-info { flex: 1; }
-    .session-time { font-weight: 700; }
-    .session-topic { color: var(--charcoal); font-weight: 600; }
-    .session-meta { font-size: 0.875rem; color: var(--muted); }
-    .session-action { flex-shrink: 0; margin-left: 0.75rem; }
-    .badge-booked {
-      background: #e8f5e9;
-      color: #2e7d32;
-      font-size: 0.8rem;
-      font-weight: 700;
-      padding: 0.4rem 0.8rem;
-      border-radius: 8px;
-    }
-    .badge-full {
-      background: #fff3e0;
-      color: #e65100;
-      font-size: 0.8rem;
-      font-weight: 700;
-      padding: 0.4rem 0.8rem;
-      border-radius: 8px;
-    }
+    .sess { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 0.9rem 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem; }
+    .sess-info { flex: 1; min-width: 0; }
+    .sess-time { font-weight: 700; font-size: 0.95rem; }
+    .sess-topic { font-weight: 600; }
+    .sess-meta { font-size: 0.875rem; color: var(--muted); }
+    .sess-meta .low { color: var(--mg); font-weight: 700; }
+    .sess-desc { font-size: 0.875rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0.2rem 0; }
+    .sess-desc.open { -webkit-line-clamp: unset; display: block; }
+    .more-btn { background: none; border: none; color: var(--mg-dark); font-weight: 700; font-size: 0.85rem; cursor: pointer; padding: 0.3rem 0; min-height: 44px; display: flex; align-items: center; }
+    .badge { font-size: 0.8rem; font-weight: 700; padding: 0.4rem 0.75rem; border-radius: 8px; white-space: nowrap; text-align: center; min-height: 36px; display: inline-flex; align-items: center; }
+    .badge-booked { background: #e8f5e9; color: #2e7d32; }
+    .badge-full { background: #f5f5f5; color: var(--muted); }
 
-    /* Trips */
-    .trips-scroll { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; }
+    /* Trips scroll */
+    .trips-scroll { display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; }
     .trips-scroll::-webkit-scrollbar { display: none; }
-    .trip-card {
-      flex-shrink: 0;
-      width: 220px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 1rem;
-    }
-    .trip-title { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; }
-    .trip-meta { font-size: 0.875rem; color: var(--muted); }
+    .trip-card { flex-shrink: 0; width: 240px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer; }
+    .trip-card:active { opacity: 0.85; }
+    .trip-card img { width: 100%; height: 120px; object-fit: cover; display: block; }
+    .trip-card-body { padding: 0.75rem; }
+    .trip-card-title { font-family: 'Poppins',sans-serif; font-weight: 600; font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 0.3rem; }
+    .trip-card-meta { font-size: 0.8rem; color: var(--muted); }
+    .trip-card-price { font-weight: 700; margin-top: 0.3rem; }
+    .trip-card-view { color: var(--mg-dark); font-weight: 700; font-size: 0.85rem; margin-top: 0.3rem; }
+
+    /* Your trips list */
+    .your-trip { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 0.6rem 1rem; margin-bottom: 0.35rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; min-height: 44px; }
+    .your-trip:active { opacity: 0.85; }
 
     /* Perks */
-    .perk-item { padding: 0.5rem 0; border-bottom: 1px solid var(--card-border); font-size: 0.95rem; }
-    .perk-item:last-child { border-bottom: none; }
+    .perk { padding: 0.45rem 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+    .perk:last-child { border-bottom: none; }
 
-    /* Membership card overlay */
-    .card-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 100;
-      justify-content: center;
-      align-items: center;
-      padding: 1rem;
-    }
-    .card-overlay.show { display: flex; }
-    .member-card {
-      background: var(--charcoal);
-      color: #fff;
-      border-radius: 20px;
-      padding: 1.5rem;
-      width: 100%;
-      max-width: 400px;
-      position: relative;
-      overflow: hidden;
-    }
-    .member-card .llg-mark { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem; }
-    .member-card .tier { color: var(--magenta); font-weight: 700; font-size: 1.1rem; }
-    .member-card .name { font-size: 1.25rem; font-weight: 700; margin: 0.75rem 0 0.25rem; }
-    .member-card .venue { color: #b0afad; }
-    .member-card .dates { margin: 1rem 0; font-size: 0.9rem; color: #b0afad; }
-    .member-card .live-clock { font-family: 'Mulish', monospace; font-size: 0.85rem; color: var(--magenta); margin: 0.75rem 0; }
-    .member-card .points-line { margin: 0.75rem 0; }
-    .member-card .earn-info { font-size: 0.85rem; color: #b0afad; }
-    .member-card .perk-list { margin: 0.75rem 0; font-size: 0.9rem; }
-    .member-card .perk-list li { margin-bottom: 0.3rem; list-style: none; }
-    .member-card .perk-list li::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--magenta); margin-right: 0.5rem; vertical-align: middle; }
-    .member-card .close-card { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; min-height: 48px; min-width: 48px; }
-    .member-card .renew-note { font-size: 0.85rem; color: #b0afad; margin-top: 1rem; }
-    .sheen {
-      position: absolute;
-      top: 0; left: -100%;
-      width: 50%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
-      animation: sheen 4s infinite;
-    }
+    /* Heading row */
+    .hrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+    .hrow h2 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+
+    /* Card screen */
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .card-screen .back { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: none; color: var(--mg-dark); font-weight: 700; font-size: 0.95rem; cursor: pointer; padding: 0.5rem 0; min-height: 44px; margin-bottom: 0.75rem; }
+    .member-card { background: var(--charcoal); color: #fff; border-radius: 16px; padding: 1.25rem; position: relative; overflow: hidden; }
+    .member-card .logo { height: 36px; filter: brightness(0) invert(1); margin-bottom: 0.6rem; }
+    .member-card .tier { color: var(--mg); font-weight: 700; font-size: 1rem; }
+    .member-card .name { font-size: 1.15rem; font-weight: 700; margin: 0.4rem 0 0.15rem; }
+    .member-card .venue { color: #b0afad; font-size: 0.9rem; }
+    .member-card .valid-strip { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.08); border-radius: 10px; font-size: 0.85rem; }
+    .member-card .valid-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; }
+    .member-card .clock { color: #FFB3DC; font-family: 'Mulish',monospace; }
+    .sheen { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent); animation: sheen 4s infinite; pointer-events: none; }
     @keyframes sheen { 0% { left: -50%; } 100% { left: 150%; } }
 
-    /* Venue picker */
-    .venue-picker { margin-bottom: 1rem; }
-    .venue-option {
-      display: block;
-      width: 100%;
-      padding: 1rem;
-      margin-bottom: 0.5rem;
-      background: var(--card-bg);
-      border: 2px solid var(--card-border);
-      border-radius: 14px;
-      text-align: left;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: 600;
-      font-family: 'Mulish', sans-serif;
-      color: var(--charcoal);
-      min-height: 48px;
-    }
-    .venue-option .venue-town { font-weight: 400; color: var(--muted); font-size: 0.875rem; }
-
-    /* Link style */
-    a.link { color: var(--magenta-dark); text-decoration: underline; font-weight: 600; }
+    /* Trip screen */
+    .trip-hero { width: 100%; height: 200px; object-fit: cover; border-radius: 0 0 var(--r) var(--r); display: block; }
+    .trip-hero-wrap { position: relative; margin: -1.25rem -1rem 1rem; }
+    .trip-hero-wrap .back { position: absolute; top: 0.75rem; left: 0.75rem; background: rgba(0,0,0,0.4); color: #fff; border: none; border-radius: 8px; padding: 0.4rem 0.8rem; font-weight: 600; font-size: 0.85rem; cursor: pointer; min-height: 36px; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+    .chip { background: #f0ede8; border-radius: 8px; padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 600; }
+    .trip-bar { background: var(--charcoal); color: #fff; border-radius: 14px; padding: 1rem; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .trip-bar-price { font-family: 'Poppins',sans-serif; font-size: 1.2rem; font-weight: 700; }
+    .trip-bar .btn { background: var(--mg); }
 
     /* Skeleton */
-    .skeleton { background: #e0ddd8; border-radius: var(--radius); animation: pulse 1.5s ease-in-out infinite; }
+    .skel { background: #e0ddd8; border-radius: var(--r); animation: pulse 1.5s ease-in-out infinite; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-    .skel-greeting { height: 2rem; width: 60%; margin-bottom: 0.5rem; }
-    .skel-subtitle { height: 1.2rem; width: 45%; margin-bottom: 1rem; }
-    .skel-card { height: 140px; margin-bottom: 1rem; }
-    .skel-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
-    .skel-tile { height: 90px; }
-    .skel-section { height: 200px; margin-bottom: 1rem; }
 
-    /* Error */
     .error-msg { color: #c0392b; font-weight: 600; padding: 2rem 0; text-align: center; }
-
-    /* Holding view */
     .holding { text-align: center; padding: 2rem 0; }
-    .holding h1 { margin-bottom: 1rem; }
   </style>
 </head>
 <body>
-  <div class="container" id="app">
-    <!-- Skeleton loading -->
+  <div class="wrap" id="app">
+    <!-- Skeleton -->
     <div id="skeleton">
-      <div class="skeleton skel-greeting"></div>
-      <div class="skeleton skel-subtitle"></div>
-      <div class="skeleton skel-card"></div>
-      <div class="skel-tiles">
-        <div class="skeleton skel-tile"></div>
-        <div class="skeleton skel-tile"></div>
+      <div class="skel" style="height:1.8rem;width:55%;margin-bottom:0.5rem"></div>
+      <div class="skel" style="height:1rem;width:70%;margin-bottom:1rem"></div>
+      <div class="skel" style="height:100px;margin-bottom:0.75rem"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.75rem">
+        <div class="skel" style="height:85px"></div>
+        <div class="skel" style="height:85px"></div>
       </div>
-      <div class="skeleton skel-section"></div>
+      <div class="skel" style="height:180px"></div>
     </div>
 
-    <div id="content" style="display:none"></div>
-    <div id="error" style="display:none"></div>
-  </div>
+    <!-- Home screen -->
+    <div id="homeScreen" class="screen"></div>
 
-  <!-- Membership card overlay -->
-  <div class="card-overlay" id="cardOverlay" onclick="if(event.target===this)closeCard()">
-    <div class="member-card" id="memberCard"></div>
+    <!-- Card screen -->
+    <div id="cardScreen" class="screen card-screen"></div>
+
+    <!-- Trip screen -->
+    <div id="tripScreen" class="screen"></div>
+
+    <!-- Error -->
+    <div id="error" style="display:none"></div>
   </div>
 
   <script>
     let DATA = null;
     let PASS = null;
-    let selectedDay = 0;
+    let selectedDay = -1;
+    let currentScreen = "home";
 
     (async function () {
-      // Read pass from hash if present
       const hash = window.location.hash.slice(1);
       const params = new URLSearchParams(hash);
       PASS = params.get("p") || null;
-
-      // Clear hash from address bar (no identifying data in URL)
       if (PASS && window.history.replaceState) {
         window.history.replaceState(null, "", window.location.pathname);
       }
@@ -299,8 +175,6 @@
       try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 9000);
-
-        // Send pass if we have one; otherwise rely on session cookie
         const fetchBody = PASS ? { pass: PASS } : {};
         const res = await fetch("/.netlify/functions/home-data", {
           method: "POST",
@@ -324,7 +198,7 @@
         }
 
         DATA = await res.json();
-        render();
+        showScreen("home");
       } catch (err) {
         showError(err.name === "AbortError" ? "Request timed out. Please try again." : "Could not connect. Please try again.");
       }
@@ -332,344 +206,374 @@
 
     function showError(msg) {
       document.getElementById("skeleton").style.display = "none";
-      document.getElementById("error").style.display = "block";
-      document.getElementById("error").innerHTML = `<p class="error-msg">${esc(msg)}</p>`;
-    }
-
-    function render() {
-      document.getElementById("skeleton").style.display = "none";
-      const el = document.getElementById("content");
+      const el = document.getElementById("error");
       el.style.display = "block";
-
-      if (!DATA.plan.eligible) {
-        renderHolding(el);
-        return;
-      }
-
-      renderHome(el);
+      el.innerHTML = `<p class="error-msg">${esc(msg)}</p>`;
     }
 
-    function renderHolding(el) {
-      const planText = DATA.plan.name ? `${esc(DATA.plan.name)} (${esc(DATA.plan.status)})` : "No active plan";
-      const money = (DATA.points / 100).toFixed(2);
-      el.innerHTML = `
-        <div class="holding">
-          <h1>${greeting()}, ${esc(DATA.firstName.split(" ")[0])}.</h1>
-          <p class="subtitle">${planText}</p>
-          <p style="margin-top:1rem;font-size:1.1rem"><strong>${Number(DATA.points).toLocaleString()} points</strong></p>
-          <p class="small">Worth £${money}</p>
-        </div>`;
-    }
-
-    function renderHome(el) {
-      let html = "";
-
-      // Check for imminent trip (within 14 days or happening now)
-      const imminentTrip = (DATA.yourTrips || []).find(t => {
-        if (!t.startDate) return false;
-        const start = new Date(t.startDate);
-        const end = t.endDate ? new Date(t.endDate) : start;
-        const now = new Date();
-        const daysUntil = (start - now) / (1000 * 60 * 60 * 24);
-        return daysUntil <= 14 || now <= end;
+    function showScreen(name, extra) {
+      document.getElementById("skeleton").style.display = "none";
+      ["homeScreen","cardScreen","tripScreen"].forEach(id => {
+        document.getElementById(id).classList.remove("active");
       });
 
-      // 0. Imminent trip card at the very top
-      if (imminentTrip) {
-        html += renderTripCard(imminentTrip, true);
+      currentScreen = name;
+
+      if (name === "home") {
+        if (!DATA.plan.eligible) { renderHolding(); return; }
+        renderHome();
+        document.getElementById("homeScreen").classList.add("active");
+        trackEvent("home_opened");
+      } else if (name === "card") {
+        renderCard();
+        document.getElementById("cardScreen").classList.add("active");
+        trackEvent("card_opened");
+      } else if (name === "trip") {
+        renderTrip(extra);
+        document.getElementById("tripScreen").classList.add("active");
+      }
+    }
+
+    // --- HOLDING ---
+    function renderHolding() {
+      const el = document.getElementById("homeScreen");
+      const planText = DATA.plan.name ? `${esc(DATA.plan.name)} (${esc(DATA.plan.status)})` : "No active plan";
+      const money = (DATA.points / 100).toFixed(2);
+      el.innerHTML = `<div class="holding">
+        <h1>${timeGreeting()}, ${firstName()}</h1>
+        <p class="small">${planText}</p>
+        <p style="margin-top:1rem;font-size:1.1rem"><strong>${pts(DATA.points)} points</strong></p>
+        <p class="small">Worth £${money}</p>
+      </div>`;
+      el.classList.add("active");
+    }
+
+    // --- HOME ---
+    function renderHome() {
+      const el = document.getElementById("homeScreen");
+      let h = "";
+
+      // Imminent trip banner (within 14 days or happening now)
+      const imminent = (DATA.yourTrips || []).find(t => {
+        if (!t.startDate) return false;
+        const s = new Date(t.startDate);
+        const e = t.endDate ? new Date(t.endDate) : s;
+        const now = new Date();
+        return (s - now) / 864e5 <= 14 || now <= e;
+      });
+      if (imminent) {
+        const cd = countdown(imminent);
+        const url = tripUrl(imminent);
+        h += `<a class="trip-banner" href="${url}" onclick="tapNav(this)">
+          <div><div style="font-weight:700;font-size:0.95rem">${esc(imminent.title)}</div>
+          <div style="font-size:0.8rem;opacity:0.8">${esc(imminent.location)}</div></div>
+          <span class="pill-mg" style="background:rgba(255,255,255,0.2);padding:0.3rem 0.7rem;border-radius:20px;font-size:0.8rem">${cd}</span>
+        </a>`;
       }
 
-      // 1. Greeting
-      html += `<h1>${greeting()}, ${esc(DATA.firstName.split(" ")[0])}.</h1>`;
-      html += `<p class="subtitle">${formatDateLong(new Date())}</p>`;
-      html += `<p style="margin:0.3rem 0 1rem;font-weight:600">Here's your golf week.</p>`;
+      // Greeting
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+      h += `<h1 style="font-size:1.4rem;margin-bottom:0.15rem">${timeGreeting()}, ${firstName()}</h1>`;
+      h += `<p class="small" style="margin-bottom:1rem">${dateStr} · Here's your golf week</p>`;
 
-      // 2. Next session
-      html += renderNextSession();
-
-      // 3. Points + membership tiles
+      // Tiles
       const money = (DATA.points / 100).toFixed(2);
-      html += `<div class="tiles">
-        <div class="tile">
+      const planShort = (DATA.plan.name || "").replace(/\s*membership\s*/i, "");
+      h += `<div class="tiles">
+        <div class="tile" onclick="showScreen('card')">
+          <div class="tile-label">Points</div>
           <div class="tile-value">£${money}</div>
-          <div class="tile-label">to spend</div>
-          <div class="small">${Number(DATA.points).toLocaleString()} points</div>
+          <div class="tile-sub">to spend · ${pts(DATA.points)} pts</div>
         </div>
-        <div class="tile" onclick="showCard()">
-          <div class="tile-value" style="font-size:1rem">${esc(DATA.plan.name)}</div>
-          <div class="tile-label" style="color:var(--magenta-dark);font-weight:600">Show my card</div>
+        <div class="tile" onclick="showScreen('card')">
+          <div class="tile-label">Member</div>
+          <div class="tile-value" style="font-size:1.1rem">${esc(planShort)}</div>
+          <div class="tile-sub"><span class="mg">Show my card ›</span></div>
         </div>
       </div>`;
 
-      // 4. Book at venue
-      html += renderBookSection();
+      // Book at venue
+      h += renderBookSection();
 
-      // 5. Your trips (excluding the one already shown at top)
-      const otherTrips = (DATA.yourTrips || []).filter(t => !imminentTrip || t.id !== imminentTrip.id);
+      // Your trips (excluding imminent)
+      const otherTrips = (DATA.yourTrips || []).filter(t => !imminent || t.id !== imminent.id);
       if (otherTrips.length > 0) {
-        html += `<h2>Your trips</h2>`;
-        otherTrips.forEach(t => { html += renderTripCard(t, false); });
-      }
-
-      // 6. Perks
-      if (DATA.perks?.length > 0) {
-        const venueName = DATA.homeVenue?.name || "your venue";
-        html += `<h2>Your ${esc(venueName)} perks</h2>`;
-        html += `<div class="card">`;
-        DATA.perks.forEach(p => { html += `<div class="perk-item">${esc(p)}</div>`; });
-        html += `<div style="margin-top:0.75rem"><a class="link" href="#" onclick="showCard();return false">Show card</a></div>`;
-        html += `</div>`;
-      }
-
-      // 7. Trips worth a look (not booked, not sold out)
-      if (DATA.events?.length > 0) {
-        html += `<h2>Trips worth a look</h2>`;
-        html += `<div class="trips-scroll">`;
-        DATA.events.forEach(e => {
-          const eventUrl = `https://www.ladieslovegolf.com/event-details/${esc(e.slug)}`;
-          html += `<div class="trip-card" style="cursor:pointer" onclick="tapTrip(this,'${eventUrl}')">
-            <div class="trip-title">${sentenceCase(esc(e.title))}</div>
-            <div class="trip-meta">${e.startDate ? formatDateLong(new Date(e.startDate)) : ""}</div>
-            <div class="trip-meta">${esc(e.location)}</div>
+        h += `<h2 style="font-size:1.1rem;margin-bottom:0.5rem">Your trips</h2>`;
+        otherTrips.forEach(t => {
+          const cd = countdown(t);
+          const url = tripUrl(t);
+          h += `<div class="your-trip" onclick="tapNav(this);window.location.href='${url}'">
+            <div><span style="font-weight:600;font-size:0.95rem">${esc(t.title)}</span>
+            <span class="small" style="margin-left:0.3rem">${t.startDate ? fmtShort(new Date(t.startDate)) : ""}</span></div>
+            <span class="mg" style="font-size:0.85rem;white-space:nowrap">${cd}</span>
           </div>`;
         });
-        html += `</div>`;
       }
 
-      // 8. Feedback
-      html += `<div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--card-border);text-align:center">
-        <a class="link" style="font-size:0.85rem" href="#" onclick="openFeedback();return false">Something not right? Tell us</a>
-      </div>`;
+      // Perks
+      if (DATA.perks?.length > 0) {
+        const vn = dropThe(DATA.homeVenue?.name || "your venue");
+        const showAll = DATA.perks.length > 3;
+        h += `<h2 style="font-size:1.1rem;margin:0.75rem 0 0.5rem">Your ${esc(vn)} perks</h2>`;
+        h += `<div class="card">`;
+        DATA.perks.slice(0, 3).forEach(p => { h += `<div class="perk">${esc(p)}</div>`; });
+        if (showAll) {
+          h += `<div id="perksExtra" style="display:none">`;
+          DATA.perks.slice(3).forEach(p => { h += `<div class="perk">${esc(p)}</div>`; });
+          h += `</div>`;
+        }
+        h += `<div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap">`;
+        if (showAll) h += `<button class="btn btn-sm btn-outline" id="perksToggle" onclick="togglePerks()">See all ${DATA.perks.length}</button>`;
+        h += `<button class="btn btn-sm btn-dark" onclick="showScreen('card')">Show my card</button>`;
+        h += `</div></div>`;
+      }
 
-      // Feedback form (hidden)
-      html += `<div id="feedbackBox" style="display:none;margin-top:1rem">
-        <textarea id="feedbackText" rows="3" style="width:100%;font-size:1rem;padding:0.6rem;border:1px solid var(--card-border);border-radius:10px;font-family:inherit;resize:vertical" placeholder="What happened?"></textarea>
+      // Trips worth a look
+      if (DATA.events?.length > 0) {
+        h += `<h2 style="font-size:1.1rem;margin:0.75rem 0 0.5rem">Trips worth a look</h2>`;
+        h += `<div class="trips-scroll">`;
+        DATA.events.forEach(e => {
+          h += `<div class="trip-card" onclick="showScreen('trip',${JSON.stringify(e).replace(/'/g,"&#39;")})">
+            ${e.imageUrl ? `<img src="${esc(e.imageUrl)}" alt="">` : `<div style="height:120px;background:#e0ddd8"></div>`}
+            <div class="trip-card-body">
+              <div class="trip-card-title">${esc(e.title)}</div>
+              <div class="trip-card-meta">${e.startDate ? fmtLong(new Date(e.startDate)) : ""}</div>
+              <div class="trip-card-meta">${esc(e.location)}</div>
+              ${e.price ? `<div class="trip-card-price">${esc(e.price)}</div>` : ""}
+              <div class="trip-card-view mg">View ›</div>
+            </div>
+          </div>`;
+        });
+        h += `</div>`;
+      }
+
+      // Feedback
+      h += `<div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">
+        <button class="more-btn" style="margin:0 auto;color:var(--muted);font-weight:400" onclick="openFeedback()">Something not right? Tell us</button>
+      </div>`;
+      h += `<div id="feedbackBox" style="display:none;margin-top:0.5rem">
+        <textarea id="feedbackText" rows="3" style="width:100%;font-size:1rem;padding:0.6rem;border:1px solid var(--border);border-radius:10px;font-family:inherit;resize:vertical" placeholder="What happened?"></textarea>
         <div style="margin-top:0.5rem;display:flex;gap:0.5rem;justify-content:flex-end">
           <button class="btn btn-sm btn-outline" onclick="closeFeedback()">Cancel</button>
           <button class="btn btn-sm" onclick="sendFeedback()">Send</button>
         </div>
       </div>`;
 
-      el.innerHTML = html;
-
-      // Track home opened
-      trackEvent("home_opened");
-    }
-
-    function renderTripCard(trip, isImminent) {
-      const start = trip.startDate ? new Date(trip.startDate) : null;
-      const end = trip.endDate ? new Date(trip.endDate) : start;
-      const now = new Date();
-
-      let countdown = "";
-      if (start) {
-        const msUntil = start - now;
-        const daysUntil = Math.ceil(msUntil / (1000 * 60 * 60 * 24));
-        if (end && now >= start && now <= end) {
-          countdown = "Happening now";
-        } else if (daysUntil === 0) {
-          countdown = "Today";
-        } else if (daysUntil === 1) {
-          countdown = "Tomorrow";
-        } else if (daysUntil > 0) {
-          countdown = `In ${daysUntil} days`;
-        }
-      }
-
-      const tripUrl = trip.slug ? `https://www.ladieslovegolf.com/event-details/${trip.slug}` : "#";
-
-      if (isImminent) {
-        return `<div style="background:var(--magenta);color:#fff;border-radius:12px;padding:0.75rem 1rem;margin-bottom:0.75rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;min-height:48px" onclick="tapTrip(this,'${tripUrl}')">
-          <div>
-            <span style="font-weight:700;font-size:0.95rem">${sentenceCase(esc(trip.title))}</span>
-            <span style="color:rgba(255,255,255,0.8);font-size:0.85rem;margin-left:0.5rem">${esc(trip.location)}</span>
-          </div>
-          <span style="font-weight:700;font-size:0.85rem;white-space:nowrap;margin-left:0.75rem">${countdown}</span>
-        </div>`;
-      }
-
-      // Compact row for "Your trips" list
-      return `<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:0.65rem 1rem;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;min-height:48px" onclick="tapTrip(this,'${tripUrl}')">
-        <div style="min-width:0">
-          <span style="font-weight:600;font-size:0.95rem">${sentenceCase(esc(trip.title))}</span>
-          <span class="small" style="margin-left:0.4rem">${start ? formatDateShort(start) : ""}</span>
-        </div>
-        <span style="color:var(--magenta);font-weight:700;font-size:0.85rem;white-space:nowrap;margin-left:0.75rem">${countdown}</span>
-      </div>`;
-    }
-
-    function renderNextSession() {
-      const next = DATA.bookings?.[0];
-      if (!next) {
-        return `<div class="card card-dark">
-          <p style="font-weight:600">Nothing booked yet</p>
-          <p class="small" style="margin:0.5rem 0">Check out the sessions below and book your next one.</p>
-        </div>`;
-      }
-      const start = next.startDate ? new Date(next.startDate) : null;
-      const end = next.endDate ? new Date(next.endDate) : null;
-      const topic = findTopicForBooking(next);
-      return `<div class="card card-dark">
-        ${topic ? `<div class="topic">${sentenceCase(esc(topic.title))}</div>` : ""}
-        <p style="font-weight:700;font-size:1.05rem;margin:0.3rem 0">${esc(next.title)}</p>
-        <p>${start ? formatDateLong(start) : "Date TBC"}</p>
-        <p>${start ? formatTime(start) : ""}${end ? " to " + formatTime(end) : ""} | ${esc(next.locationName)}</p>
-        <div style="margin-top:1rem">
-          <a class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3)" href="https://www.ladieslovegolf.com/bookings" target="_top">Can't make it?</a>
-        </div>
-        <p class="small" style="margin-top:0.5rem">You can move or cancel up to 24 hours before.</p>
-      </div>`;
+      el.innerHTML = h;
     }
 
     function renderBookSection() {
-      // No home venue
       if (!DATA.homeVenue) {
-        let html = `<h2>Where do you usually play?</h2><div class="venue-picker">`;
+        let h = `<h2 style="font-size:1.1rem;margin-bottom:0.5rem">Where do you usually play?</h2>`;
         (DATA.allVenues || []).forEach(v => {
-          html += `<button class="venue-option" onclick="pickVenue('${v.id}')">
-            ${esc(v.name)} <span class="venue-town">${v.town ? esc(v.town) : ""}</span>
+          h += `<button class="card" style="width:100%;text-align:left;cursor:pointer;border:2px solid var(--border);font-size:1rem;font-weight:600;font-family:inherit;color:var(--charcoal);min-height:44px;margin-bottom:0.4rem" onclick="pickVenue('${v.id}')">
+            ${esc(v.name)} <span class="small">${v.town ? esc(v.town) : ""}</span>
           </button>`;
         });
-        html += `</div>`;
-        return html;
+        return h;
       }
 
-      // Build 7-day strip
       const days = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        days.push(d);
-      }
+      for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() + i); days.push(d); }
 
-      // Find which days have sessions
       const sessionDates = new Set((DATA.sessions || []).map(s => s.startDate?.substring(0, 10)).filter(Boolean));
 
-      // Auto-select next day with sessions if current day has none
-      if (selectedDay === 0) {
+      // Auto-select first day with sessions
+      if (selectedDay < 0) {
+        selectedDay = 0;
         for (let i = 0; i < days.length; i++) {
-          if (sessionDates.has(days[i].toISOString().substring(0, 10))) {
-            selectedDay = i;
-            break;
-          }
+          if (sessionDates.has(days[i].toISOString().substring(0, 10))) { selectedDay = i; break; }
         }
       }
 
-      let html = `<h2>Book at ${esc(DATA.homeVenue.name)}</h2>`;
+      const vn = dropThe(DATA.homeVenue?.name || "venue");
+      let h = `<div class="hrow">
+        <h2>Book at ${esc(vn)}</h2>
+        <button class="pill" onclick="changeVenue()">Change venue</button>
+      </div>`;
 
-      // Day strip with dots for days that have sessions
-      html += `<div class="day-strip" id="dayStrip">`;
+      // Day strip
+      h += `<div class="day-strip">`;
       days.forEach((d, i) => {
-        const dayName = d.toLocaleDateString("en-GB", { weekday: "short" });
-        const dayNum = d.getDate();
-        const dateStr = d.toISOString().substring(0, 10);
-        const hasSessions = sessionDates.has(dateStr);
-        html += `<div class="day-chip ${i === selectedDay ? "active" : ""} ${!hasSessions ? "day-empty" : ""}" onclick="selectDay(${i})">
-          <span class="day-name">${dayName}</span>
-          <span>${dayNum}</span>
-          ${hasSessions ? '<span class="day-dot"></span>' : ""}
+        const dn = i === 0 ? "Today" : d.toLocaleDateString("en-GB", { weekday: "short" });
+        const num = d.getDate();
+        const ds = d.toISOString().substring(0, 10);
+        const has = sessionDates.has(ds);
+        h += `<div class="day-chip ${i === selectedDay ? "active" : ""} ${!has ? "empty" : ""}" onclick="selectDay(${i})">
+          <span class="dn">${dn}</span><span>${num}</span>
+          ${has ? '<span class="day-dot"></span>' : ""}
         </div>`;
       });
-      html += `</div>`;
+      h += `</div>`;
 
-      // Sessions for selected day
-      const selDate = days[selectedDay];
-      const selDateStr = selDate.toISOString().substring(0, 10);
-      const daySessions = (DATA.sessions || []).filter(s => {
-        if (!s.startDate) return false;
-        return s.startDate.substring(0, 10) === selDateStr;
-      });
+      // Sessions
+      const selDateStr = days[selectedDay].toISOString().substring(0, 10);
+      const daySess = (DATA.sessions || []).filter(s => s.startDate?.substring(0, 10) === selDateStr);
 
-      if (daySessions.length === 0) {
-        // Find next available
+      if (daySess.length === 0) {
         let nextAvail = null;
         for (const s of (DATA.sessions || [])) {
-          if (s.startDate && new Date(s.startDate) > selDate) { nextAvail = s; break; }
+          if (s.startDate && new Date(s.startDate) > days[selectedDay]) { nextAvail = s; break; }
         }
-        if (nextAvail) {
-          const nd = new Date(nextAvail.startDate);
-          html += `<p class="small" style="padding:1rem 0">No sessions on this day. Next session: ${formatDateLong(nd)} at ${formatTime(nd)}.</p>`;
-        } else {
-          html += `<p class="small" style="padding:1rem 0">No sessions on this day.</p>`;
-        }
+        h += `<p class="small" style="padding:0.75rem 0">${nextAvail
+          ? `No sessions this day. Next: ${fmtLong(new Date(nextAvail.startDate))} at ${fmtTime(new Date(nextAvail.startDate))}.`
+          : "No sessions this day. Days with a dot have sessions."}</p>`;
       } else {
-        daySessions.forEach((s, i) => {
+        daySess.forEach((s, i) => {
           const start = new Date(s.startDate);
           const end = s.endDate ? new Date(s.endDate) : null;
-          const topicTitle = s.topic?.title ? sentenceCase(s.topic.title) : "";
-          const placesLeft = s.remainingCapacity;
-          const isFull = placesLeft === 0;
+          const topic = s.topic?.title ? sentenceCase(s.topic.title) : "";
+          const places = s.remainingCapacity;
+          const full = places === 0;
+          const lowPlaces = places > 0 && places <= 3;
+          const price = DATA.memberPrice || "12.50";
 
           const bookUrl = buildBookingUrl(s);
-          let actionHtml;
+          let action;
           if (s.isBooked) {
-            actionHtml = `<span class="badge-booked">You're booked</span>`;
-          } else if (isFull && DATA.plan.eligible) {
-            actionHtml = `<a class="btn btn-sm" style="background:#e65100" href="${bookUrl}" onclick="tapWaitlist(this)">Waitlist</a>`;
-          } else if (isFull) {
-            actionHtml = `<span class="badge-full">Full</span>`;
+            action = `<div style="text-align:center"><span class="badge badge-booked">You're booked</span>
+              <div style="margin-top:0.3rem"><a class="mg" style="font-size:0.8rem;text-decoration:none" href="https://www.ladieslovegolf.com/bookings" onclick="tapNav(this)">Manage</a></div></div>`;
+          } else if (full && DATA.plan.eligible) {
+            action = `<a class="btn btn-sm" style="background:#e65100" href="${bookUrl}" onclick="tapWaitlist(this)">Join waitlist</a>`;
+          } else if (full) {
+            action = `<span class="badge badge-full">Full</span>`;
           } else {
-            actionHtml = `<a class="btn btn-sm" href="${bookUrl}" onclick="tapBookBtn(this)">Book</a>`;
+            action = `<a class="btn btn-sm" href="${bookUrl}" onclick="tapBookBtn(this)">Book</a>`;
           }
 
-          // Long description behind More/Less
-          const descId = `desc-${selectedDay}-${i}`;
+          const descId = `d${selectedDay}${i}`;
           let descHtml = "";
           if (s.topic?.description) {
-            const desc = esc(s.topic.description);
-            descHtml = `<div class="small" style="margin:0.2rem 0 0.3rem">
-              <a class="link" style="font-size:0.85rem" id="${descId}-more" onclick="toggleDesc('${descId}');return false" href="#">More</a>
-              <div id="${descId}-full" style="display:none">${desc} <a class="link" style="font-size:0.85rem" onclick="toggleDesc('${descId}');return false" href="#">Less</a></div>
-            </div>`;
+            descHtml = `<div class="sess-desc" id="${descId}">${esc(s.topic.description)}</div>
+              <button class="more-btn" id="${descId}b" onclick="toggleDesc('${descId}')">More</button>`;
           }
 
-          html += `<div class="session-row">
-            <div class="session-info">
-              <div class="session-time">${formatTime(start)}${end ? " to " + formatTime(end) : ""}</div>
-              ${topicTitle ? `<div class="session-topic">${esc(topicTitle)}</div>` : ""}
+          h += `<div class="sess">
+            <div class="sess-info">
+              <div class="sess-time">${fmtTime(start)}${end ? " to " + fmtTime(end) : ""}</div>
+              ${topic ? `<div class="sess-topic">${esc(topic)}</div>` : ""}
               ${descHtml}
-              <div class="session-meta">${placesLeft} place${placesLeft !== 1 ? "s" : ""} left | £12.50 member price</div>
+              <div class="sess-meta">${lowPlaces ? `<span class="low">${places} place${places !== 1 ? "s" : ""} left</span>` : `${places} place${places !== 1 ? "s" : ""} left`} · £${price} member price</div>
             </div>
-            <div class="session-action">${actionHtml}</div>
+            <div style="flex-shrink:0;margin-left:0.4rem">${action}</div>
           </div>`;
         });
       }
 
-      html += `<p style="margin-top:0.5rem"><a class="link" href="#" onclick="showVenuePicker();return false">Other venues</a></p>`;
-
-      return html;
+      return h;
     }
 
-    function findTopicForBooking(booking) {
-      if (!booking.startDate || !DATA.sessions) return null;
-      const bookingStart = new Date(booking.startDate);
-      for (const s of DATA.sessions) {
-        if (s.topic && s.startDate) {
-          const sStart = new Date(s.startDate);
-          if (Math.abs(sStart.getTime() - bookingStart.getTime()) < 2 * 60 * 60 * 1000) {
-            return s.topic;
-          }
-        }
+    // --- CARD SCREEN ---
+    function renderCard() {
+      const el = document.getElementById("cardScreen");
+      const renewDate = DATA.plan.endDate ? fmtLong(new Date(DATA.plan.endDate)) : null;
+      const sinceDate = DATA.plan.startDate ? new Date(DATA.plan.startDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : null;
+      const money = (DATA.points / 100).toFixed(2);
+      const vn = DATA.homeVenue?.name || "";
+      const rolling = !DATA.plan.endDate;
+
+      let h = `<button class="back" onclick="showScreen('home')">← Home</button>`;
+
+      h += `<div class="member-card">
+        <div class="sheen"></div>
+        <img class="logo" src="LLG_Logo.png" alt="LLG">
+        <div class="tier">${esc(DATA.plan.name)}</div>
+        <div class="name">${esc(DATA.firstName)}</div>
+        <div class="venue">${esc(vn)}</div>
+        <div class="valid-strip">
+          <span class="valid-dot"></span>
+          <span>Valid now</span>
+          <span class="clock" id="cardClock"></span>
+        </div>
+      </div>`;
+
+      // Under card
+      h += `<div style="margin-top:1rem">`;
+      if (sinceDate) {
+        h += `<p class="small">Member since ${sinceDate}${rolling ? " · Rolling membership" : renewDate ? ` · Renews ${renewDate}` : ""}</p>`;
       }
-      return null;
+
+      h += `<div class="card" style="margin-top:0.75rem">
+        <div style="font-weight:700;font-size:1.2rem;font-family:'Poppins',sans-serif">£${money} <span style="font-size:0.9rem;font-weight:400">to spend</span></div>
+        <p class="small">${pts(DATA.points)} points · 100 points = £1</p>
+        <p class="small" style="margin-top:0.5rem">Earn: 15 points per session, 1 point per £1 on events and Golf Breaks holidays</p>
+      </div>`;
+
+      if (DATA.perks?.length > 0) {
+        const pvn = dropThe(DATA.homeVenue?.name || "your venue");
+        h += `<h2 style="font-size:1.05rem;margin:0.75rem 0 0.4rem">Your ${esc(pvn)} perks</h2>`;
+        h += `<div class="card">`;
+        DATA.perks.forEach(p => { h += `<div class="perk">${esc(p)}</div>`; });
+        h += `</div>`;
+      }
+
+      if (renewDate) {
+        h += `<p class="small" style="margin-top:0.5rem">Renews on ${renewDate}. Manage or cancel up to 7 days before.</p>`;
+      }
+      h += `</div>`;
+
+      el.innerHTML = h;
+      updateClock();
+      if (window._clockInt) clearInterval(window._clockInt);
+      window._clockInt = setInterval(updateClock, 1000);
     }
 
-    function selectDay(i) {
-      selectedDay = i;
-      render();
+    function updateClock() {
+      const el = document.getElementById("cardClock");
+      if (!el) return;
+      const now = new Date();
+      const day = now.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+      const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      el.textContent = `${day}, ${time}`;
     }
 
-    function showVenuePicker() {
+    // --- TRIP SCREEN ---
+    function renderTrip(trip) {
+      const el = document.getElementById("tripScreen");
+      const ticketUrl = `https://www.ladieslovegolf.com/event-details/${trip.slug}`;
+
+      let h = `<div class="trip-hero-wrap">
+        ${trip.imageUrl ? `<img class="trip-hero" src="${esc(trip.imageUrl)}" alt="">` : `<div class="trip-hero" style="background:#e0ddd8"></div>`}
+        <button class="back" onclick="showScreen('home')">← Home</button>
+      </div>`;
+
+      h += `<div class="small" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:0.3rem">Trip</div>`;
+      h += `<h1 style="font-size:1.3rem;margin-bottom:0.5rem">${esc(trip.title)}</h1>`;
+      h += `<p class="small">${esc(trip.location)}</p>`;
+
+      // Chips
+      h += `<div class="chip-row">`;
+      if (trip.startDate) h += `<span class="chip">${fmtLong(new Date(trip.startDate))}</span>`;
+      if (trip.endDate && trip.endDate !== trip.startDate) h += `<span class="chip">to ${fmtLong(new Date(trip.endDate))}</span>`;
+      h += `</div>`;
+
+      if (trip.shortDescription) {
+        h += `<p style="margin:0.75rem 0;font-size:0.95rem">${esc(trip.shortDescription)}</p>`;
+      }
+
+      // Book bar
+      h += `<div class="trip-bar">
+        ${trip.price ? `<div class="trip-bar-price">${esc(trip.price)}</div>` : `<div></div>`}
+        <a class="btn" href="${ticketUrl}" onclick="tapNav(this,'Opening tickets...')">Book your place</a>
+      </div>`;
+
+      el.innerHTML = h;
+    }
+
+    // --- UTILITIES ---
+    function selectDay(i) { selectedDay = i; showScreen("home"); }
+
+    function changeVenue() {
       DATA.homeVenue = null;
       DATA.homeVenueSource = "none";
-      render();
+      selectedDay = -1;
+      showScreen("home");
     }
 
     async function pickVenue(venueId) {
       const venue = (DATA.allVenues || []).find(v => v.id === venueId);
       if (!venue) return;
-
-      // Save preference
       try {
         await fetch("/.netlify/functions/set-home-venue", {
           method: "POST",
@@ -678,11 +582,7 @@
           body: JSON.stringify({ pass: PASS, venueId }),
         });
       } catch {}
-
-      // Reload to get venue-specific data
-      document.getElementById("content").style.display = "none";
-      document.getElementById("skeleton").style.display = "block";
-
+      document.getElementById("homeScreen").innerHTML = '<div class="skel" style="height:200px"></div>';
       try {
         const fetchBody = PASS ? { pass: PASS, skipCache: true } : { skipCache: true };
         const res = await fetch("/.netlify/functions/home-data", {
@@ -691,186 +591,71 @@
           credentials: "same-origin",
           body: JSON.stringify(fetchBody),
         });
-        if (res.ok) {
-          DATA = await res.json();
-          selectedDay = 0;
-          render();
-        }
+        if (res.ok) { DATA = await res.json(); selectedDay = -1; showScreen("home"); }
       } catch {}
     }
 
-    // --- Membership card ---
-
-    function showCard() {
-      trackEvent("card_opened");
-      const card = document.getElementById("memberCard");
-      const renewDate = DATA.plan.endDate ? formatDateLong(new Date(DATA.plan.endDate)) : "N/A";
-      const sinceDate = DATA.plan.startDate ? formatDateLong(new Date(DATA.plan.startDate)) : "N/A";
-      const money = (DATA.points / 100).toFixed(2);
-      const venueName = DATA.homeVenue?.name || "";
-
-      let perksHtml = "";
-      if (DATA.perks?.length > 0) {
-        perksHtml = `<ul class="perk-list">${DATA.perks.map(p => `<li>${esc(p)}</li>`).join("")}</ul>`;
-      }
-
-      card.innerHTML = `
-        <div class="sheen"></div>
-        <button class="close-card" onclick="closeCard()">&times;</button>
-        <div class="llg-mark">llg</div>
-        <div class="tier">${esc(DATA.plan.name)}</div>
-        <div class="name">${esc(DATA.firstName)}</div>
-        <div class="venue">${esc(venueName)}</div>
-        <div class="dates">Member since ${sinceDate}<br>Renews ${renewDate}</div>
-        <div class="live-clock" id="liveClock"></div>
-        <div class="points-line">
-          <strong>£${money}</strong> to spend <span class="small">(${Number(DATA.points).toLocaleString()} points)</span>
-        </div>
-        <div class="earn-info">Earn: 15 points per session, 1 point per £1 on events and Golf Breaks holidays</div>
-        ${perksHtml}
-        <div class="renew-note">Renews on ${renewDate}. Manage or cancel up to 7 days before.</div>
-      `;
-
-      document.getElementById("cardOverlay").classList.add("show");
-      updateClock();
-      window._clockInterval = setInterval(updateClock, 1000);
-    }
-
-    function closeCard() {
-      document.getElementById("cardOverlay").classList.remove("show");
-      if (window._clockInterval) clearInterval(window._clockInterval);
-    }
-
-    function updateClock() {
-      const el = document.getElementById("liveClock");
-      if (!el) return;
-      const now = new Date();
-      const day = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-      const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      el.textContent = `Valid today, ${day}, ${time}`;
-    }
-
-    // --- Formatting ---
-
-    function greeting() {
-      const h = new Date().getHours();
-      if (h < 12) return "Morning";
-      if (h < 17) return "Afternoon";
-      return "Evening";
-    }
-
-    function formatDateLong(d) {
-      return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-    }
-
-    function formatDateShort(d) {
-      return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-    }
-
-    // Build Wix booking form deep link for a specific session
-    // From docs: Wix tutorial "Build a Custom Booking Calendar Page"
-    function tapBookBtn(el) {
-      el.textContent = "Opening booking...";
-      el.style.opacity = "0.6";
-      el.style.pointerEvents = "none";
-      trackEvent("book_tapped");
-    }
-
-    function tapWaitlist(el) {
-      el.textContent = "Opening...";
-      el.style.opacity = "0.6";
-      el.style.pointerEvents = "none";
-      trackEvent("waitlist_tapped");
-    }
-
-    function tapTrip(el, url) {
-      el.style.opacity = "0.6";
-      el.style.pointerEvents = "none";
-      trackEvent("trip_tapped");
-      window.location.href = url;
-    }
-
-    // --- Tracking ---
-    function trackEvent(eventName) {
-      try {
-        const body = PASS ? { pass: PASS, action: "event", event: eventName } : { action: "event", event: eventName };
-        fetch("/.netlify/functions/track", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify(body),
-        });
-      } catch {}
-    }
-
-    // --- Feedback ---
-    function openFeedback() {
-      document.getElementById("feedbackBox").style.display = "block";
-    }
-    function closeFeedback() {
-      document.getElementById("feedbackBox").style.display = "none";
-      document.getElementById("feedbackText").value = "";
-    }
-    async function sendFeedback() {
-      const text = document.getElementById("feedbackText").value.trim();
-      if (!text) return;
-      try {
-        const body = PASS ? { pass: PASS, action: "feedback", message: text, screen: "home" } : { action: "feedback", message: text, screen: "home" };
-        await fetch("/.netlify/functions/track", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify(body),
-        });
-        closeFeedback();
-        document.querySelector("[onclick*='openFeedback']").textContent = "Thanks for your feedback";
-        trackEvent("feedback_sent");
-      } catch {
-        alert("Could not send. Please try again.");
-      }
+    function togglePerks() {
+      const extra = document.getElementById("perksExtra");
+      const btn = document.getElementById("perksToggle");
+      if (extra.style.display === "none") { extra.style.display = ""; btn.textContent = "Show fewer"; }
+      else { extra.style.display = "none"; btn.textContent = `See all ${DATA.perks.length}`; }
     }
 
     function toggleDesc(id) {
-      const moreLink = document.getElementById(id + "-more");
-      const full = document.getElementById(id + "-full");
-      if (full.style.display === "none") {
-        full.style.display = "";
-        moreLink.style.display = "none";
-      } else {
-        full.style.display = "none";
-        moreLink.style.display = "";
-      }
+      const el = document.getElementById(id);
+      const btn = document.getElementById(id + "b");
+      el.classList.toggle("open");
+      btn.textContent = el.classList.contains("open") ? "Less" : "More";
     }
 
-    function buildBookingUrl(session) {
-      const params = new URLSearchParams();
-      if (session.serviceId) params.set("bookings_serviceId", session.serviceId);
-      if (session.resourceId) params.set("bookings_resourceId", session.resourceId);
-      if (session.startDate) params.set("bookings_startDate", session.startDate);
-      if (session.endDate) params.set("bookings_endDate", session.endDate);
-      params.set("bookings_timezone", session.timeZone || "Europe/London");
-      return "https://www.ladieslovegolf.com/booking-form?" + params.toString();
+    function tapBookBtn(el) { el.textContent = "Opening booking..."; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("book_tapped"); }
+    function tapWaitlist(el) { el.textContent = "Opening..."; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("waitlist_tapped"); }
+    function tapNav(el, text) { if (text) el.textContent = text; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("trip_tapped"); }
+
+    function buildBookingUrl(s) {
+      const p = new URLSearchParams();
+      if (s.serviceId) p.set("bookings_serviceId", s.serviceId);
+      if (s.resourceId) p.set("bookings_resourceId", s.resourceId);
+      if (s.startDate) p.set("bookings_startDate", s.startDate);
+      if (s.endDate) p.set("bookings_endDate", s.endDate);
+      p.set("bookings_timezone", s.timeZone || "Europe/London");
+      return "https://www.ladieslovegolf.com/booking-form?" + p.toString();
     }
 
-    function formatTime(d) {
-      let h = d.getHours();
-      let m = d.getMinutes();
-      const ampm = h >= 12 ? "pm" : "am";
-      if (h > 12) h -= 12;
-      if (h === 0) h = 12;
-      return m === 0 ? `${h}${ampm}` : `${h}.${String(m).padStart(2, "0")}${ampm}`;
+    function tripUrl(t) { return t.slug ? `https://www.ladieslovegolf.com/event-details/${t.slug}` : "#"; }
+
+    function countdown(t) {
+      if (!t.startDate) return "";
+      const s = new Date(t.startDate);
+      const e = t.endDate ? new Date(t.endDate) : s;
+      const now = new Date();
+      const d = Math.ceil((s - now) / 864e5);
+      if (e && now >= s && now <= e) return "Happening now";
+      if (d === 0) return "Today";
+      if (d === 1) return "Tomorrow";
+      return d > 0 ? `In ${d} days` : "";
     }
 
-    function sentenceCase(str) {
-      if (!str) return "";
-      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    function trackEvent(n) { try { fetch("/.netlify/functions/track", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ pass: PASS, action: "event", event: n }) }); } catch {} }
+
+    function openFeedback() { document.getElementById("feedbackBox").style.display = "block"; }
+    function closeFeedback() { document.getElementById("feedbackBox").style.display = "none"; document.getElementById("feedbackText").value = ""; }
+    async function sendFeedback() {
+      const t = document.getElementById("feedbackText").value.trim();
+      if (!t) return;
+      try { await fetch("/.netlify/functions/track", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ pass: PASS, action: "feedback", message: t, screen: "home" }) }); closeFeedback(); trackEvent("feedback_sent"); } catch {}
     }
 
-    function esc(str) {
-      const d = document.createElement("div");
-      d.textContent = String(str || "");
-      return d.innerHTML;
-    }
+    function timeGreeting() { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; }
+    function firstName() { return esc((DATA?.firstName || "").split(" ")[0]); }
+    function fmtLong(d) { return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }); }
+    function fmtShort(d) { return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+    function fmtTime(d) { let h = d.getHours(), m = d.getMinutes(); const a = h >= 12 ? "pm" : "am"; if (h > 12) h -= 12; if (h === 0) h = 12; return m === 0 ? `${h}${a}` : `${h}.${String(m).padStart(2,"0")}${a}`; }
+    function sentenceCase(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ""; }
+    function dropThe(s) { return s.replace(/^The\s+/i, ""); }
+    function pts(n) { return Number(n).toLocaleString(); }
+    function esc(s) { const d = document.createElement("div"); d.textContent = String(s || ""); return d.innerHTML; }
   </script>
 </body>
 </html>

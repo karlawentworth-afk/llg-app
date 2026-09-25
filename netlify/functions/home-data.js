@@ -192,6 +192,26 @@ async function fetchBookingHistory(contactId, headers) {
   } catch { return []; }
 }
 
+async function fetchServicePrice(locationId, headers) {
+  try {
+    const res = await fetchWithTimeout(
+      "https://www.wixapis.com/bookings/v2/services/query",
+      {
+        method: "POST", headers,
+        body: JSON.stringify({ query: { paging: { limit: 20 } } }),
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const service = (data.services || []).find(s => {
+      return (s.locations || []).some(l => l.business?.id === locationId || l.id === locationId);
+    });
+    if (!service) return null;
+    const price = parseFloat(service.payment?.fixed?.price?.value || "0");
+    return price > 0 ? price : null;
+  } catch { return null; }
+}
+
 async function fetchVenueSessions(locationId, headers) {
   try {
     const now = new Date();
@@ -260,6 +280,9 @@ async function fetchEvents(headers) {
       slug: e.slug || "",
       status: e.status || "",
       soldOut: e.summaries?.soldOut || false,
+      imageUrl: e.mainImage?.url || null,
+      shortDescription: e.shortDescription || "",
+      price: e.registration?.tickets?.lowestPrice?.formattedValue || null,
     }));
   } catch { return []; }
 }
@@ -418,15 +441,17 @@ exports.handler = async (event) => {
   let sessions = [];
   let perks = [];
   let topics = [];
+  let servicePrice = null;
 
   if (homeVenue && supabase) {
     const now = new Date();
     const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    [sessions, perks, topics] = await Promise.all([
+    [sessions, perks, topics, servicePrice] = await Promise.all([
       homeVenue.wix_location_id ? fetchVenueSessions(homeVenue.wix_location_id, wixH) : [],
       getVenuePerks(supabase, homeVenue.id),
       getSessionTopics(supabase, homeVenue.id, now, end),
+      homeVenue.wix_location_id ? fetchServicePrice(homeVenue.wix_location_id, wixH) : null,
     ]);
 
     // Match topics to sessions by date+time
@@ -462,6 +487,9 @@ exports.handler = async (event) => {
     .filter(e => !bookedEventIdSet.has(e.id) && !e.soldOut && e.status === "UPCOMING")
     .slice(0, 5);
 
+  const MEMBER_DISCOUNT = 7.50;
+  const memberPrice = servicePrice ? (servicePrice - MEMBER_DISCOUNT).toFixed(2) : null;
+
   const data = {
     firstName: firstName || "Member",
     plan,
@@ -474,6 +502,8 @@ exports.handler = async (event) => {
     perks,
     yourTrips,
     events: tripsWorthALook,
+    servicePrice,
+    memberPrice,
   };
 
   // Cache
