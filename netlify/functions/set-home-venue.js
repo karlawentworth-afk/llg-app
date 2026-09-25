@@ -25,6 +25,16 @@ function verifyPass(pass, secret) {
   return { payload };
 }
 
+function parseCookies(cookieHeader) {
+  const cookies = {};
+  if (!cookieHeader) return cookies;
+  cookieHeader.split(";").forEach(c => {
+    const [k, ...v] = c.trim().split("=");
+    if (k) cookies[k.trim()] = v.join("=").trim();
+  });
+  return cookies;
+}
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -42,10 +52,22 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "bad_request" }) }; }
 
-  const result = verifyPass(body.pass, secret);
-  if (result.error) return { statusCode: 401, headers, body: JSON.stringify({ error: result.error }) };
+  // Try pass first, then session cookie
+  let payload;
+  if (body.pass) {
+    const result = verifyPass(body.pass, secret);
+    if (result.error) return { statusCode: 401, headers, body: JSON.stringify({ error: result.error }) };
+    payload = result.payload;
+  } else {
+    const cookies = parseCookies(event.headers.cookie || event.headers.Cookie || "");
+    const token = cookies["llg_session"];
+    if (!token) return { statusCode: 401, headers, body: JSON.stringify({ error: "no_session" }) };
+    const result = verifyPass(token, secret);
+    if (result.error) return { statusCode: 401, headers, body: JSON.stringify({ error: result.error }) };
+    payload = result.payload;
+  }
 
-  const { memberId } = result.payload;
+  const { memberId } = payload;
   const venueId = body.venueId;
 
   if (!venueId || typeof venueId !== "string") {

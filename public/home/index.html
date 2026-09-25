@@ -286,8 +286,7 @@
     let selectedDay = 0;
 
     (async function () {
-      // Temporary: log web view origin so we can restore CSP
-      console.log("ORIGIN:", location.origin, "REFERRER:", document.referrer, "ANCESTORS:", window.location.ancestorOrigins ? [...window.location.ancestorOrigins] : "n/a");
+      const pageStart = performance.now();
 
       // Read pass from hash if present
       const hash = window.location.hash.slice(1);
@@ -300,6 +299,7 @@
       }
 
       try {
+        const fetchStart = performance.now();
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 9000);
 
@@ -313,6 +313,7 @@
           signal: controller.signal,
         });
         clearTimeout(timer);
+        const fetchEnd = performance.now();
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -327,7 +328,21 @@
         }
 
         DATA = await res.json();
+        const renderStart = performance.now();
         render();
+        const renderEnd = performance.now();
+
+        // Timing report
+        const serverTiming = DATA._timing || {};
+        console.log("TIMING:", JSON.stringify({
+          pageToFetch: Math.round(fetchStart - pageStart),
+          fetchRoundTrip: Math.round(fetchEnd - fetchStart),
+          serverBatch1: serverTiming.batch1,
+          serverBatch2: serverTiming.batch2,
+          serverTotal: serverTiming.total,
+          render: Math.round(renderEnd - renderStart),
+          totalToContent: Math.round(renderEnd - pageStart),
+        }));
       } catch (err) {
         showError(err.name === "AbortError" ? "Request timed out. Please try again." : "Could not connect. Please try again.");
       }
