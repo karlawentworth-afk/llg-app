@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LLG Home</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -286,8 +286,6 @@
     let selectedDay = 0;
 
     (async function () {
-      const pageStart = performance.now();
-
       // Read pass from hash if present
       const hash = window.location.hash.slice(1);
       const params = new URLSearchParams(hash);
@@ -299,7 +297,6 @@
       }
 
       try {
-        const fetchStart = performance.now();
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 9000);
 
@@ -313,7 +310,6 @@
           signal: controller.signal,
         });
         clearTimeout(timer);
-        const fetchEnd = performance.now();
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -328,21 +324,7 @@
         }
 
         DATA = await res.json();
-        const renderStart = performance.now();
         render();
-        const renderEnd = performance.now();
-
-        // Timing report
-        const serverTiming = DATA._timing || {};
-        console.log("TIMING:", JSON.stringify({
-          pageToFetch: Math.round(fetchStart - pageStart),
-          fetchRoundTrip: Math.round(fetchEnd - fetchStart),
-          serverBatch1: serverTiming.batch1,
-          serverBatch2: serverTiming.batch2,
-          serverTotal: serverTiming.total,
-          render: Math.round(renderEnd - renderStart),
-          totalToContent: Math.round(renderEnd - pageStart),
-        }));
       } catch (err) {
         showError(err.name === "AbortError" ? "Request timed out. Please try again." : "Could not connect. Please try again.");
       }
@@ -454,7 +436,24 @@
         html += `</div>`;
       }
 
+      // 8. Feedback
+      html += `<div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--card-border);text-align:center">
+        <a class="link" style="font-size:0.85rem" href="#" onclick="openFeedback();return false">Something not right? Tell us</a>
+      </div>`;
+
+      // Feedback form (hidden)
+      html += `<div id="feedbackBox" style="display:none;margin-top:1rem">
+        <textarea id="feedbackText" rows="3" style="width:100%;font-size:1rem;padding:0.6rem;border:1px solid var(--card-border);border-radius:10px;font-family:inherit;resize:vertical" placeholder="What happened?"></textarea>
+        <div style="margin-top:0.5rem;display:flex;gap:0.5rem;justify-content:flex-end">
+          <button class="btn btn-sm btn-outline" onclick="closeFeedback()">Cancel</button>
+          <button class="btn btn-sm" onclick="sendFeedback()">Send</button>
+        </div>
+      </div>`;
+
       el.innerHTML = html;
+
+      // Track home opened
+      trackEvent("home_opened");
     }
 
     function renderTripCard(trip, isImminent) {
@@ -606,7 +605,7 @@
           if (s.isBooked) {
             actionHtml = `<span class="badge-booked">You're booked</span>`;
           } else if (isFull && DATA.plan.eligible) {
-            actionHtml = `<a class="btn btn-sm" style="background:#e65100" href="${bookUrl}" onclick="tapBookBtn(this)">Waitlist</a>`;
+            actionHtml = `<a class="btn btn-sm" style="background:#e65100" href="${bookUrl}" onclick="tapWaitlist(this)">Waitlist</a>`;
           } else if (isFull) {
             actionHtml = `<span class="badge-full">Full</span>`;
           } else {
@@ -703,6 +702,7 @@
     // --- Membership card ---
 
     function showCard() {
+      trackEvent("card_opened");
       const card = document.getElementById("memberCard");
       const renewDate = DATA.plan.endDate ? formatDateLong(new Date(DATA.plan.endDate)) : "N/A";
       const sinceDate = DATA.plan.startDate ? formatDateLong(new Date(DATA.plan.startDate)) : "N/A";
@@ -773,12 +773,61 @@
       el.textContent = "Opening booking...";
       el.style.opacity = "0.6";
       el.style.pointerEvents = "none";
+      trackEvent("book_tapped");
+    }
+
+    function tapWaitlist(el) {
+      el.textContent = "Opening...";
+      el.style.opacity = "0.6";
+      el.style.pointerEvents = "none";
+      trackEvent("waitlist_tapped");
     }
 
     function tapTrip(el, url) {
       el.style.opacity = "0.6";
       el.style.pointerEvents = "none";
+      trackEvent("trip_tapped");
       window.location.href = url;
+    }
+
+    // --- Tracking ---
+    function trackEvent(eventName) {
+      try {
+        const body = PASS ? { pass: PASS, action: "event", event: eventName } : { action: "event", event: eventName };
+        fetch("/.netlify/functions/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(body),
+        });
+      } catch {}
+    }
+
+    // --- Feedback ---
+    function openFeedback() {
+      document.getElementById("feedbackBox").style.display = "block";
+    }
+    function closeFeedback() {
+      document.getElementById("feedbackBox").style.display = "none";
+      document.getElementById("feedbackText").value = "";
+    }
+    async function sendFeedback() {
+      const text = document.getElementById("feedbackText").value.trim();
+      if (!text) return;
+      try {
+        const body = PASS ? { pass: PASS, action: "feedback", message: text, screen: "home" } : { action: "feedback", message: text, screen: "home" };
+        await fetch("/.netlify/functions/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(body),
+        });
+        closeFeedback();
+        document.querySelector("[onclick*='openFeedback']").textContent = "Thanks for your feedback";
+        trackEvent("feedback_sent");
+      } catch {
+        alert("Could not send. Please try again.");
+      }
     }
 
     function toggleDesc(id) {

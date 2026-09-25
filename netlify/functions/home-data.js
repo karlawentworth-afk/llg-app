@@ -401,8 +401,6 @@ exports.handler = async (event) => {
 
   const wixH = wixHeaders();
   const supabase = getSupabase();
-  const t0 = Date.now();
-
   // Parallel fetch: Wix data + Supabase home venue
   const [plan, bookings, points, allEvents, memberEventIds, homeVenueResult, allVenues] = await Promise.all([
     fetchPlan(memberId, wixH),
@@ -413,7 +411,6 @@ exports.handler = async (event) => {
     supabase ? getHomeVenue(supabase, memberId, contactId, wixH) : { venue: null, source: "none" },
     supabase ? getAllVenues(supabase) : [],
   ]);
-  const t1 = Date.now();
 
   const homeVenue = homeVenueResult.venue;
 
@@ -449,8 +446,6 @@ exports.handler = async (event) => {
     });
   }
 
-  const t2 = Date.now();
-
   // Check which sessions the member is already booked on
   const bookedEventIds = new Set(bookings.map(b => b.eventId).filter(Boolean));
   sessions = sessions.map(s => ({
@@ -479,7 +474,6 @@ exports.handler = async (event) => {
     perks,
     yourTrips,
     events: tripsWorthALook,
-    _timing: { batch1: t1 - t0, batch2: t2 - t1, total: t2 - t0 },
   };
 
   // Cache
