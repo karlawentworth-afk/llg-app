@@ -443,6 +443,10 @@
           const price = DATA.memberPrice || "12.50";
 
           const bookUrl = buildBookingUrl(s);
+          const priceNum = parseFloat(price);
+          const ptsNeeded = Math.ceil(priceNum * 100);
+          const canUsePoints = DATA.plan.eligible && !full && !s.isBooked && DATA.points >= ptsNeeded && priceNum > 0;
+
           let action;
           if (s.isBooked) {
             action = `<div style="text-align:center"><span class="badge badge-booked">You're booked</span>
@@ -453,6 +457,9 @@
             action = `<span class="badge badge-full">Full</span>`;
           } else {
             action = `<a class="btn btn-sm" href="${bookUrl}" onclick="tapBookBtn(this)">Book</a>`;
+            if (canUsePoints) {
+              action += `<button class="more-btn" style="font-size:0.8rem;margin-top:0.3rem;white-space:nowrap" onclick="usePoints('${s.serviceId}','${s.startDate || ""}',${ptsNeeded},${priceNum},'${bookUrl}',this)">Use ${pts(ptsNeeded)} pts (£${priceNum.toFixed(2)})</button>`;
+            }
           }
 
           const descId = `d${selectedDay}${i}`;
@@ -623,6 +630,28 @@
     }
 
     function tapBookBtn(el) { el.textContent = "Opening booking..."; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("book_tapped"); }
+
+    async function usePoints(serviceId, sessionStart, ptsAmount, moneyAmount, bookUrl, el) {
+      el.textContent = "Setting up...";
+      el.style.opacity = "0.6";
+      el.style.pointerEvents = "none";
+      try {
+        const body = { pass: PASS, action: "set", serviceId, sessionStart, pointsAmount: ptsAmount, moneyAmount };
+        const res = await fetch("/.netlify/functions/redeem-points", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || "failed"); }
+        trackEvent("points_redemption_set");
+        window.location.href = bookUrl;
+      } catch (err) {
+        el.textContent = "Could not set up. Try again.";
+        el.style.opacity = "1";
+        el.style.pointerEvents = "auto";
+      }
+    }
     function tapWaitlist(el) { el.textContent = "Opening..."; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("waitlist_tapped"); }
     function tapNav(el, text) { if (text) el.textContent = text; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("trip_tapped"); }
 

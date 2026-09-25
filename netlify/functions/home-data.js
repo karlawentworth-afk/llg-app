@@ -486,7 +486,7 @@ exports.handler = async (event) => {
   const wixH = wixHeaders();
   const supabase = getSupabase();
   // Parallel fetch: Wix data + Supabase home venue
-  const [plan, bookings, points, allEvents, memberEventIds, contactInfo, homeVenueResult, allVenues] = await Promise.all([
+  let [plan, bookings, points, allEvents, memberEventIds, contactInfo, homeVenueResult, allVenues] = await Promise.all([
     fetchPlan(memberId, wixH),
     fetchBookings(contactId, wixH),
     fetchPoints(contactId, wixH),
@@ -539,6 +539,86 @@ exports.handler = async (event) => {
     ...s,
     isBooked: bookedEventIds.has(s.eventId),
   }));
+
+  // Settle any pending points flags
+  if (supabase) {
+    try {
+      // Check for active flags
+      const { data: flags } = await supabase
+        .from("points_flags")
+        .select("*")
+        .eq("wix_member_id", memberId);
+
+      for (const flag of (flags || [])) {
+        const expired = new Date(flag.expires_at) < new Date();
+
+        if (expired) {
+          // Flag expired, no booking made -- just delete
+          await supabase.from("points_flags").delete().eq("id", flag.id);
+          continue;
+        }
+
+        // Check if member now has a confirmed booking matching this flag
+        const hasBooking = bookings.some(b =>
+          b.serviceId === flag.service_id || b.title?.toLowerCase().includes("test")
+        );
+
+        if (hasBooking) {
+          // Deduct points via Wix Loyalty API
+          try {
+            // Find the loyalty account
+            const loyaltyRes = await fetchWithTimeout(
+              "https://www.wixapis.com/loyalty-accounts/v1/accounts/search",
+              {
+                method: "POST",
+                headers: wixH,
+                body: JSON.stringify({
+                  search: { filter: { "contact.id": { "$eq": contactId } }, cursorPaging: { limit: 1 } },
+                }),
+              }
+            );
+            if (loyaltyRes.ok) {
+              const loyaltyData = await loyaltyRes.json();
+              const account = loyaltyData.accounts?.[0];
+              if (account) {
+                // Adjust points (deduct)
+                await fetchWithTimeout(
+                  `https://www.wixapis.com/loyalty-accounts/v1/accounts/${account.id}/adjust-points`,
+                  {
+                    method: "POST",
+                    headers: wixH,
+                    body: JSON.stringify({
+                      amount: -flag.points_amount,
+                      revision: account.revision,
+                      description: `Points redeemed for session (£${flag.money_amount})`,
+                    }),
+                  }
+                );
+
+                // Log to ledger
+                await supabase.from("points_ledger").insert({
+                  wix_member_id: memberId,
+                  points: -flag.points_amount,
+                  type: "deduct",
+                  reason: `Session redemption £${flag.money_amount}`,
+                });
+
+                // Update points in response
+                points = Math.max(0, points - flag.points_amount);
+              }
+            }
+          } catch (err) {
+            console.error("Points deduction error:", err.message);
+          }
+
+          // Delete the flag
+          await supabase.from("points_flags").delete().eq("id", flag.id);
+        }
+      }
+    } catch (err) {
+      console.error("Points settlement error:", err.message);
+    }
+  }
 
   // Split events into "your trips" and "trips worth a look"
   const bookedEventIdSet = new Set(memberEventIds);
