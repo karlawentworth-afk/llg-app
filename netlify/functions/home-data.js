@@ -220,12 +220,16 @@ async function fetchVenueSessions(locationId, headers) {
       title: e.title || "Session",
       startDate: e.start?.localDate || null,
       endDate: e.end?.localDate || null,
+      startUtc: e.start?.utcDate || null,
+      endUtc: e.end?.utcDate || null,
+      timeZone: e.start?.timeZone || "Europe/London",
       totalCapacity: e.totalCapacity || 0,
       remainingCapacity: e.remainingCapacity || 0,
       locationName: e.location?.name || "",
       recurrenceType: e.recurrenceType || "NONE",
       scheduleId: e.scheduleId || "",
-      externalScheduleId: e.externalScheduleId || "",
+      serviceId: e.externalScheduleId || "",
+      resourceId: e.resources?.[0]?.id || "",
     }));
   } catch { return []; }
 }

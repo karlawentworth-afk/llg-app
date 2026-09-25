@@ -354,7 +354,7 @@
       const money = (DATA.points / 100).toFixed(2);
       el.innerHTML = `
         <div class="holding">
-          <h1>${greeting()}, ${esc(DATA.firstName)}.</h1>
+          <h1>${greeting()}, ${esc(DATA.firstName.split(" ")[0])}.</h1>
           <p class="subtitle">${planText}</p>
           <p style="margin-top:1rem;font-size:1.1rem"><strong>${Number(DATA.points).toLocaleString()} points</strong></p>
           <p class="small">Worth £${money}</p>
@@ -365,7 +365,7 @@
       let html = "";
 
       // 1. Greeting
-      html += `<h1>${greeting()}, ${esc(DATA.firstName)}.</h1>`;
+      html += `<h1>${greeting()}, ${esc(DATA.firstName.split(" ")[0])}.</h1>`;
       html += `<p class="subtitle">${formatDateLong(new Date())}</p>`;
       html += `<p style="margin:0.3rem 0 1rem;font-weight:600">Here's your golf week.</p>`;
 
@@ -498,7 +498,8 @@
           } else if (isFull) {
             actionHtml = `<span class="badge-full">Full (Waitlist)</span>`;
           } else {
-            actionHtml = `<a class="btn btn-sm" href="https://www.ladieslovegolf.com/bookings" target="_top">Book</a>`;
+            const bookUrl = buildBookingUrl(s);
+            actionHtml = `<a class="btn btn-sm" href="${bookUrl}">Book</a>`;
           }
 
           html += `<div class="session-row">
@@ -638,6 +639,18 @@
 
     function formatDateLong(d) {
       return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+    }
+
+    // Build Wix booking form deep link for a specific session
+    // From docs: Wix tutorial "Build a Custom Booking Calendar Page"
+    function buildBookingUrl(session) {
+      const params = new URLSearchParams();
+      if (session.serviceId) params.set("bookings_serviceId", session.serviceId);
+      if (session.resourceId) params.set("bookings_resourceId", session.resourceId);
+      if (session.startDate) params.set("bookings_startDate", session.startDate);
+      if (session.endDate) params.set("bookings_endDate", session.endDate);
+      params.set("bookings_timezone", session.timeZone || "Europe/London");
+      return "https://www.ladieslovegolf.com/booking-form?" + params.toString();
     }
 
     function formatTime(d) {
