@@ -147,14 +147,14 @@ async function handleSessions(supabase, body, headers) {
 }
 
 async function handleSearchTopics(supabase, body, headers) {
-  const { query, category } = body;
+  const { query, category, venueId } = body;
 
   let q = supabase
     .from("topic_library")
     .select("id, title, description, category")
     .eq("active", true)
     .order("title")
-    .limit(50);
+    .limit(30);
 
   if (query && query.trim().length > 0) {
     q = q.ilike("title", `%${query.trim()}%`);
@@ -168,7 +168,27 @@ async function handleSearchTopics(supabase, body, headers) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: "search_failed", detail: error.message }) };
   }
 
-  return { statusCode: 200, headers, body: JSON.stringify({ topics: data || [] }) };
+  // Batch fetch last-used dates for all results at this venue
+  const topics = data || [];
+  if (topics.length > 0 && venueId) {
+    const titles = topics.map(t => t.title);
+    const { data: usages } = await supabase
+      .from("session_topics")
+      .select("title, start_utc")
+      .eq("venue_id", venueId)
+      .in("title", titles)
+      .order("start_utc", { ascending: false });
+
+    // Map: title -> most recent start_utc
+    const lastUsedMap = {};
+    (usages || []).forEach(u => {
+      if (!lastUsedMap[u.title]) lastUsedMap[u.title] = u.start_utc;
+    });
+
+    topics.forEach(t => { t.lastUsed = lastUsedMap[t.title] || null; });
+  }
+
+  return { statusCode: 200, headers, body: JSON.stringify({ topics }) };
 }
 
 async function handleSaveTopic(supabase, body, headers) {

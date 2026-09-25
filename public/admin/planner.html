@@ -294,8 +294,10 @@
     searchTimer = setTimeout(async () => {
       try {
         const venueId = document.getElementById("venueSelect").value;
-        const data = await api({ action: "searchTopics", query });
         const resultsEl = document.getElementById("results-" + idx);
+        resultsEl.innerHTML = '<div style="padding:0.75rem;color:#999">Searching...</div>';
+
+        const data = await api({ action: "searchTopics", query, venueId });
 
         if (data.topics.length === 0) {
           resultsEl.innerHTML = '<div style="padding:1rem;color:#999">No topics found</div>';
@@ -304,15 +306,11 @@
 
         let html = "";
         for (const t of data.topics) {
-          // Fetch last used at this venue
           let lastUsedText = "";
-          try {
-            const lu = await api({ action: "lastUsed", topicTitle: t.title, venueId });
-            if (lu.lastUsed) {
-              const d = new Date(lu.lastUsed);
-              lastUsedText = "Last run: " + d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-            }
-          } catch {}
+          if (t.lastUsed) {
+            const d = new Date(t.lastUsed);
+            lastUsedText = "Last run: " + d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+          }
 
           html += `<div class="picker-item" onclick="pickTopic(${idx}, '${escAttr(t.title)}', '${escAttr(t.description || "")}')">
             <div class="picker-item-title">${esc(t.title)}</div>
@@ -324,7 +322,7 @@
       } catch (err) {
         document.getElementById("results-" + idx).innerHTML = '<div style="padding:1rem;color:#c62828">' + esc(err.message) + '</div>';
       }
-    }, 300);
+    }, 200);
   }
 
   async function pickTopic(idx, title, description) {
