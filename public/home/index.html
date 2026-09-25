@@ -19,7 +19,8 @@
       --radius: 18px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    html { height: 100%; }
+    body { height: 100%; overflow: hidden; }
     body {
       font-family: 'Mulish', 'Segoe UI', sans-serif;
       background: var(--bg);
@@ -28,7 +29,14 @@
       line-height: 1.5;
       padding: 0;
     }
-    .container { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 3rem;
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
 
     /* Typography */
     h1, h2, h3 { font-family: 'Poppins', 'Segoe UI', sans-serif; }
