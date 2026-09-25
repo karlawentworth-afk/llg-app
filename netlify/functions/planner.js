@@ -38,9 +38,8 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "method_not_allowed" }) };
 
   const password = event.headers["x-admin-password"];
-  const envPwd = process.env.ADMIN_PASSWORD;
-  if (!envPwd || password !== envPwd) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: "unauthorized", hasEnv: !!envPwd, hasHeader: !!password }) };
+  if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: "unauthorized" }) };
   }
 
   const supabase = getSupabase();
