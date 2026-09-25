@@ -98,25 +98,68 @@ function wixHeaders() {
 
 async function fetchPlan(memberId, headers) {
   try {
-    const res = await fetchWithTimeout(
+    // Check active plans first
+    const activeRes = await fetchWithTimeout(
       `https://www.wixapis.com/pricing-plans/v2/orders?buyerIds=${encodeURIComponent(memberId)}&orderStatuses=ACTIVE&limit=5`,
       { method: "GET", headers }
     );
-    if (!res.ok) return { name: null, status: "none" };
-    const data = await res.json();
-    if (!data.orders?.length) return { name: null, status: "none" };
-    const active = data.orders.find(o => o.status === "ACTIVE") || data.orders[0];
-    const isEligible = ELIGIBLE_PLAN_IDS.includes(active.planId);
-    return {
-      name: active.planName || "Unknown Plan",
-      status: (active.status || "unknown").toLowerCase(),
-      planId: active.planId,
-      eligible: isEligible,
-      startDate: active.startDate || null,
-      endDate: active.endDate || null,
-      autoRenewing: active.autoRenewCanceled === false,
-    };
-  } catch { return { name: null, status: "none" }; }
+    if (activeRes.ok) {
+      const activeData = await activeRes.json();
+      if (activeData.orders?.length > 0) {
+        const active = activeData.orders.find(o => o.status === "ACTIVE") || activeData.orders[0];
+        const isEligible = ELIGIBLE_PLAN_IDS.includes(active.planId);
+        const planKey = active.planId === ELIGIBLE_PLAN_IDS[0] ? "physical"
+          : active.planId === ELIGIBLE_PLAN_IDS[1] ? "complete"
+          : active.planId === "8324fc1b-c344-454c-af4d-eed9639b7222" ? "digital"
+          : "other";
+        return {
+          name: active.planName || "Unknown Plan",
+          status: "active",
+          planId: active.planId,
+          planKey,
+          eligible: isEligible,
+          memberType: planKey,
+          startDate: active.startDate || null,
+          endDate: active.endDate || null,
+          autoRenewing: active.autoRenewCanceled === false,
+        };
+      }
+    }
+
+    // No active plan -- check for lapsed (ENDED or CANCELED)
+    const allRes = await fetchWithTimeout(
+      `https://www.wixapis.com/pricing-plans/v2/orders?buyerIds=${encodeURIComponent(memberId)}&limit=10`,
+      { method: "GET", headers }
+    );
+    if (allRes.ok) {
+      const allData = await allRes.json();
+      const past = (allData.orders || []).filter(o =>
+        o.status === "ENDED" || o.status === "CANCELED"
+      );
+      if (past.length > 0) {
+        // Most recent lapsed plan
+        const last = past[0];
+        const planKey = last.planId === ELIGIBLE_PLAN_IDS[0] ? "physical"
+          : last.planId === ELIGIBLE_PLAN_IDS[1] ? "complete"
+          : last.planId === "8324fc1b-c344-454c-af4d-eed9639b7222" ? "digital"
+          : "other";
+        return {
+          name: last.planName || "Unknown Plan",
+          status: "lapsed",
+          planId: last.planId,
+          planKey,
+          eligible: false,
+          memberType: `lapsed_${planKey}`,
+          startDate: last.startDate || null,
+          endDate: last.endDate || null,
+          autoRenewing: false,
+        };
+      }
+    }
+
+    // No plans at all
+    return { name: null, status: "none", planId: null, planKey: null, eligible: false, memberType: "non_member", startDate: null, endDate: null, autoRenewing: false };
+  } catch { return { name: null, status: "none", planId: null, planKey: null, eligible: false, memberType: "non_member", startDate: null, endDate: null, autoRenewing: false }; }
 }
 
 async function fetchBookings(contactId, headers) {
@@ -490,9 +533,16 @@ exports.handler = async (event) => {
   const MEMBER_DISCOUNT = 7.50;
   const memberPrice = servicePrice ? (servicePrice - MEMBER_DISCOUNT).toFixed(2) : null;
 
+  const planCheckoutUrls = {
+    digital: "https://www.ladieslovegolf.com/plans-pricing/digital-membership-1",
+    physical: "https://www.ladieslovegolf.com/plans-pricing/physical-membership",
+    complete: "https://www.ladieslovegolf.com/plans-pricing/complete-membership-1",
+  };
+
   const data = {
     firstName: firstName || "Member",
     plan,
+    memberType: plan.memberType || "non_member",
     bookings,
     points,
     homeVenue: homeVenue ? { id: homeVenue.id, name: homeVenue.name, town: homeVenue.town } : null,
@@ -504,6 +554,12 @@ exports.handler = async (event) => {
     events: tripsWorthALook,
     servicePrice,
     memberPrice,
+    planCheckoutUrls,
+    planPrices: {
+      digital: "£8.99/month",
+      physical: "£149/year",
+      complete: "£199/year",
+    },
   };
 
   // Cache

@@ -1,0 +1,121 @@
+{
+  "_doc": "Home screen card order per member type. Cards are shown in this order. Set visible: false to hide.",
+  "memberTypes": ["non_member", "lapsed_digital", "lapsed_physical", "lapsed_complete", "digital", "physical", "complete"],
+  "cards": [
+    {
+      "id": "trip_banner",
+      "label": "Imminent trip banner (within 14 days)",
+      "visible": { "physical": true, "complete": true, "digital": true, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false, "non_member": false }
+    },
+    {
+      "id": "welcome",
+      "label": "Welcome and how would you like to golf",
+      "visible": { "non_member": true, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false, "digital": false, "physical": false, "complete": false }
+    },
+    {
+      "id": "lapsed_greeting",
+      "label": "We've missed you greeting",
+      "visible": { "lapsed_physical": true, "lapsed_complete": true, "lapsed_digital": true, "non_member": false, "digital": false, "physical": false, "complete": false }
+    },
+    {
+      "id": "greeting",
+      "label": "Good morning greeting with date",
+      "visible": { "physical": true, "complete": true, "digital": true, "non_member": false, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false }
+    },
+    {
+      "id": "weekly_tip",
+      "label": "This week's video tip (Digital)",
+      "visible": { "digital": true, "complete": false, "physical": false, "non_member": false, "lapsed_digital": false, "lapsed_physical": false, "lapsed_complete": false }
+    },
+    {
+      "id": "tiles",
+      "label": "Points and membership tiles",
+      "visible": { "physical": true, "complete": true, "digital": true, "non_member": false, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false }
+    },
+    {
+      "id": "programme",
+      "label": "Your programme (Complete only)",
+      "visible": { "complete": true, "physical": false, "digital": false, "non_member": false, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false }
+    },
+    {
+      "id": "book_sessions",
+      "label": "Book at venue with day strip",
+      "visible": { "physical": true, "complete": true, "digital": false, "non_member": false, "lapsed_physical": true, "lapsed_complete": true, "lapsed_digital": false }
+    },
+    {
+      "id": "your_trips",
+      "label": "Your booked trips",
+      "visible": { "physical": true, "complete": true, "digital": true, "non_member": false, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false }
+    },
+    {
+      "id": "perks",
+      "label": "Your venue perks",
+      "visible": { "physical": true, "complete": true, "digital": false, "non_member": false, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false }
+    },
+    {
+      "id": "community",
+      "label": "Community chat link (Digital)",
+      "visible": { "digital": true, "complete": false, "physical": false, "non_member": false, "lapsed_digital": false, "lapsed_physical": false, "lapsed_complete": false }
+    },
+    {
+      "id": "golf_trip_planner",
+      "label": "Planning your own golf trip?",
+      "visible": { "physical": true, "complete": true, "digital": false, "non_member": false, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false }
+    },
+    {
+      "id": "swing_analysis",
+      "label": "Send us your swing",
+      "visible": { "physical": true, "complete": true, "digital": true, "non_member": false, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false }
+    },
+    {
+      "id": "upgrade",
+      "label": "Upgrade to Complete (Physical only)",
+      "visible": { "physical": true, "complete": false, "digital": false, "non_member": false, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false }
+    },
+    {
+      "id": "try_venue",
+      "label": "Fancy meeting the group? (Digital only)",
+      "visible": { "digital": true, "complete": false, "physical": false, "non_member": false, "lapsed_digital": false, "lapsed_physical": false, "lapsed_complete": false }
+    },
+    {
+      "id": "free_videos",
+      "label": "Free videos",
+      "visible": { "non_member": true, "lapsed_digital": true, "lapsed_physical": false, "lapsed_complete": false, "digital": false, "physical": false, "complete": false }
+    },
+    {
+      "id": "testimonials",
+      "label": "Member testimonials",
+      "visible": { "non_member": true, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false, "digital": false, "physical": false, "complete": false }
+    },
+    {
+      "id": "trips_worth_a_look",
+      "label": "Trips worth a look",
+      "visible": { "physical": true, "complete": true, "digital": true, "non_member": true, "lapsed_physical": true, "lapsed_complete": true, "lapsed_digital": true }
+    },
+    {
+      "id": "rejoin",
+      "label": "Rejoin card (lapsed only)",
+      "visible": { "lapsed_physical": true, "lapsed_complete": true, "lapsed_digital": true, "non_member": false, "digital": false, "physical": false, "complete": false }
+    },
+    {
+      "id": "join",
+      "label": "Join card (non-members only)",
+      "visible": { "non_member": true, "lapsed_physical": false, "lapsed_complete": false, "lapsed_digital": false, "digital": false, "physical": false, "complete": false }
+    },
+    {
+      "id": "savings_nudge",
+      "label": "You'd have saved as a member (after 3 bookings)",
+      "visible": { "non_member": true, "lapsed_physical": true, "lapsed_complete": true, "lapsed_digital": false, "digital": false, "physical": false, "complete": false }
+    },
+    {
+      "id": "ask_us",
+      "label": "Ask us anything (LLG Assistant)",
+      "visible": { "physical": true, "complete": true, "digital": true, "non_member": true, "lapsed_physical": true, "lapsed_complete": true, "lapsed_digital": true }
+    },
+    {
+      "id": "feedback",
+      "label": "Something not right? Tell us",
+      "visible": { "physical": true, "complete": true, "digital": true, "non_member": true, "lapsed_physical": true, "lapsed_complete": true, "lapsed_digital": true }
+    }
+  ]
+}
