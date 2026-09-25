@@ -5,6 +5,9 @@ const TIMEOUT_MS = 9000;
 const CACHE_TTL_MS = 60_000;
 const cache = new Map();
 
+const SESSION_TTL_SECS = 7 * 24 * 60 * 60; // 7 days
+const COOKIE_NAME = "llg_session";
+
 const ELIGIBLE_PLAN_IDS = [
   "530c7704-3e17-4f8f-bc5a-5ceec84ae16c", // Physical
   "00478766-f484-40f0-9d4a-1fb329b54da5", // Complete
@@ -35,6 +38,35 @@ function verifyPass(pass, secret) {
   if (!payload.exp || now > payload.exp) return { error: "pass_expired" };
   if (!payload.memberId || !payload.contactId) return { error: "incomplete_pass" };
   return { payload };
+}
+
+// --- Session cookie ---
+
+function makeSessionToken(payload, secret) {
+  const sessionPayload = {
+    memberId: payload.memberId,
+    contactId: payload.contactId,
+    firstName: payload.firstName,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECS,
+  };
+  const payloadB64 = base64urlEncode(Buffer.from(JSON.stringify(sessionPayload), "utf8"));
+  const sig = base64urlEncode(crypto.createHmac("sha256", secret).update(payloadB64).digest());
+  return payloadB64 + "." + sig;
+}
+
+function parseCookies(cookieHeader) {
+  const cookies = {};
+  if (!cookieHeader) return cookies;
+  cookieHeader.split(";").forEach(c => {
+    const [k, ...v] = c.trim().split("=");
+    if (k) cookies[k.trim()] = v.join("=").trim();
+  });
+  return cookies;
+}
+
+function sessionCookieHeader(token) {
+  return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL_SECS}`;
 }
 
 // --- Fetch helpers ---
@@ -310,18 +342,37 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: "server_config" }) };
   }
 
-  let pass;
-  try { pass = JSON.parse(event.body).pass; } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "bad_request" }) }; }
+  // Try pass from body first, then session cookie
+  let pass = null;
+  let setCookie = null;
+  try { pass = JSON.parse(event.body).pass; } catch {}
 
-  const result = verifyPass(pass, secret);
-  if (result.error) return { statusCode: 401, headers, body: JSON.stringify({ error: result.error }) };
+  let payload;
 
-  const { memberId, contactId, firstName } = result.payload;
+  if (pass) {
+    const result = verifyPass(pass, secret);
+    if (result.error) return { statusCode: 401, headers, body: JSON.stringify({ error: result.error }) };
+    payload = result.payload;
+    // Issue a session cookie so she's remembered
+    setCookie = sessionCookieHeader(makeSessionToken(payload, secret));
+  } else {
+    // Check session cookie
+    const cookies = parseCookies(event.headers.cookie || event.headers.Cookie || "");
+    const token = cookies[COOKIE_NAME];
+    if (!token) return { statusCode: 401, headers, body: JSON.stringify({ error: "no_session" }) };
+    const result = verifyPass(token, secret);
+    if (result.error) return { statusCode: 401, headers, body: JSON.stringify({ error: result.error }) };
+    payload = result.payload;
+  }
+
+  const { memberId, contactId, firstName } = payload;
 
   // Check cache
   const cached = cache.get(memberId);
   if (cached && Date.now() < cached.expires) {
-    return { statusCode: 200, headers, body: JSON.stringify(cached.data) };
+    const respHeaders = { ...headers };
+    if (setCookie) respHeaders["Set-Cookie"] = setCookie;
+    return { statusCode: 200, headers: respHeaders, body: JSON.stringify(cached.data) };
   }
 
   const wixH = wixHeaders();
@@ -394,5 +445,8 @@ exports.handler = async (event) => {
   // Cache
   cache.set(memberId, { data, expires: Date.now() + CACHE_TTL_MS });
 
-  return { statusCode: 200, headers, body: JSON.stringify(data) };
+  const respHeaders = { ...headers };
+  if (setCookie) respHeaders["Set-Cookie"] = setCookie;
+
+  return { statusCode: 200, headers: respHeaders, body: JSON.stringify(data) };
 };

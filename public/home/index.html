@@ -287,19 +287,27 @@
     let selectedDay = 0;
 
     (async function () {
+      // Read pass from hash if present
       const hash = window.location.hash.slice(1);
       const params = new URLSearchParams(hash);
-      PASS = params.get("p");
+      PASS = params.get("p") || null;
 
-      if (!PASS) { showError("No pass provided. Please access this page from the LLG website."); return; }
+      // Clear hash from address bar (no identifying data in URL)
+      if (PASS && window.history.replaceState) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
 
       try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 9000);
+
+        // Send pass if we have one; otherwise rely on session cookie
+        const fetchBody = PASS ? { pass: PASS } : {};
         const res = await fetch("/.netlify/functions/home-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pass: PASS }),
+          credentials: "same-origin",
+          body: JSON.stringify(fetchBody),
           signal: controller.signal,
         });
         clearTimeout(timer);
@@ -309,6 +317,7 @@
           const msgs = {
             invalid_signature: "Access denied.",
             pass_expired: "Your session has expired. Please reload the page on the LLG website.",
+            no_session: "Please open this page from the LLG app.",
             server_config: "Server configuration error. Please contact LLG.",
           };
           showError(msgs[err.error] || "Something went wrong. Please try again.");
@@ -544,6 +553,7 @@
         await fetch("/.netlify/functions/set-home-venue", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
           body: JSON.stringify({ pass: PASS, venueId }),
         });
       } catch {}
@@ -553,10 +563,12 @@
       document.getElementById("skeleton").style.display = "block";
 
       try {
+        const fetchBody = PASS ? { pass: PASS } : {};
         const res = await fetch("/.netlify/functions/home-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pass: PASS }),
+          credentials: "same-origin",
+          body: JSON.stringify(fetchBody),
         });
         if (res.ok) {
           DATA = await res.json();
