@@ -351,6 +351,16 @@
         h += `</div>`;
       }
 
+      // Golf trip planner card
+      if (DATA.plan.eligible) {
+        const tripFormUrl = `/home/golf-trip.html#name=${encodeURIComponent(DATA.fullName || "")}&email=${encodeURIComponent(DATA.email || "")}&phone=${encodeURIComponent(DATA.phone || "")}`;
+        h += `<div class="card" style="margin-top:0.75rem">
+          <h2 style="font-size:1.05rem;margin-bottom:0.4rem">Planning your own golf trip?</h2>
+          <p class="small" style="margin-bottom:0.75rem">Every golf trip you book through us earns money off coaching. A £1,500 break earns £15, that's a session on us.</p>
+          <a class="btn btn-sm" href="${tripFormUrl}" onclick="tapNav(this,'Opening...')" style="display:inline-flex;text-decoration:none">Get a quote from Golf Breaks</a>
+        </div>`;
+      }
+
       // Feedback
       h += `<div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">
         <button class="more-btn" style="margin:0 auto;color:var(--muted);font-weight:400" onclick="openFeedback()">Something not right? Tell us</button>
