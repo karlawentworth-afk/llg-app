@@ -343,7 +343,7 @@
               <div class="trip-card-title">${esc(e.title)}</div>
               <div class="trip-card-meta">${e.startDate ? fmtLong(new Date(e.startDate)) : ""}</div>
               <div class="trip-card-meta">${esc(e.location)}</div>
-              ${e.price ? `<div class="trip-card-price">${esc(e.price)}</div>` : ""}
+              ${e.price ? `<div class="trip-card-price">${esc(e.price)} to secure your place</div>` : ""}
               <div class="trip-card-view mg">View ›</div>
             </div>
           </div>`;
@@ -579,7 +579,7 @@
 
       // Book bar
       h += `<div class="trip-bar">
-        ${trip.price ? `<div class="trip-bar-price">${esc(trip.price)}</div>` : `<div></div>`}
+        ${trip.price ? `<div class="trip-bar-price">${esc(trip.price)} to secure your place</div>` : `<div></div>`}
         <a class="btn" href="${ticketUrl}" onclick="tapNav(this,'Opening tickets...')">Book your place</a>
       </div>`;
 
