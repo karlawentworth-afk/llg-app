@@ -40,6 +40,38 @@ export const listTriggers = async () => {
 
 export const getEligibleTriggers = async (options, context) => {
   const memberId = context?.identity?.memberId;
+
+  // Fire-and-forget debug beacon (1s timeout, never blocks checkout)
+  try {
+    const triggerIds = (options.triggers || []).map(
+      (tr) => tr.customTrigger?._id || "unknown"
+    );
+    const pointsFound = triggerIds.includes(TRIGGER_POINTS);
+    const debugSecret = await getSecret("LLG_SPI_SECRET").catch(() => null);
+    if (debugSecret) {
+      Promise.race([
+        fetch(
+          "https://llg-app-test.netlify.app/.netlify/functions/spi-debug",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-SPI-Secret": debugSecret,
+            },
+            body: JSON.stringify({
+              step: "getEligibleTriggers",
+              hasMemberId: !!memberId,
+              triggerIds,
+              pointsTriggerFound: pointsFound,
+              triggerCount: triggerIds.length,
+            }),
+          }
+        ),
+        timeout(1000),
+      ]).catch(() => {});
+    }
+  } catch (e) {}
+
   if (!memberId) return { eligibleTriggers: [] };
 
   const eligible = [];
