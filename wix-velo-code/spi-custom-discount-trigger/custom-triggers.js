@@ -30,7 +30,6 @@ function timeout(ms) {
 }
 
 export const listTriggers = async () => {
-  console.log("SPI listTriggers called");
   return {
     customTriggers: [
       { _id: TRIGGER_MEMBER, name: "LLG Member Coaching Discount" },
@@ -41,9 +40,6 @@ export const listTriggers = async () => {
 
 export const getEligibleTriggers = async (options, context) => {
   const memberId = context?.identity?.memberId;
-  console.log("SPI getEligibleTriggers called, hasMemberId:", !!memberId);
-  console.log("SPI triggers count:", (options.triggers || []).length);
-  console.log("SPI lineItems count:", (options.lineItems || []).length);
   if (!memberId) return { eligibleTriggers: [] };
 
   const eligible = [];
@@ -61,7 +57,6 @@ export const getEligibleTriggers = async (options, context) => {
       ELIGIBLE_PLAN_IDS.includes(order.planId)
     );
 
-    console.log("SPI member discount: hasEligiblePlan =", hasEligiblePlan);
     if (hasEligiblePlan) {
       const t = (options.triggers || []).find(
         (tr) => tr.customTrigger?._id === TRIGGER_MEMBER
@@ -83,24 +78,15 @@ export const getEligibleTriggers = async (options, context) => {
       (tr) => tr.customTrigger?._id === TRIGGER_POINTS
     );
 
-    console.log("SPI points trigger found in options:", !!pointsTrigger);
     if (pointsTrigger) {
       let spiSecret;
       try {
         spiSecret = await getSecret("LLG_SPI_SECRET");
-        console.log("SPI secret loaded:", !!spiSecret);
       } catch (err) {
         console.error("SPI secret error:", err.message || err);
       }
 
       if (spiSecret) {
-        // Extract service IDs from line items so check-points-flag
-        // only matches when the flagged session is in the basket
-        const lineItemServiceIds = (options.lineItems || [])
-          .map((li) => li.catalogReference?.catalogItemId)
-          .filter(Boolean);
-        console.log("SPI lineItemServiceIds:", JSON.stringify(lineItemServiceIds));
-
         try {
           const res = await Promise.race([
             fetch(
@@ -111,16 +97,14 @@ export const getEligibleTriggers = async (options, context) => {
                   "Content-Type": "application/json",
                   "X-SPI-Secret": spiSecret,
                 },
-                body: JSON.stringify({ memberId, lineItemServiceIds }),
+                body: JSON.stringify({ memberId }),
               }
             ),
             timeout(2000),
           ]);
 
-          console.log("SPI check-points-flag status:", res.status);
           if (res.ok) {
             const data = await res.json();
-            console.log("SPI flag result: hasFlag =", data.hasFlag);
             if (data.hasFlag) {
               eligible.push({
                 customTriggerId: pointsTrigger.customTrigger._id,
@@ -137,6 +121,5 @@ export const getEligibleTriggers = async (options, context) => {
     console.error("SPI points trigger error:", err.message || err);
   }
 
-  console.log("SPI returning eligible count:", eligible.length);
   return { eligibleTriggers: eligible };
 };
