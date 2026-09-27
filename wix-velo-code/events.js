@@ -15,13 +15,11 @@
 
 import { getSecret } from "wix-secrets-backend";
 import { fetch } from "wix-fetch";
-import { members } from "wix-members-backend";
 
 const SETTLE_URL =
   "https://llg-app-test.netlify.app/.netlify/functions/settle-points";
 
 export async function wixBookingsV2_onBookingConfirmed(event) {
-  // The booking entity from Wix V2
   const booking = event.data?.booking;
   if (!booking) {
     console.error("events.js: no booking in event");
@@ -42,22 +40,6 @@ export async function wixBookingsV2_onBookingConfirmed(event) {
     return;
   }
 
-  // Look up the memberId from the contactId
-  let memberId = null;
-  try {
-    const member = await members.getMember(contactId, {
-      fieldsets: ["PUBLIC"],
-    });
-    memberId = member?._id || null;
-  } catch (err) {
-    console.error("events.js: member lookup failed", err.message);
-  }
-
-  if (!memberId) {
-    // Not a member, no points to settle
-    return;
-  }
-
   let spiSecret;
   try {
     spiSecret = await getSecret("LLG_SPI_SECRET");
@@ -74,7 +56,6 @@ export async function wixBookingsV2_onBookingConfirmed(event) {
         "X-SPI-Secret": spiSecret,
       },
       body: JSON.stringify({
-        memberId,
         bookingId,
         serviceId,
         sessionStart,

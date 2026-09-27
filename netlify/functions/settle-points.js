@@ -47,9 +47,12 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "bad_request" }) }; }
 
-  const { memberId, bookingId, serviceId, sessionStart, contactId } = body;
-  if (!memberId || !bookingId) {
+  let { memberId, bookingId, serviceId, sessionStart, contactId } = body;
+  if (!bookingId) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "missing_fields" }) };
+  }
+  if (!memberId && !contactId) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "missing_member_or_contact" }) };
   }
 
   const sbUrl = process.env.SUPABASE_URL;
@@ -58,6 +61,35 @@ exports.handler = async (event) => {
   const supabase = createClient(sbUrl, sbKey);
 
   try {
+    // 0. Resolve memberId from contactId if needed (via Wix Members API)
+    if (!memberId && contactId) {
+      const wixH = {
+        Authorization: process.env.WIX_API_KEY,
+        "wix-site-id": process.env.WIX_SITE_ID,
+        "Content-Type": "application/json",
+      };
+      if (process.env.WIX_ACCOUNT_ID) wixH["wix-account-id"] = process.env.WIX_ACCOUNT_ID;
+
+      const memberRes = await fetchWithTimeout(
+        "https://www.wixapis.com/members/v1/members/query",
+        {
+          method: "POST",
+          headers: wixH,
+          body: JSON.stringify({
+            query: { filter: { contactId: { $eq: contactId } }, paging: { limit: 1 } },
+          }),
+        }
+      );
+      if (memberRes.ok) {
+        const memberData = await memberRes.json();
+        memberId = memberData.members?.[0]?.id || null;
+      }
+    }
+
+    if (!memberId) {
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ settled: false, reason: "no_member" }) };
+    }
+
     // 1. Already settled? (idempotent check)
     const { data: existing } = await supabase
       .from("points_ledger")
