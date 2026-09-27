@@ -293,12 +293,11 @@
       });
       if (imminent) {
         var cd = countdown(imminent);
-        var url = tripUrl(imminent);
-        h += '<a class="trip-banner" href="' + url + '" onclick="tapNav(this)">' +
+        h += '<div class="trip-banner" onclick="showScreen(\'trip\',' + JSON.stringify(imminent).replace(/'/g,"&#39;") + ')">' +
           '<div><div style="font-weight:700;font-size:0.95rem">' + esc(imminent.title) + '</div>' +
           '<div style="font-size:0.8rem;opacity:0.8">' + esc(imminent.location) + '</div></div>' +
           '<span style="background:rgba(255,255,255,0.2);padding:0.3rem 0.7rem;border-radius:20px;font-size:0.8rem;font-weight:700;white-space:nowrap">' + cd + '</span>' +
-        '</a>';
+        '</div>';
       }
 
       // Greeting
@@ -364,8 +363,7 @@
         h += '<h2 style="font-size:1.1rem;margin:0.75rem 0 0.5rem">Your trips</h2>';
         otherTrips.forEach(function(t) {
           var cd = countdown(t);
-          var url = tripUrl(t);
-          h += '<div class="your-trip" onclick="tapNav(this);window.location.href=\'' + url + '\'">' +
+          h += '<div class="your-trip" onclick="showScreen(\'trip\',' + JSON.stringify(t).replace(/'/g,"&#39;") + ')">' +
             '<div><span style="font-weight:600;font-size:0.95rem">' + esc(t.title) + '</span>' +
             '<span class="small" style="margin-left:0.3rem">' + (t.startDate ? fmtShort(new Date(t.startDate)) : "") + '</span></div>' +
             '<span class="mg" style="font-size:0.85rem;white-space:nowrap">' + cd + '</span>' +
@@ -601,31 +599,75 @@
     function renderTrip(trip) {
       var el = document.getElementById("tripScreen");
       var ticketUrl = "https://www.ladieslovegolf.com/event-details/" + trip.slug;
+      var portalUrl = "https://llggolfschool.netlify.app/llg/trip-portal.html";
+      var booked = trip.isBooked === true;
+      var cd = countdown(trip);
 
       var h = '<div class="trip-hero-wrap">' +
         (trip.imageUrl ? '<img class="trip-hero" src="' + esc(trip.imageUrl) + '" alt="">' : '<div class="trip-hero" style="background:#e0ddd8"></div>') +
         '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>' +
       '</div>';
 
-      h += '<div class="small" style="text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:0.3rem">Trip</div>';
-      h += '<h1 style="font-size:1.3rem;margin-bottom:0.5rem">' + esc(trip.title) + '</h1>';
-      h += '<p class="small">' + esc(trip.location) + '</p>';
+      h += '<h1 style="font-size:1.3rem;margin-bottom:0.3rem">' + esc(trip.title) + '</h1>';
 
-      h += '<div class="chip-row">';
-      if (trip.startDate) h += '<span class="chip">' + fmtLong(new Date(trip.startDate)) + '</span>';
-      if (trip.endDate && trip.endDate !== trip.startDate) h += '<span class="chip">to ' + fmtLong(new Date(trip.endDate)) + '</span>';
-      h += '</div>';
+      // Dates and location
+      var dateStr = "";
+      if (trip.startDate) dateStr = fmtLong(new Date(trip.startDate));
+      if (trip.endDate && trip.endDate !== trip.startDate) dateStr += " to " + fmtLong(new Date(trip.endDate));
+      if (dateStr) h += '<p class="small" style="margin-bottom:0.15rem">' + dateStr + '</p>';
+      if (trip.location) h += '<p class="small">' + esc(trip.location) + '</p>';
 
-      if (trip.shortDescription) {
-        h += '<p style="margin:0.75rem 0;font-size:0.95rem">' + esc(trip.shortDescription) + '</p>';
+      // Booked state
+      if (booked) {
+        h += '<div style="margin:1rem 0;display:flex;align-items:center;gap:0.5rem">' +
+          '<span class="badge badge-booked" style="font-size:0.9rem;padding:0.5rem 1rem">You\'re booked</span>' +
+          (cd ? '<span class="mg" style="font-size:0.9rem">' + cd + '</span>' : '') +
+        '</div>';
       }
 
-      h += '<div class="trip-bar">' +
-        (trip.price ? '<div class="trip-bar-price">' + esc(trip.price) + ' to secure your place</div>' : '<div></div>') +
-        '<a class="btn" href="' + ticketUrl + '" onclick="tapNav(this,\'Opening tickets...\')">Book your place</a>' +
-      '</div>';
+      // Description (cleaned up from Wix HTML)
+      if (trip.shortDescription) {
+        h += '<div style="margin:1rem 0;font-size:1rem;line-height:1.6">' + cleanDescription(trip.shortDescription) + '</div>';
+      }
+
+      // Bottom bar
+      if (booked) {
+        h += '<a class="btn btn-dark" href="' + portalUrl + '" onclick="tapNav(this,\'Opening...\')" style="width:100%;margin-top:0.5rem">Open your trip portal</a>';
+      } else if (trip.soldOut) {
+        h += '<div class="trip-bar" style="justify-content:center">' +
+          '<span style="font-size:1rem;font-weight:600;opacity:0.7">Fully booked</span>' +
+        '</div>';
+      } else {
+        h += '<div class="trip-bar">' +
+          (trip.price ? '<div class="trip-bar-price">' + esc(trip.price) + ' to secure your place</div>' : '<div></div>') +
+          '<a class="btn" href="' + ticketUrl + '" onclick="tapNav(this,\'Opening...\')">Secure your place</a>' +
+        '</div>';
+      }
 
       el.innerHTML = h;
+    }
+
+    function cleanDescription(html) {
+      // Strip Wix formatting, keep paragraphs and bullet lists
+      var div = document.createElement("div");
+      div.innerHTML = html;
+      // Remove all style attributes
+      div.querySelectorAll("[style]").forEach(function(el) { el.removeAttribute("style"); });
+      // Remove all class attributes
+      div.querySelectorAll("[class]").forEach(function(el) { el.removeAttribute("class"); });
+      // Remove font, span (unwrap), and other formatting tags
+      ["font","span","b","strong","i","em","u"].forEach(function(tag) {
+        div.querySelectorAll(tag).forEach(function(el) {
+          var parent = el.parentNode;
+          while (el.firstChild) parent.insertBefore(el.firstChild, el);
+          parent.removeChild(el);
+        });
+      });
+      // Clean up: collapse empty paragraphs
+      div.querySelectorAll("p").forEach(function(p) {
+        if (!p.textContent.trim() && !p.querySelector("img,br")) p.remove();
+      });
+      return div.innerHTML;
     }
 
     // --- UTILITIES ---
