@@ -67,6 +67,7 @@ exports.handler = async (event) => {
 
     // Create new flag, expires in 30 minutes
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    console.log("redeem-points SET: memberId =", memberId, "serviceId =", serviceId, "sessionStart =", sessionStart, "points =", pointsAmount, "money =", moneyAmount, "expiresAt =", expiresAt);
     const { error } = await supabase.from("points_flags").insert({
       wix_member_id: memberId,
       service_id: serviceId,

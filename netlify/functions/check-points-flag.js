@@ -1,7 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
 
 // Called by the Wix SPI to check if a member has an active points flag
-// that matches one of the line items in the basket.
 // Secured with a shared secret (LLG_SPI_SECRET in Wix Secrets Manager
 // and SPI_SECRET in Netlify env vars)
 
@@ -25,8 +24,8 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "bad_request" }) }; }
 
-  const { memberId, lineItemServiceIds } = body;
-  console.log("check-points-flag request: memberId =", memberId);
+  const { memberId } = body;
+  console.log("check-points-flag: memberId =", memberId);
   if (!memberId) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_member_id" }) };
 
   const sbUrl = process.env.SUPABASE_URL;
@@ -49,24 +48,11 @@ exports.handler = async (event) => {
   }
 
   const flag = data?.[0] || null;
-  console.log("check-points-flag: rowCount =", (data || []).length, "flag =", flag ? { id: flag.id, service_id: flag.service_id, expires_at: flag.expires_at } : null);
-
-  if (!flag) {
-    console.log("check-points-flag: returning hasFlag = false (no active flag)");
-    return { statusCode: 200, headers, body: JSON.stringify({ hasFlag: false, flag: null }) };
-  }
-
-  // If line item service IDs were provided, only match if the
-  // flagged service is actually in the basket
-  if (Array.isArray(lineItemServiceIds) && lineItemServiceIds.length > 0) {
-    if (!lineItemServiceIds.includes(flag.service_id)) {
-      return { statusCode: 200, headers, body: JSON.stringify({ hasFlag: false, flag: null }) };
-    }
-  }
+  console.log("check-points-flag: rowCount =", (data || []).length, "hasFlag =", !!flag, "flag =", flag ? { service_id: flag.service_id, expires_at: flag.expires_at, points_amount: flag.points_amount } : null, "now =", new Date().toISOString());
 
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({ hasFlag: true, flag }),
+    body: JSON.stringify({ hasFlag: !!flag, flag }),
   };
 };
