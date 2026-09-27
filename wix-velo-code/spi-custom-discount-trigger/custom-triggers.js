@@ -87,6 +87,12 @@ export const getEligibleTriggers = async (options, context) => {
       }
 
       if (spiSecret) {
+        // Extract service IDs from line items so check-points-flag
+        // only matches when the flagged session is in the basket
+        const lineItemServiceIds = (options.lineItems || [])
+          .map((li) => li.catalogReference?.catalogItemId)
+          .filter(Boolean);
+
         try {
           const res = await Promise.race([
             fetch(
@@ -97,7 +103,7 @@ export const getEligibleTriggers = async (options, context) => {
                   "Content-Type": "application/json",
                   "X-SPI-Secret": spiSecret,
                 },
-                body: JSON.stringify({ memberId }),
+                body: JSON.stringify({ memberId, lineItemServiceIds }),
               }
             ),
             timeout(2000),

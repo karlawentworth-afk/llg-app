@@ -1,6 +1,7 @@
 const { createClient } = require("@supabase/supabase-js");
 
 // Called by the Wix SPI to check if a member has an active points flag
+// that matches one of the line items in the basket.
 // Secured with a shared secret (LLG_SPI_SECRET in Wix Secrets Manager
 // and SPI_SECRET in Netlify env vars)
 
@@ -24,7 +25,7 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "bad_request" }) }; }
 
-  const { memberId } = body;
+  const { memberId, lineItemServiceIds } = body;
   if (!memberId) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_member_id" }) };
 
   const sbUrl = process.env.SUPABASE_URL;
@@ -48,9 +49,21 @@ exports.handler = async (event) => {
 
   const flag = data?.[0] || null;
 
+  if (!flag) {
+    return { statusCode: 200, headers, body: JSON.stringify({ hasFlag: false, flag: null }) };
+  }
+
+  // If line item service IDs were provided, only match if the
+  // flagged service is actually in the basket
+  if (Array.isArray(lineItemServiceIds) && lineItemServiceIds.length > 0) {
+    if (!lineItemServiceIds.includes(flag.service_id)) {
+      return { statusCode: 200, headers, body: JSON.stringify({ hasFlag: false, flag: null }) };
+    }
+  }
+
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({ hasFlag: !!flag, flag }),
+    body: JSON.stringify({ hasFlag: true, flag }),
   };
 };

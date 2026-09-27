@@ -201,6 +201,7 @@ async function fetchBookings(contactId, headers) {
       const b = eb.booking || eb;
       const slot = b.bookedEntity?.slot || {};
       return {
+        bookingId: b._id || null,
         title: b.bookedEntity?.title || "Session",
         startDate: slot.startDate || b.startDate || null,
         endDate: slot.endDate || null,
@@ -559,14 +560,29 @@ exports.handler = async (event) => {
         }
 
         // Check if member now has a confirmed booking matching this flag
-        const hasBooking = bookings.some(b =>
+        const matchedBooking = bookings.find(b =>
           b.serviceId === flag.service_id || b.title?.toLowerCase().includes("test")
         );
 
-        if (hasBooking) {
+        if (matchedBooking) {
+          const bkId = matchedBooking.bookingId;
+
+          // Idempotent: skip if this booking was already settled
+          if (bkId) {
+            const { data: already } = await supabase
+              .from("points_ledger")
+              .select("id")
+              .eq("booking_id", bkId)
+              .limit(1);
+            if (already && already.length > 0) {
+              // Already settled (by Wix event or earlier load). Just clean up the flag.
+              await supabase.from("points_flags").delete().eq("id", flag.id);
+              continue;
+            }
+          }
+
           // Deduct points via Wix Loyalty API
           try {
-            // Find the loyalty account
             const loyaltyRes = await fetchWithTimeout(
               "https://www.wixapis.com/loyalty-accounts/v1/accounts/search",
               {
@@ -581,7 +597,6 @@ exports.handler = async (event) => {
               const loyaltyData = await loyaltyRes.json();
               const account = loyaltyData.accounts?.[0];
               if (account) {
-                // Adjust points (deduct)
                 await fetchWithTimeout(
                   `https://www.wixapis.com/loyalty-accounts/v1/accounts/${account.id}/adjust-points`,
                   {
@@ -595,15 +610,15 @@ exports.handler = async (event) => {
                   }
                 );
 
-                // Log to ledger
+                // Log to ledger with booking_id for idempotency
                 await supabase.from("points_ledger").insert({
                   wix_member_id: memberId,
                   points: -flag.points_amount,
                   type: "deduct",
                   reason: `Session redemption £${flag.money_amount}`,
+                  booking_id: bkId || null,
                 });
 
-                // Update points in response
                 points = Math.max(0, points - flag.points_amount);
               }
             }
