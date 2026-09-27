@@ -187,6 +187,16 @@
     var PASS = null;
     var selectedDay = -1;
     var currentScreen = "home";
+    var ALL_TRIPS = []; // combined yourTrips + events, looked up by index
+
+    // Event delegation for trip taps (data-trip-idx)
+    document.getElementById("app").addEventListener("click", function(e) {
+      var el = e.target.closest("[data-trip-idx]");
+      if (el) {
+        var idx = parseInt(el.getAttribute("data-trip-idx"), 10);
+        if (ALL_TRIPS[idx]) showScreen("trip", ALL_TRIPS[idx]);
+      }
+    });
 
     (async function () {
       var hash = window.location.hash.slice(1);
@@ -283,6 +293,9 @@
       var el = document.getElementById("homeScreen");
       var h = "";
 
+      // Build trip lookup array (yourTrips first, then events)
+      ALL_TRIPS = [].concat(DATA.yourTrips || [], DATA.events || []);
+
       // Imminent trip banner (within 14 days or happening now)
       var imminent = (DATA.yourTrips || []).find(function(t) {
         if (!t.startDate) return false;
@@ -293,7 +306,8 @@
       });
       if (imminent) {
         var cd = countdown(imminent);
-        h += '<div class="trip-banner" onclick="showScreen(\'trip\',' + JSON.stringify(imminent).replace(/'/g,"&#39;") + ')">' +
+        var imIdx = ALL_TRIPS.indexOf(imminent);
+        h += '<div class="trip-banner" data-trip-idx="' + imIdx + '">' +
           '<div><div style="font-weight:700;font-size:0.95rem">' + esc(imminent.title) + '</div>' +
           '<div style="font-size:0.8rem;opacity:0.8">' + esc(imminent.location) + '</div></div>' +
           '<span style="background:rgba(255,255,255,0.2);padding:0.3rem 0.7rem;border-radius:20px;font-size:0.8rem;font-weight:700;white-space:nowrap">' + cd + '</span>' +
@@ -363,7 +377,8 @@
         h += '<h2 style="font-size:1.1rem;margin:0.75rem 0 0.5rem">Your trips</h2>';
         otherTrips.forEach(function(t) {
           var cd = countdown(t);
-          h += '<div class="your-trip" onclick="showScreen(\'trip\',' + JSON.stringify(t).replace(/'/g,"&#39;") + ')">' +
+          var tIdx = ALL_TRIPS.indexOf(t);
+          h += '<div class="your-trip" data-trip-idx="' + tIdx + '">' +
             '<div><span style="font-weight:600;font-size:0.95rem">' + esc(t.title) + '</span>' +
             '<span class="small" style="margin-left:0.3rem">' + (t.startDate ? fmtShort(new Date(t.startDate)) : "") + '</span></div>' +
             '<span class="mg" style="font-size:0.85rem;white-space:nowrap">' + cd + '</span>' +
@@ -376,7 +391,8 @@
         h += '<h2 style="font-size:1.1rem;margin:0.75rem 0 0.5rem">Trips worth a look</h2>';
         h += '<div class="trips-scroll">';
         DATA.events.forEach(function(e) {
-          h += '<div class="trip-card" onclick="showScreen(\'trip\',' + JSON.stringify(e).replace(/'/g,"&#39;") + ')">' +
+          var eIdx = ALL_TRIPS.indexOf(e);
+          h += '<div class="trip-card" data-trip-idx="' + eIdx + '">' +
             (e.imageUrl ? '<img src="' + esc(e.imageUrl) + '" alt="">' : '<div style="height:120px;background:#e0ddd8"></div>') +
             '<div class="trip-card-body">' +
               '<div class="trip-card-title">' + esc(e.title) + '</div>' +
