@@ -40,7 +40,14 @@ $w.onReady(function () {
       if (msg.includes("No permission") || msg.includes("not logged in")) {
         showLogin();
       } else {
-        loginMsg.text = "Something went wrong. Please try again.";
+        loginMsg.text = "Something went wrong.";
+        loginBtn.label = "Try again";
+        loginBtn.show();
+        loginBtn.onClick(function () {
+          loginBtn.hide();
+          loginMsg.text = "Loading your golf...";
+          loadApp();
+        });
       }
     }
   }

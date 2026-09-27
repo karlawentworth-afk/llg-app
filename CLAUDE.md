@@ -62,5 +62,13 @@
   version control, but the Velo file name is discount-trigger.js.
   Always tell Karla to paste into discount-trigger.js.
 
+## Known limitations (parked)
+- Points discount applies to any item in the basket from the
+  flagged service, not just the specific session. In practice
+  members book one session at a time. A per-session check
+  (lineItemServiceIds) was built but parked because the
+  catalogReference structure for bookings needs live verification.
+- No points refund on cancellation (by design, same as money).
+
 ## Style
 - UK English. No em dashes. Plain language.
