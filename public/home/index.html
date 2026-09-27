@@ -463,6 +463,7 @@
           if (canUsePoints) {
             pointsHtml = `<div style="width:100%;margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid var(--border)">
               <button class="btn btn-sm btn-outline" style="width:100%;font-size:0.85rem" onclick="usePoints('${s.serviceId}','${s.startDate || ""}',${ptsNeeded},${priceNum},'${bookUrl}',this)">Or use ${pts(ptsNeeded)} points (£${priceNum.toFixed(2)})</button>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:0.3rem;line-height:1.4">Points work just like paying: you can move your session up to 24 hours before, but cancelled sessions aren't refunded.</div>
             </div>`;
           }
 
