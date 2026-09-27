@@ -26,6 +26,7 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "bad_request" }) }; }
 
   const { memberId, lineItemServiceIds } = body;
+  console.log("check-points-flag request: memberId =", memberId);
   if (!memberId) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_member_id" }) };
 
   const sbUrl = process.env.SUPABASE_URL;
@@ -48,8 +49,10 @@ exports.handler = async (event) => {
   }
 
   const flag = data?.[0] || null;
+  console.log("check-points-flag: rowCount =", (data || []).length, "flag =", flag ? { id: flag.id, service_id: flag.service_id, expires_at: flag.expires_at } : null);
 
   if (!flag) {
+    console.log("check-points-flag: returning hasFlag = false (no active flag)");
     return { statusCode: 200, headers, body: JSON.stringify({ hasFlag: false, flag: null }) };
   }
 
