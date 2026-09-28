@@ -37,7 +37,7 @@
     .topic-current { font-weight: 600; color: #2B2A29; cursor: pointer; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid transparent; min-height: 36px; display: flex; align-items: center; }
     .topic-current:hover { border-color: #DE0082; background: #fff5f9; }
     .topic-empty { color: #aaa; font-style: italic; }
-    .topic-no-session { color: #e65100; font-style: italic; }
+    .topic-no-session { color: #5E5D5B; font-style: italic; background: #F7F4F0; border-radius: 4px; padding: 0.2rem 0.4rem; }
     .picker-dropdown {
       display: none;
       position: absolute;
@@ -109,7 +109,7 @@
     <button class="btn-secondary" onclick="copyLastMonth()">Copy last month</button>
     <button class="btn-secondary" onclick="openAddTopic()">+ New topic</button>
     <button class="btn-secondary" onclick="markBlanksNoSession()">Mark blanks "No session"</button>
-    <button class="btn-secondary" onclick="tidyCalendar()" style="background:#fff3e0;color:#e65100">Tidy Wix calendar</button>
+    <button class="btn-secondary" onclick="tidyCalendar()">Tidy Wix calendar</button>
   </div>
 
   <div class="main">
@@ -326,8 +326,8 @@
         var html = "";
 
         // "No session this day" always first
-        html += '<div class="picker-item" data-pick-idx="' + idx + '" data-pick-title="No session this day" data-pick-desc="" style="border-left:3px solid #e65100">' +
-          '<div class="picker-item-title" style="color:#e65100">No session this day</div>' +
+        html += '<div class="picker-item" data-pick-idx="' + idx + '" data-pick-title="No session this day" data-pick-desc="" style="border-left:3px solid #5E5D5B;background:#F7F4F0">' +
+          '<div class="picker-item-title" style="color:#5E5D5B">No session this day</div>' +
         '</div>';
 
         if (SEARCH_RESULTS.length === 0 && query) {
@@ -451,7 +451,11 @@
       return d ? d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + formatTime(d) : "Unknown";
     }).join("\n");
 
-    if (!confirm("Mark " + blanks.length + " blank session(s) as \"No session this day\"?\n\n" + list)) return;
+    var venueName = VENUES.find(function(v) { return v.id === venueId; });
+    venueName = venueName ? venueName.name : "this venue";
+    var monthLabel = document.getElementById("monthSelect").selectedOptions[0].text;
+
+    if (!confirm("Mark " + blanks.length + " blank session(s) as \"No session this day\" at " + venueName + " in " + monthLabel + "?\n\n" + list)) return;
 
     try {
       showStatus("Marking...", "info");
