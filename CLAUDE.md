@@ -62,6 +62,13 @@
   version control, but the Velo file name is discount-trigger.js.
   Always tell Karla to paste into discount-trigger.js.
 
+## Go-live checklist
+- Replace WIX_CONTACTS_WRITE_KEY with a Contacts-only key. The
+  current key has broader permissions during testing. Code must
+  only use it to update the verified member's own handicap and
+  golf club fields via update-member-details. Never use it for
+  anything else.
+
 ## Known limitations (parked)
 - Points discount applies to any item in the basket from the
   flagged service, not just the specific session. In practice

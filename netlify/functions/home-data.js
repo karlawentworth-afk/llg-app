@@ -102,7 +102,7 @@ async function fetchContactInfo(contactId, headers) {
       `https://www.wixapis.com/contacts/v4/contacts/${encodeURIComponent(contactId)}?fieldsets=FULL`,
       { method: "GET", headers }
     );
-    if (!res.ok) return { fullName: "", email: "", phone: "" };
+    if (!res.ok) return { fullName: "", email: "", phone: "", handicap: null, golfClub: null };
     const data = await res.json();
     const c = data.contact || {};
     const fn = c.info?.name?.first || "";
@@ -110,8 +110,22 @@ async function fetchContactInfo(contactId, headers) {
     const fullName = (fn + (ln ? " " + ln : "")).trim();
     const email = c.primaryInfo?.email || "";
     const phone = c.primaryInfo?.phone || "";
-    return { fullName, email, phone };
-  } catch { return { fullName: "", email: "", phone: "" }; }
+    const handicap = c.info?.extendedFields?.items?.["custom.handicap"] ?? c.customFields?.["custom.handicap"]?.value ?? null;
+    const golfClub = c.info?.extendedFields?.items?.["custom.golf_club"] ?? c.customFields?.["custom.golf_club"]?.value ?? null;
+    return { fullName, email, phone, handicap, golfClub };
+  } catch { return { fullName: "", email: "", phone: "", handicap: null, golfClub: null }; }
+}
+
+async function fetchProfilePhoto(memberId, headers) {
+  try {
+    const res = await fetchWithTimeout(
+      `https://www.wixapis.com/members/v1/members/${encodeURIComponent(memberId)}?fieldsets=FULL`,
+      { method: "GET", headers }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.member?.profile?.photo?.url || null;
+  } catch { return null; }
 }
 
 async function fetchPlan(memberId, headers) {
@@ -223,10 +237,29 @@ async function fetchPoints(contactId, headers) {
         body: JSON.stringify({ search: { filter: { "contact.id": { "$eq": contactId } }, cursorPaging: { limit: 1 } } }),
       }
     );
-    if (!res.ok) return 0;
+    if (!res.ok) return { balance: 0, accountId: null };
     const data = await res.json();
-    return data.accounts?.[0]?.points?.balance || 0;
-  } catch { return 0; }
+    const account = data.accounts?.[0];
+    return { balance: account?.points?.balance || 0, accountId: account?.id || null };
+  } catch { return { balance: 0, accountId: null }; }
+}
+
+async function fetchLoyaltyTransactions(accountId, headers) {
+  if (!accountId) return [];
+  try {
+    const res = await fetchWithTimeout(
+      `https://www.wixapis.com/loyalty-accounts/v1/accounts/${encodeURIComponent(accountId)}/transactions?cursorPaging.limit=50`,
+      { method: "GET", headers }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.transactions || []).map(t => ({
+      type: t.transactionType || "",
+      amount: t.amount || 0,
+      description: t.description || "",
+      date: t.createdDate || null,
+    }));
+  } catch { return []; }
 }
 
 async function fetchBookingHistory(contactId, headers) {
@@ -249,7 +282,16 @@ async function fetchBookingHistory(contactId, headers) {
     return (data.extendedBookings || []).map(eb => {
       const b = eb.booking || eb;
       const slot = b.bookedEntity?.slot || {};
-      return { locationId: slot.location?.id || "", locationName: slot.location?.name || "" };
+      return {
+        bookingId: b._id || null,
+        title: b.bookedEntity?.title || "Session",
+        startDate: slot.startDate || b.startDate || null,
+        endDate: slot.endDate || null,
+        locationId: slot.location?.id || "",
+        locationName: slot.location?.name || "",
+        serviceId: slot.serviceId || "",
+        status: b.status || "",
+      };
     });
   } catch { return []; }
 }
@@ -487,7 +529,7 @@ exports.handler = async (event) => {
   const wixH = wixHeaders();
   const supabase = getSupabase();
   // Parallel fetch: Wix data + Supabase home venue
-  let [plan, bookings, points, allEvents, memberEventIds, contactInfo, homeVenueResult, allVenues] = await Promise.all([
+  let [plan, bookings, pointsData, allEvents, memberEventIds, contactInfo, homeVenueResult, allVenues, bookingHistory, profilePhoto] = await Promise.all([
     fetchPlan(memberId, wixH),
     fetchBookings(contactId, wixH),
     fetchPoints(contactId, wixH),
@@ -496,7 +538,21 @@ exports.handler = async (event) => {
     fetchContactInfo(contactId, wixH),
     supabase ? getHomeVenue(supabase, memberId, contactId, wixH) : { venue: null, source: "none" },
     supabase ? getAllVenues(supabase) : [],
+    fetchBookingHistory(contactId, wixH),
+    fetchProfilePhoto(memberId, wixH),
   ]);
+
+  let points = pointsData.balance;
+  const loyaltyAccountId = pointsData.accountId;
+
+  // Second parallel batch: loyalty transactions + admin check
+  const [loyaltyTransactions] = await Promise.all([
+    fetchLoyaltyTransactions(loyaltyAccountId, wixH),
+  ]);
+
+  // Admin check
+  const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+  const isAdmin = adminEmails.includes((contactInfo.email || "").toLowerCase());
 
   const homeVenue = homeVenueResult.venue;
 
@@ -660,10 +716,15 @@ exports.handler = async (event) => {
     fullName: contactInfo.fullName || firstName || "",
     email: contactInfo.email || "",
     phone: contactInfo.phone || "",
+    profilePhoto,
+    handicap: contactInfo.handicap,
+    golfClub: contactInfo.golfClub,
     plan,
     memberType: plan.memberType || "non_member",
     bookings,
+    pastBookings: bookingHistory.filter(b => b.startDate && new Date(b.startDate) < new Date()).slice(0, 30),
     points,
+    loyaltyTransactions,
     homeVenue: homeVenue ? { id: homeVenue.id, name: homeVenue.name, town: homeVenue.town } : null,
     homeVenueSource: homeVenueResult.source,
     allVenues,
@@ -674,6 +735,7 @@ exports.handler = async (event) => {
     allTrips: allTripsWithStatus,
     servicePrice,
     memberPrice,
+    isAdmin,
     planCheckoutUrls,
     planPrices: {
       digital: "£8.99/month",

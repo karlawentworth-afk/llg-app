@@ -77,7 +77,7 @@
     .more-btn { background: none; border: none; color: var(--mg-dark); font-weight: 700; font-size: 0.85rem; cursor: pointer; padding: 0.3rem 0; min-height: 44px; display: flex; align-items: center; text-decoration: none; }
     .badge { font-size: 0.8rem; font-weight: 700; padding: 0.4rem 0.75rem; border-radius: 8px; white-space: nowrap; text-align: center; min-height: 36px; display: inline-flex; align-items: center; }
     .badge-booked { background: #e8f5e9; color: #2e7d32; }
-    .badge-full { background: #f5f5f5; color: var(--muted); }
+    .badge-full { background: var(--bg); color: var(--muted); }
 
     /* Trips scroll */
     .trips-scroll { display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; }
@@ -143,6 +143,10 @@
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     .skel-section { margin-bottom: 0.75rem; }
 
+    /* Avatar */
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--charcoal); color: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .avatar:active { opacity: 0.8; }
+
     .error-msg { color: #c0392b; font-weight: 600; padding: 2rem 0; text-align: center; }
     .holding { text-align: center; padding: 2rem 0; }
   </style>
@@ -179,6 +183,9 @@
     <!-- All trips screen -->
     <div id="allTripsScreen" class="screen card-screen"></div>
 
+    <!-- Account screen -->
+    <div id="accountScreen" class="screen card-screen"></div>
+
     <!-- Error -->
     <div id="error" style="display:none"></div>
   </div>
@@ -192,12 +199,19 @@
     var currentScreen = "home";
     var ALL_TRIPS = []; // combined yourTrips + events, looked up by index
 
-    // Event delegation for trip taps (data-trip-idx)
+    // Event delegation for taps
     document.getElementById("app").addEventListener("click", function(e) {
-      var el = e.target.closest("[data-trip-idx]");
-      if (el) {
-        var idx = parseInt(el.getAttribute("data-trip-idx"), 10);
+      // Trip taps
+      var tripEl = e.target.closest("[data-trip-idx]");
+      if (tripEl) {
+        var idx = parseInt(tripEl.getAttribute("data-trip-idx"), 10);
         if (ALL_TRIPS[idx]) showScreen("trip", ALL_TRIPS[idx]);
+        return;
+      }
+      // Screen navigation (avatar, tiles, etc.)
+      var screenEl = e.target.closest("[data-screen]");
+      if (screenEl) {
+        showScreen(screenEl.getAttribute("data-screen"));
       }
     });
 
@@ -256,7 +270,7 @@
 
     function showScreen(name, extra) {
       document.getElementById("loadingWrap").style.display = "none";
-      ["homeScreen","cardScreen","tripScreen","allTripsScreen"].forEach(function(id) {
+      ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen"].forEach(function(id) {
         document.getElementById(id).classList.remove("active");
       });
 
@@ -275,6 +289,10 @@
         renderCard();
         document.getElementById("cardScreen").classList.add("active");
         trackEvent("card_opened");
+      } else if (name === "account") {
+        renderAccount();
+        document.getElementById("accountScreen").classList.add("active");
+        trackEvent("account_opened");
       } else if (name === "trip") {
         renderTrip(extra);
         document.getElementById("tripScreen").classList.add("active");
@@ -321,11 +339,20 @@
         '</div>';
       }
 
-      // Greeting
+      // Greeting with avatar
       var now = new Date();
       var dateStr = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-      h += '<h1 style="font-size:1.4rem;margin-bottom:0.15rem">' + timeGreeting() + firstName() + '</h1>';
-      h += '<p class="small" style="margin-bottom:1rem">' + dateStr + ' \u00b7 Here\'s your golf week</p>';
+      var initials = getInitials(DATA.fullName || DATA.firstName || "");
+      var avatarContent = DATA.profilePhoto
+        ? '<img src="' + esc(DATA.profilePhoto) + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer" data-screen="account">'
+        : '<div class="avatar" data-screen="account">' + esc(initials) + '</div>';
+      h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">' +
+        '<div>' +
+          '<h1 style="font-size:1.4rem;margin-bottom:0.15rem">' + timeGreeting() + firstName() + '</h1>' +
+          '<p class="small">' + dateStr + ' \u00b7 Here\'s your golf week</p>' +
+        '</div>' +
+        avatarContent +
+      '</div>';
 
       // Your next session (only when booked)
       var nextBooked = (DATA.bookings || []).find(function(b) { return b.startDate; });
@@ -345,12 +372,12 @@
       var money = (DATA.points / 100).toFixed(2);
       var planShort = (DATA.plan.name || "").replace(/\s*membership\s*/i, "");
       h += '<div class="tiles">' +
-        '<div class="tile" onclick="showScreen(\'card\')">' +
+        '<div class="tile" data-screen="card">' +
           '<div class="tile-label">Points</div>' +
           '<div class="tile-value">\u00a3' + money + '</div>' +
           '<div class="tile-sub">to spend \u00b7 ' + pts(DATA.points) + ' pts</div>' +
         '</div>' +
-        '<div class="tile" onclick="showScreen(\'card\')">' +
+        '<div class="tile" data-screen="account">' +
           '<div class="tile-label">Member</div>' +
           '<div class="tile-value" style="font-size:1.1rem">' + esc(planShort) + '</div>' +
           '<div class="tile-sub"><span class="mg">Show my card \u203a</span></div>' +
@@ -515,7 +542,7 @@
             action = '<div style="text-align:center"><span class="badge badge-booked">You\'re booked</span>' +
               '<div style="margin-top:0.3rem"><a class="mg" style="font-size:0.8rem" href="https://www.ladieslovegolf.com/account/my-bookings" onclick="tapNav(this)">Manage</a></div></div>';
           } else if (full && DATA.plan.eligible) {
-            action = '<a class="btn btn-sm" style="background:#e65100" href="' + bookUrl + '" onclick="tapWaitlist(this)">Join waitlist</a>';
+            action = '<a class="btn btn-sm" style="background:#fff;color:var(--mg-dark);border:1.5px solid var(--mg)" href="' + bookUrl + '" onclick="tapWaitlist(this)">Join waitlist</a>';
           } else if (full) {
             action = '<span class="badge badge-full">Full</span>';
           } else {
@@ -567,7 +594,7 @@
 
       h += '<div class="member-card">' +
         '<div class="sheen"></div>' +
-        '<img class="logo" src="WEGS-MASTER-reversed.png" alt="LLG">' +
+        '<img class="logo" src="LLG_Logo_White.svg" alt="LLG">' +
         '<div class="tier">' + esc(DATA.plan.name) + '</div>' +
         '<div class="name">' + esc(DATA.fullName || DATA.firstName || "") + '</div>' +
         '<div class="venue">' + esc(vn) + '</div>' +
@@ -801,6 +828,273 @@
       });
     }
 
+    // --- ACCOUNT SCREEN ---
+    function renderAccount() {
+      var el = document.getElementById("accountScreen");
+      var h = '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>';
+
+      // Avatar + name header
+      var initials = getInitials(DATA.fullName || DATA.firstName || "");
+      var avatarHtml = DATA.profilePhoto
+        ? '<img src="' + esc(DATA.profilePhoto) + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover">'
+        : '<div style="width:56px;height:56px;border-radius:50%;background:var(--mg);color:#fff;font-weight:700;font-size:1.2rem;display:flex;align-items:center;justify-content:center">' + esc(initials) + '</div>';
+      h += '<div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem">' +
+        avatarHtml +
+        '<div><div style="font-family:\'Poppins\',sans-serif;font-weight:700;font-size:1.2rem">' + esc(DATA.fullName || DATA.firstName || "") + '</div>' +
+        '<div class="small">' + esc(DATA.email || "") + '</div></div>' +
+      '</div>';
+
+      // --- Upcoming bookings ---
+      if (DATA.bookings && DATA.bookings.length > 0) {
+        h += '<h2 style="font-size:1.05rem;margin-bottom:0.5rem">Upcoming bookings</h2>';
+        DATA.bookings.forEach(function(b) {
+          var start = b.startDate ? new Date(b.startDate) : null;
+          h += '<div class="card" style="padding:0.8rem 1rem">' +
+            '<div style="font-weight:600">' + (start ? fmtLong(start) : "") + '</div>' +
+            '<div style="font-size:0.95rem">' + (start ? fmtTime(start) : "") + (b.endDate ? ' to ' + fmtTime(new Date(b.endDate)) : '') + '</div>' +
+            '<div class="small">' + esc(b.title) + (b.locationName ? ' \u00b7 ' + esc(b.locationName) : '') + '</div>' +
+            '<div style="margin-top:0.4rem"><a class="mg" style="font-size:0.85rem" href="https://www.ladieslovegolf.com/account/my-bookings">Move or cancel</a></div>' +
+          '</div>';
+        });
+      }
+
+      // --- Past sessions ---
+      var pastBookings = DATA.pastBookings || [];
+      var thisYear = new Date().getFullYear();
+      var thisYearCount = pastBookings.filter(function(b) {
+        return b.startDate && new Date(b.startDate).getFullYear() === thisYear;
+      }).length;
+
+      if (pastBookings.length > 0) {
+        h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">Past sessions</h2>';
+        h += '<p class="small" style="margin-bottom:0.5rem">' + thisYearCount + ' session' + (thisYearCount !== 1 ? 's' : '') + ' this year</p>';
+        h += '<div class="card">';
+        pastBookings.slice(0, 10).forEach(function(b) {
+          var start = b.startDate ? new Date(b.startDate) : null;
+          h += '<div class="perk" style="display:flex;justify-content:space-between">' +
+            '<span>' + esc(b.title) + '</span>' +
+            '<span class="small">' + (start ? fmtShort(start) : "") + '</span>' +
+          '</div>';
+        });
+        if (pastBookings.length > 10) {
+          h += '<div class="small" style="padding-top:0.4rem">And ' + (pastBookings.length - 10) + ' more</div>';
+        }
+        h += '</div>';
+      }
+
+      // --- My trips ---
+      var upcomingTrips = (DATA.yourTrips || []).filter(function(t) {
+        return t.startDate && new Date(t.startDate) >= new Date();
+      });
+      var pastTrips = (DATA.yourTrips || []).filter(function(t) {
+        return t.startDate && new Date(t.startDate) < new Date();
+      });
+      if (upcomingTrips.length > 0 || pastTrips.length > 0) {
+        h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">My trips</h2>';
+        // Rebuild ALL_TRIPS for account screen trip taps
+        ALL_TRIPS = [].concat(DATA.yourTrips || [], DATA.events || []);
+        upcomingTrips.forEach(function(t) {
+          var tIdx = ALL_TRIPS.indexOf(t);
+          var cd = countdown(t);
+          h += '<div class="card" data-trip-idx="' + tIdx + '" style="cursor:pointer;padding:0.8rem 1rem">' +
+            '<div style="font-weight:600">' + esc(t.title) + '</div>' +
+            '<div class="small">' + (t.startDate ? fmtShort(new Date(t.startDate)) : "") + (t.location ? ' \u00b7 ' + esc(t.location) : '') + '</div>' +
+            (cd ? '<span class="mg" style="font-size:0.85rem">' + cd + '</span>' : '') +
+          '</div>';
+        });
+        if (pastTrips.length > 0) {
+          h += '<div class="card">';
+          pastTrips.forEach(function(t) {
+            var tIdx = ALL_TRIPS.indexOf(t);
+            h += '<div class="perk" data-trip-idx="' + tIdx + '" style="cursor:pointer;display:flex;justify-content:space-between">' +
+              '<span>' + esc(t.title) + '</span>' +
+              '<span class="small">' + (t.startDate ? fmtShort(new Date(t.startDate)) : "") + '</span>' +
+            '</div>';
+          });
+          h += '</div>';
+        }
+      }
+
+      // --- Points ---
+      var money = (DATA.points / 100).toFixed(2);
+      h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">Points</h2>';
+      h += '<div class="card">' +
+        '<div style="font-weight:700;font-size:1.2rem;font-family:\'Poppins\',sans-serif">\u00a3' + money + ' <span style="font-size:0.9rem;font-weight:400">to spend</span></div>' +
+        '<p class="small">' + pts(DATA.points) + ' points \u00b7 100 points = \u00a31</p>';
+
+      var transactions = DATA.loyaltyTransactions || [];
+      if (transactions.length > 0) {
+        h += '<div style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.5rem">';
+        h += '<div class="small" style="font-weight:600;margin-bottom:0.3rem">Recent activity</div>';
+        transactions.slice(0, 15).forEach(function(t) {
+          var sign = t.amount >= 0 ? '+' : '';
+          var colour = t.amount >= 0 ? '#2e7d32' : 'var(--charcoal)';
+          var label = t.type === 'EARN' ? 'Earned' : t.type === 'REDEEM' ? 'Redeemed' : t.type === 'ADJUST' ? 'Adjusted' : t.type === 'REFUND' ? 'Refunded' : t.type;
+          h += '<div style="display:flex;justify-content:space-between;padding:0.25rem 0;font-size:0.9rem">' +
+            '<span>' + esc(t.description || label) + '</span>' +
+            '<span style="font-weight:600;color:' + colour + '">' + sign + t.amount + '</span>' +
+          '</div>';
+        });
+        h += '</div>';
+      } else {
+        h += '<p class="small" style="margin-top:0.5rem">You earn 15 points per coaching session and 1 point per \u00a31 on events and trips.</p>';
+      }
+      h += '</div>';
+
+      // --- My membership ---
+      var renewDate = DATA.plan.endDate ? fmtLong(new Date(DATA.plan.endDate)) : null;
+      var sinceStr = DATA.plan.startDate ? new Date(DATA.plan.startDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : null;
+      var rolling = !DATA.plan.endDate;
+      h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">My membership</h2>';
+      h += '<div class="card">' +
+        '<div style="font-weight:700;font-size:1.1rem">' + esc(DATA.plan.name || "No plan") + '</div>';
+      if (sinceStr) {
+        h += '<p class="small">Member since ' + sinceStr + (rolling ? ' \u00b7 Rolling membership' : renewDate ? ' \u00b7 Renews ' + renewDate : '') + '</p>';
+      }
+      if (renewDate) {
+        h += '<p class="small" style="margin-top:0.3rem">Manage or cancel up to 7 days before renewal.</p>';
+      }
+      h += '<div style="margin-top:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap">' +
+        '<a class="btn btn-sm btn-outline" href="https://www.ladieslovegolf.com/account/my-subscriptions">Manage</a>' +
+        '<button class="btn btn-sm btn-dark" data-screen="card">Show my card</button>' +
+      '</div></div>';
+
+      // --- My details ---
+      h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">My details</h2>';
+      h += '<div class="card">';
+      h += '<div class="perk"><span class="small">Name</span><br><span style="font-weight:600">' + esc(DATA.fullName || "") + '</span></div>';
+      h += '<div class="perk"><span class="small">Email</span><br><span style="font-weight:600">' + esc(DATA.email || "") + '</span></div>';
+      h += '<div class="perk"><span class="small">Phone</span><br><span style="font-weight:600">' + esc(DATA.phone || "Not set") + '</span></div>';
+
+      // Handicap (editable)
+      var hcpVal = DATA.handicap != null && DATA.handicap !== "" ? DATA.handicap : null;
+      h += '<div class="perk" id="handicapRow"><span class="small">Handicap</span><br>';
+      if (hcpVal != null) {
+        h += '<span style="font-weight:600">' + esc(String(hcpVal)) + '</span> ';
+        h += '<button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.8rem" id="editHcpBtn">Edit</button>';
+      } else {
+        h += '<button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.85rem" id="editHcpBtn">Add handicap</button>';
+      }
+      h += '</div>';
+
+      // Golf club (editable)
+      var clubVal = DATA.golfClub || "";
+      h += '<div class="perk" id="golfClubRow"><span class="small">Golf club</span><br>';
+      if (clubVal) {
+        h += '<span style="font-weight:600">' + esc(clubVal) + '</span> ';
+        h += '<button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.8rem" id="editClubBtn">Edit</button>';
+      } else {
+        h += '<button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.85rem" id="editClubBtn">Add golf club</button>';
+      }
+      h += '</div>';
+
+      h += '<div style="margin-top:0.5rem"><a class="mg" style="font-size:0.85rem" href="https://www.ladieslovegolf.com/account/my-account">Update my details on Wix</a></div>';
+      h += '</div>';
+
+      // --- Preferences ---
+      var vn = DATA.homeVenue ? DATA.homeVenue.name || "" : "Not set";
+      h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">Preferences</h2>';
+      h += '<div class="card">' +
+        '<div class="perk"><span class="small">Home venue</span><br><span style="font-weight:600">' + esc(vn) + '</span>' +
+        ' <button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.8rem" onclick="changeVenue();showScreen(\'home\')">Change</button></div>' +
+      '</div>';
+
+      // --- Admin ---
+      if (DATA.isAdmin) {
+        h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">Admin</h2>';
+        h += '<div class="card">' +
+          '<a class="mg" style="font-size:0.95rem" href="/admin/planner.html">Session planner</a><br>' +
+          '<a class="mg" style="font-size:0.95rem;margin-top:0.3rem;display:inline-block" href="/admin/">Upload topics</a>' +
+        '</div>';
+      }
+
+      // --- Sign out ---
+      h += '<div style="margin-top:1.5rem;text-align:center">' +
+        '<button class="more-btn" style="color:var(--muted)" id="signOutBtn">Sign out</button>' +
+      '</div>';
+
+      el.innerHTML = h;
+
+      // Wire up edit handlers
+      var editHcpBtn = document.getElementById("editHcpBtn");
+      if (editHcpBtn) editHcpBtn.addEventListener("click", function() { showHandicapEditor(); });
+
+      var editClubBtn = document.getElementById("editClubBtn");
+      if (editClubBtn) editClubBtn.addEventListener("click", function() { showGolfClubEditor(); });
+
+      var signOutBtn = document.getElementById("signOutBtn");
+      if (signOutBtn) signOutBtn.addEventListener("click", function() {
+        document.cookie = "llg_session=; Path=/; Max-Age=0";
+        window.location.href = "https://www.ladieslovegolf.com";
+      });
+    }
+
+    function showHandicapEditor() {
+      var row = document.getElementById("handicapRow");
+      if (!row) return;
+      var current = DATA.handicap != null && DATA.handicap !== "" ? DATA.handicap : "";
+      row.innerHTML = '<span class="small">Handicap</span><br>' +
+        '<div style="display:flex;gap:0.4rem;margin-top:0.3rem">' +
+          '<input type="number" id="hcpInput" min="0" max="54" step="0.1" value="' + esc(String(current)) + '" placeholder="e.g. 18.4" style="width:80px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:inherit">' +
+          '<button class="btn btn-sm" id="hcpSaveBtn" style="padding:0 0.75rem">Save</button>' +
+          '<button class="btn btn-sm btn-outline" id="hcpClearBtn" style="padding:0 0.5rem;font-size:0.8rem">Clear</button>' +
+        '</div>';
+      document.getElementById("hcpSaveBtn").addEventListener("click", function() { saveHandicap(document.getElementById("hcpInput").value); });
+      document.getElementById("hcpClearBtn").addEventListener("click", function() { saveHandicap(""); });
+    }
+
+    function showGolfClubEditor() {
+      var row = document.getElementById("golfClubRow");
+      if (!row) return;
+      var current = DATA.golfClub || "";
+      row.innerHTML = '<span class="small">Golf club</span><br>' +
+        '<div style="margin-top:0.3rem">' +
+          '<input type="text" id="clubInput" value="' + esc(current) + '" placeholder="Which club?" style="width:100%;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;margin-bottom:0.3rem">' +
+          '<div style="display:flex;gap:0.4rem">' +
+            '<button class="btn btn-sm" id="clubSaveBtn" style="padding:0 0.75rem">Save</button>' +
+            '<button class="btn btn-sm btn-outline" id="clubClearBtn" style="padding:0 0.5rem;font-size:0.8rem">Clear</button>' +
+          '</div>' +
+        '</div>';
+      document.getElementById("clubSaveBtn").addEventListener("click", function() { saveGolfClub(document.getElementById("clubInput").value); });
+      document.getElementById("clubClearBtn").addEventListener("click", function() { saveGolfClub(""); });
+    }
+
+    async function saveHandicap(val) {
+      var btn = document.getElementById("hcpSaveBtn");
+      if (btn) { btn.textContent = "Saving..."; btn.disabled = true; }
+      try {
+        var res = await fetch("/.netlify/functions/update-member-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ handicap: val === "" ? null : val }),
+        });
+        if (!res.ok) throw new Error("failed");
+        DATA.handicap = val === "" ? null : val;
+        renderAccount();
+      } catch(e) {
+        if (btn) { btn.textContent = "Error"; btn.disabled = false; }
+      }
+    }
+
+    async function saveGolfClub(val) {
+      var btn = document.getElementById("clubSaveBtn");
+      if (btn) { btn.textContent = "Saving..."; btn.disabled = true; }
+      try {
+        var res = await fetch("/.netlify/functions/update-member-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ golfClub: val }),
+        });
+        if (!res.ok) throw new Error("failed");
+        DATA.golfClub = val || null;
+        renderAccount();
+      } catch(e) {
+        if (btn) { btn.textContent = "Error"; btn.disabled = false; }
+      }
+    }
+
     // --- UTILITIES ---
     function selectDay(i) { selectedDay = i; showScreen("home"); }
 
@@ -879,7 +1173,7 @@
         el.style.opacity = "1";
       }
     }
-    function tapWaitlist(el) { el.textContent = "Opening..."; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("waitlist_tapped"); }
+    function tapWaitlist(el) { el.textContent = "Opening waitlist..."; el.style.background = "#F0D9E6"; el.style.color = "#8A0050"; el.style.borderColor = "#F0D9E6"; el.style.pointerEvents = "none"; trackEvent("waitlist_tapped"); }
     function tapNav(el, text) { if (text) el.textContent = text; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("trip_tapped"); }
 
     function buildBookingUrl(s) {
@@ -927,6 +1221,12 @@
     function sentenceCase(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ""; }
     function dropThe(s) { return s.replace(/^The\s+/i, ""); }
     function pts(n) { return Number(n).toLocaleString(); }
+    function getInitials(name) {
+      var parts = (name || "").trim().split(/\s+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      if (parts.length === 1 && parts[0]) return parts[0][0].toUpperCase();
+      return "?";
+    }
     function esc(s) { var d = document.createElement("div"); d.textContent = String(s || ""); return d.innerHTML; }
   </script>
 </body>
