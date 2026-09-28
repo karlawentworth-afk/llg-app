@@ -72,7 +72,7 @@ exports.handler = async (event) => {
 };
 
 async function handleVenues(supabase, headers) {
-  const { data } = await supabase.from("venues").select("id, name, town, wix_location_id").order("name");
+  const { data } = await supabase.from("venues").select("id, name, town, wix_location_id, logo_url, poster_footnote").order("name");
   return { statusCode: 200, headers, body: JSON.stringify({ venues: data || [] }) };
 }
 
