@@ -128,6 +128,9 @@ async function handleSessions(supabase, body, headers) {
         totalCapacity: e.totalCapacity || 0,
         remainingCapacity: e.remainingCapacity || 0,
       }));
+    if (batch.length > 0 && page === 0) {
+      console.log("planner sessions sample:", JSON.stringify(batch.slice(0, 2).map(function(s) { return { start: s.startDate, end: s.endDate, title: s.title }; })));
+    }
     wixSessions = wixSessions.concat(batch);
     cursor = data.pagingMetadata?.cursors?.next || null;
     if (!cursor) break;
