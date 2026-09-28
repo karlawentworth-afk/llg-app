@@ -961,34 +961,33 @@
 
       // --- My details ---
       h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">My details</h2>';
-      h += '<div class="card">';
-      h += '<div class="perk"><span class="small">Name</span><br><span style="font-weight:600">' + esc(DATA.fullName || "") + '</span></div>';
-      h += '<div class="perk"><span class="small">Email</span><br><span style="font-weight:600">' + esc(DATA.email || "") + '</span></div>';
-      h += '<div class="perk"><span class="small">Phone</span><br><span style="font-weight:600">' + esc(DATA.phone || "Not set") + '</span></div>';
+      h += '<div class="card" id="detailsCard">';
 
-      // Handicap (editable)
-      var hcpVal = DATA.handicap != null && DATA.handicap !== "" ? DATA.handicap : null;
-      h += '<div class="perk" id="handicapRow"><span class="small">Handicap</span><br>';
-      if (hcpVal != null) {
-        h += '<span style="font-weight:600">' + esc(String(hcpVal)) + '</span> ';
-        h += '<button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.8rem" id="editHcpBtn">Edit</button>';
-      } else {
-        h += '<button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.85rem" id="editHcpBtn">Add handicap</button>';
-      }
-      h += '</div>';
+      var inputStyle = 'width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:1rem';
 
-      // Golf club (editable)
-      var clubVal = DATA.golfClub || "";
-      h += '<div class="perk" id="golfClubRow"><span class="small">Golf club</span><br>';
-      if (clubVal) {
-        h += '<span style="font-weight:600">' + esc(clubVal) + '</span> ';
-        h += '<button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.8rem" id="editClubBtn">Edit</button>';
-      } else {
-        h += '<button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.85rem" id="editClubBtn">Add golf club</button>';
-      }
-      h += '</div>';
+      h += '<div class="perk"><span class="small">First name</span><br>' +
+        '<input type="text" id="detFirstName" value="' + esc(DATA.firstName || "") + '" style="' + inputStyle + '"></div>';
 
-      h += '<div style="margin-top:0.5rem"><a class="mg" style="font-size:0.85rem" href="https://www.ladieslovegolf.com/account/my-account">Update my details on Wix</a></div>';
+      h += '<div class="perk"><span class="small">Last name</span><br>' +
+        '<input type="text" id="detLastName" value="' + esc(DATA.lastName || "") + '" style="' + inputStyle + '"></div>';
+
+      h += '<div class="perk"><span class="small">Email</span><br>' +
+        '<span style="font-weight:600">' + esc(DATA.email || "") + '</span>' +
+        '<div class="small" style="margin-top:0.2rem">To change the email you log in with, just ask us</div></div>';
+
+      h += '<div class="perk"><span class="small">Phone</span><br>' +
+        '<input type="tel" id="detPhone" value="' + esc(DATA.phone || "") + '" placeholder="07700 900000" style="' + inputStyle + '"></div>';
+
+      h += '<div class="perk"><span class="small">Handicap</span><br>' +
+        '<input type="number" id="detHandicap" min="0" max="54" step="0.1" value="' + esc(DATA.handicap != null && DATA.handicap !== "" ? String(DATA.handicap) : "") + '" placeholder="I don\'t have one yet" style="' + inputStyle + '"></div>';
+
+      h += '<div class="perk"><span class="small">Golf club</span><br>' +
+        '<input type="text" id="detGolfClub" value="' + esc(DATA.golfClub || "") + '" placeholder="Which club are you a member of?" style="' + inputStyle + '"></div>';
+
+      h += '<div style="margin-top:0.75rem;display:flex;gap:0.5rem;align-items:center">' +
+        '<button class="btn btn-sm" id="detSaveBtn">Save</button>' +
+        '<span id="detSaveMsg" class="small" style="display:none"></span>' +
+      '</div>';
       h += '</div>';
 
       // --- Preferences ---
@@ -1015,12 +1014,9 @@
 
       el.innerHTML = h;
 
-      // Wire up edit handlers
-      var editHcpBtn = document.getElementById("editHcpBtn");
-      if (editHcpBtn) editHcpBtn.addEventListener("click", function() { showHandicapEditor(); });
-
-      var editClubBtn = document.getElementById("editClubBtn");
-      if (editClubBtn) editClubBtn.addEventListener("click", function() { showGolfClubEditor(); });
+      // Wire up handlers
+      var detSaveBtn = document.getElementById("detSaveBtn");
+      if (detSaveBtn) detSaveBtn.addEventListener("click", saveDetails);
 
       var signOutBtn = document.getElementById("signOutBtn");
       if (signOutBtn) signOutBtn.addEventListener("click", function() {
@@ -1029,69 +1025,70 @@
       });
     }
 
-    function showHandicapEditor() {
-      var row = document.getElementById("handicapRow");
-      if (!row) return;
-      var current = DATA.handicap != null && DATA.handicap !== "" ? DATA.handicap : "";
-      row.innerHTML = '<span class="small">Handicap</span><br>' +
-        '<div style="display:flex;gap:0.4rem;margin-top:0.3rem">' +
-          '<input type="number" id="hcpInput" min="0" max="54" step="0.1" value="' + esc(String(current)) + '" placeholder="e.g. 18.4" style="width:80px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:inherit">' +
-          '<button class="btn btn-sm" id="hcpSaveBtn" style="padding:0 0.75rem">Save</button>' +
-          '<button class="btn btn-sm btn-outline" id="hcpClearBtn" style="padding:0 0.5rem;font-size:0.8rem">Clear</button>' +
-        '</div>';
-      document.getElementById("hcpSaveBtn").addEventListener("click", function() { saveHandicap(document.getElementById("hcpInput").value); });
-      document.getElementById("hcpClearBtn").addEventListener("click", function() { saveHandicap(""); });
-    }
+    async function saveDetails() {
+      var btn = document.getElementById("detSaveBtn");
+      var msg = document.getElementById("detSaveMsg");
+      if (!btn) return;
+      btn.textContent = "Saving...";
+      btn.disabled = true;
+      msg.style.display = "none";
 
-    function showGolfClubEditor() {
-      var row = document.getElementById("golfClubRow");
-      if (!row) return;
-      var current = DATA.golfClub || "";
-      row.innerHTML = '<span class="small">Golf club</span><br>' +
-        '<div style="margin-top:0.3rem">' +
-          '<input type="text" id="clubInput" value="' + esc(current) + '" placeholder="Which club?" style="width:100%;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;margin-bottom:0.3rem">' +
-          '<div style="display:flex;gap:0.4rem">' +
-            '<button class="btn btn-sm" id="clubSaveBtn" style="padding:0 0.75rem">Save</button>' +
-            '<button class="btn btn-sm btn-outline" id="clubClearBtn" style="padding:0 0.5rem;font-size:0.8rem">Clear</button>' +
-          '</div>' +
-        '</div>';
-      document.getElementById("clubSaveBtn").addEventListener("click", function() { saveGolfClub(document.getElementById("clubInput").value); });
-      document.getElementById("clubClearBtn").addEventListener("click", function() { saveGolfClub(""); });
-    }
+      var fn = (document.getElementById("detFirstName").value || "").trim();
+      var ln = (document.getElementById("detLastName").value || "").trim();
+      var phone = (document.getElementById("detPhone").value || "").trim();
+      var hcp = document.getElementById("detHandicap").value;
+      var club = (document.getElementById("detGolfClub").value || "").trim();
 
-    async function saveHandicap(val) {
-      var btn = document.getElementById("hcpSaveBtn");
-      if (btn) { btn.textContent = "Saving..."; btn.disabled = true; }
       try {
         var res = await fetch("/.netlify/functions/update-member-details", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
-          body: JSON.stringify({ handicap: val === "" ? null : val }),
+          body: JSON.stringify({
+            firstName: fn,
+            lastName: ln,
+            phone: phone,
+            handicap: hcp === "" ? null : hcp,
+            golfClub: club,
+          }),
         });
-        if (!res.ok) throw new Error("failed");
-        DATA.handicap = val === "" ? null : val;
-        renderAccount();
-      } catch(e) {
-        if (btn) { btn.textContent = "Error"; btn.disabled = false; }
-      }
-    }
+        if (!res.ok) {
+          var err = await res.json().catch(function() { return {}; });
+          var errMsgs = {
+            invalid_phone: "Please check the phone number",
+            invalid_handicap: "Handicap must be 0 to 54",
+          };
+          throw new Error(errMsgs[err.error] || "Could not save. Please try again.");
+        }
 
-    async function saveGolfClub(val) {
-      var btn = document.getElementById("clubSaveBtn");
-      if (btn) { btn.textContent = "Saving..."; btn.disabled = true; }
-      try {
-        var res = await fetch("/.netlify/functions/update-member-details", {
+        // Update local data so Home and Account show the new values
+        DATA.firstName = fn;
+        DATA.lastName = ln;
+        DATA.fullName = (fn + (ln ? " " + ln : "")).trim();
+        DATA.phone = phone;
+        DATA.handicap = hcp === "" ? null : hcp;
+        DATA.golfClub = club || null;
+
+        // Clear the cache so next home-data call gets fresh data
+        fetch("/.netlify/functions/home-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
-          body: JSON.stringify({ golfClub: val }),
-        });
-        if (!res.ok) throw new Error("failed");
-        DATA.golfClub = val || null;
-        renderAccount();
-      } catch(e) {
-        if (btn) { btn.textContent = "Error"; btn.disabled = false; }
+          body: JSON.stringify({ skipCache: true }),
+        }).catch(function() {});
+
+        btn.textContent = "Save";
+        btn.disabled = false;
+        msg.textContent = "Saved";
+        msg.style.display = "";
+        msg.style.color = "#2e7d32";
+        setTimeout(function() { msg.style.display = "none"; }, 2000);
+      } catch (e) {
+        btn.textContent = "Save";
+        btn.disabled = false;
+        msg.textContent = e.message || "Could not save";
+        msg.style.display = "";
+        msg.style.color = "var(--mg-dark)";
       }
     }
 

@@ -112,8 +112,8 @@ async function fetchContactInfo(contactId, headers) {
     const phone = c.primaryInfo?.phone || "";
     const handicap = c.info?.extendedFields?.items?.["custom.handicap"] ?? c.customFields?.["custom.handicap"]?.value ?? null;
     const golfClub = c.info?.extendedFields?.items?.["custom.golfclub"] ?? c.customFields?.["custom.golfclub"]?.value ?? null;
-    return { fullName, email, phone, handicap, golfClub };
-  } catch { return { fullName: "", email: "", phone: "", handicap: null, golfClub: null }; }
+    return { fullName, first: fn, last: ln, email, phone, handicap, golfClub };
+  } catch { return { fullName: "", first: "", last: "", email: "", phone: "", handicap: null, golfClub: null }; }
 }
 
 async function fetchProfilePhoto(memberId, headers) {
@@ -712,7 +712,8 @@ exports.handler = async (event) => {
   };
 
   const data = {
-    firstName: contactInfo.fullName?.split(" ")[0] || firstName || "",
+    firstName: contactInfo.first || firstName || "",
+    lastName: contactInfo.last || "",
     fullName: contactInfo.fullName || firstName || "",
     email: contactInfo.email || "",
     phone: contactInfo.phone || "",
