@@ -116,6 +116,14 @@ async function handleSessions(supabase, body, headers) {
     );
     if (!res.ok) break;
     const data = await res.json();
+    if (page === 0) {
+      var allTypes = (data.events || []).map(function(e) { return e.type; });
+      var classCount = allTypes.filter(function(t) { return t === "CLASS"; }).length;
+      console.log("planner page0: total=" + allTypes.length + " CLASS=" + classCount + " types=" + JSON.stringify([...new Set(allTypes)]));
+      (data.events || []).filter(function(e) { return e.type === "CLASS"; }).slice(0, 3).forEach(function(e) {
+        console.log("planner class:", e.start?.localDate, "to", e.end?.localDate, "title:", e.title);
+      });
+    }
     const batch = (data.events || [])
       .filter(e => e.status !== "CANCELLED" && e.type === "CLASS")
       .map(e => ({
