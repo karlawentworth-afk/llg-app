@@ -339,22 +339,24 @@ async function fetchVenueSessions(locationId, headers) {
     );
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.events || []).map(e => ({
-      eventId: e.id,
-      title: e.title || "Session",
-      startDate: e.start?.localDate || null,
-      endDate: e.end?.localDate || null,
-      startUtc: e.start?.utcDate || null,
-      endUtc: e.end?.utcDate || null,
-      timeZone: e.start?.timeZone || "Europe/London",
-      totalCapacity: e.totalCapacity || 0,
-      remainingCapacity: e.remainingCapacity || 0,
-      locationName: e.location?.name || "",
-      recurrenceType: e.recurrenceType || "NONE",
-      scheduleId: e.scheduleId || "",
-      serviceId: e.externalScheduleId || "",
-      resourceId: e.resources?.[0]?.id || "",
-    }));
+    return (data.events || [])
+      .filter(e => e.status !== "CANCELLED")
+      .map(e => ({
+        eventId: e.id,
+        title: e.title || "Session",
+        startDate: e.start?.localDate || null,
+        endDate: e.end?.localDate || null,
+        startUtc: e.start?.utcDate || null,
+        endUtc: e.end?.utcDate || null,
+        timeZone: e.start?.timeZone || "Europe/London",
+        totalCapacity: e.totalCapacity || 0,
+        remainingCapacity: e.remainingCapacity || 0,
+        locationName: e.location?.name || "",
+        recurrenceType: e.recurrenceType || "NONE",
+        scheduleId: e.scheduleId || "",
+        serviceId: e.externalScheduleId || "",
+        resourceId: e.resources?.[0]?.id || "",
+      }));
   } catch { return []; }
 }
 
@@ -723,7 +725,7 @@ exports.handler = async (event) => {
     plan,
     memberType: plan.memberType || "non_member",
     bookings,
-    pastBookings: bookingHistory.filter(b => b.startDate && new Date(b.startDate) < new Date()).slice(0, 30),
+    pastBookings: bookingHistory.filter(b => b.startDate && new Date(b.startDate) < new Date() && b.status !== "CANCELED" && b.status !== "DECLINED").slice(0, 30),
     points,
     loyaltyTransactions,
     homeVenue: homeVenue ? { id: homeVenue.id, name: homeVenue.name, town: homeVenue.town } : null,

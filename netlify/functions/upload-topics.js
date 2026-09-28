@@ -1,7 +1,7 @@
 const { createClient } = require("@supabase/supabase-js");
+const { verifyAdminMember } = require("./lib/verify-admin-member");
 
 const TIMEOUT_MS = 9000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -14,7 +14,7 @@ exports.handler = async (event) => {
   const headers = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, X-Admin-Password",
+    "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 
@@ -26,10 +26,9 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: "method_not_allowed" }) };
   }
 
-  // Check admin password
-  const password = event.headers["x-admin-password"];
-  if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: "unauthorized" }) };
+  const admin = await verifyAdminMember(event);
+  if (!admin) {
+    return { statusCode: 401, headers, body: JSON.stringify({ error: "no_access" }) };
   }
 
   const supabase = getSupabase();

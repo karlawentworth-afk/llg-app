@@ -91,9 +91,7 @@
 
 <div id="loginGate" class="login-gate">
   <h1>Session Planner</h1>
-  <label>Admin password</label>
-  <input type="password" id="passwordInput" placeholder="Enter password">
-  <button class="btn-primary" onclick="login()">Sign in</button>
+  <p id="loginMsg">Checking access...</p>
 </div>
 
 <div id="app" style="display:none">
@@ -135,27 +133,42 @@
 </div>
 
 <script>
-  let PASSWORD = "";
   let VENUES = [];
   let SESSIONS = [];
   let openPickerIdx = null;
 
-  function login() {
-    PASSWORD = document.getElementById("passwordInput").value;
-    if (!PASSWORD) return;
-    document.getElementById("loginGate").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    loadVenues();
-    populateMonths();
-  }
+  // Check admin access on load
+  (async function() {
+    try {
+      var res = await fetch("/.netlify/functions/planner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ action: "venues" }),
+      });
+      if (!res.ok) {
+        document.getElementById("loginMsg").textContent = "No access. Open the LLG app first to sign in, then try again.";
+        return;
+      }
+      document.getElementById("loginGate").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      var data = await res.json();
+      VENUES = data.venues || [];
+      renderVenueSelect();
+      populateMonths();
+    } catch(e) {
+      document.getElementById("loginMsg").textContent = "Could not connect. Please try again.";
+    }
+  })();
 
   async function api(body) {
-    const res = await fetch("/.netlify/functions/planner", {
+    var res = await fetch("/.netlify/functions/planner", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Admin-Password": PASSWORD },
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
       body: JSON.stringify(body),
     });
-    const data = await res.json();
+    var data = await res.json();
     if (!res.ok) throw new Error(data.error + (data.detail ? ": " + data.detail : ""));
     return data;
   }
@@ -168,15 +181,19 @@
     if (type === "ok") setTimeout(() => { el.style.display = "none"; }, 3000);
   }
 
+  function renderVenueSelect() {
+    var sel = document.getElementById("venueSelect");
+    sel.innerHTML = '<option value="">Choose venue</option>';
+    VENUES.forEach(function(v) {
+      sel.innerHTML += '<option value="' + v.id + '">' + esc(v.name) + (v.town ? " (" + esc(v.town) + ")" : "") + '</option>';
+    });
+  }
+
   async function loadVenues() {
     try {
-      const data = await api({ action: "venues" });
+      var data = await api({ action: "venues" });
       VENUES = data.venues;
-      const sel = document.getElementById("venueSelect");
-      sel.innerHTML = '<option value="">Choose venue</option>';
-      VENUES.forEach(v => {
-        sel.innerHTML += `<option value="${v.id}">${esc(v.name)}${v.town ? " (" + esc(v.town) + ")" : ""}</option>`;
-      });
+      renderVenueSelect();
     } catch (err) { showStatus("Failed to load venues: " + err.message, "err"); }
   }
 

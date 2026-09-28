@@ -26,8 +26,7 @@
 <body>
   <h1>Upload Session Topics</h1>
 
-  <label for="password">Admin password</label>
-  <input type="password" id="password" placeholder="Enter admin password">
+  <div id="accessMsg" style="color:#999">Checking access...</div>
 
   <label for="csvFile">CSV file</label>
   <p class="help">Columns: venue, date (YYYY-MM-DD), start_time (HH:MM), title, description</p>
@@ -57,13 +56,31 @@
       });
     }
 
-    async function preview() {
-      const password = document.getElementById("password").value;
-      const file = document.getElementById("csvFile").files[0];
-      const status = document.getElementById("status");
-      const table = document.getElementById("previewTable");
+    // Check access on load
+    (async function() {
+      try {
+        var res = await fetch("/.netlify/functions/upload-topics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ action: "preview", rows: [] }),
+        });
+        if (res.status === 401) {
+          document.getElementById("accessMsg").textContent = "No access. Open the LLG app first to sign in, then try again.";
+          document.getElementById("previewBtn").disabled = true;
+          return;
+        }
+        document.getElementById("accessMsg").style.display = "none";
+      } catch(e) {
+        document.getElementById("accessMsg").textContent = "Could not connect.";
+      }
+    })();
 
-      if (!password) { status.innerHTML = '<span class="error">Enter password</span>'; return; }
+    async function preview() {
+      var file = document.getElementById("csvFile").files[0];
+      var status = document.getElementById("status");
+      var table = document.getElementById("previewTable");
+
       if (!file) { status.innerHTML = '<span class="error">Choose a CSV file</span>'; return; }
 
       status.textContent = "Loading...";
@@ -71,7 +88,7 @@
       document.getElementById("saveBtn").disabled = true;
       previewedRows = null;
 
-      const text = await file.text();
+      var text = await file.text();
       const rows = parseCSV(text);
 
       if (rows.length === 0) { status.innerHTML = '<span class="error">No data rows found</span>'; return; }
@@ -79,7 +96,7 @@
       try {
         const res = await fetch("/.netlify/functions/upload-topics", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Password": password },
+          headers: { "Content-Type": "application/json" }, credentials: "same-origin",
           body: JSON.stringify({ action: "preview", rows }),
         });
         const data = await res.json();
@@ -117,8 +134,7 @@
     }
 
     async function save() {
-      const password = document.getElementById("password").value;
-      const status = document.getElementById("status");
+      var status = document.getElementById("status");
 
       if (!previewedRows) return;
 
@@ -128,7 +144,7 @@
       try {
         const res = await fetch("/.netlify/functions/upload-topics", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Password": password },
+          headers: { "Content-Type": "application/json" }, credentials: "same-origin",
           body: JSON.stringify({ action: "save", rows: previewedRows }),
         });
         const data = await res.json();
