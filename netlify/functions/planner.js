@@ -141,11 +141,14 @@ async function handleSessions(supabase, body, headers) {
     if (!cursor) break;
   }
 
-  // Temp: log session summary for verification
+  // Temp: log session summary with service IDs
   console.log("planner verify:", venue.name, year + "-" + month, "sessions:", wixSessions.length);
+  var serviceIds = new Set();
   wixSessions.forEach(function(s) {
-    console.log("  ", s.startDate, "to", s.endDate, s.title, "type:" + s.type);
+    serviceIds.add(s.externalScheduleId);
+    console.log("  ", s.startDate, "to", s.endDate, "svc:" + s.externalScheduleId);
   });
+  console.log("planner service IDs:", JSON.stringify([...serviceIds]));
 
   // Get existing topic assignments for this venue and month
   const monthStart = new Date(year, month - 1, 1);
