@@ -176,6 +176,9 @@
     <!-- Trip screen -->
     <div id="tripScreen" class="screen"></div>
 
+    <!-- All trips screen -->
+    <div id="allTripsScreen" class="screen card-screen"></div>
+
     <!-- Error -->
     <div id="error" style="display:none"></div>
   </div>
@@ -253,7 +256,7 @@
 
     function showScreen(name, extra) {
       document.getElementById("loadingWrap").style.display = "none";
-      ["homeScreen","cardScreen","tripScreen"].forEach(function(id) {
+      ["homeScreen","cardScreen","tripScreen","allTripsScreen"].forEach(function(id) {
         document.getElementById(id).classList.remove("active");
       });
 
@@ -264,6 +267,10 @@
         renderHome();
         document.getElementById("homeScreen").classList.add("active");
         trackEvent("home_opened");
+      } else if (name === "allTrips") {
+        renderAllTrips();
+        document.getElementById("allTripsScreen").classList.add("active");
+        trackEvent("all_trips_opened");
       } else if (name === "card") {
         renderCard();
         document.getElementById("cardScreen").classList.add("active");
@@ -388,7 +395,7 @@
 
       // Trips worth a look
       if (DATA.events && DATA.events.length > 0) {
-        h += '<h2 style="font-size:1.1rem;margin:0.75rem 0 0.5rem">Trips worth a look</h2>';
+        h += '<div class="hrow" style="margin:0.75rem 0 0.5rem"><h2>Trips worth a look</h2><button class="pill" onclick="showScreen(\'allTrips\')">See all trips</button></div>';
         h += '<div class="trips-scroll">';
         DATA.events.forEach(function(e) {
           var eIdx = ALL_TRIPS.indexOf(e);
@@ -684,6 +691,114 @@
         if (!p.textContent.trim() && !p.querySelector("img,br")) p.remove();
       });
       return div.innerHTML;
+    }
+
+    // --- ALL TRIPS SCREEN ---
+    var tripFilter = "all";
+
+    function tripCategory(t) {
+      // Simple rule based on title and location keywords.
+      // "Golf school" if title contains "golf school" or "school".
+      // "Overseas" if location doesn't look like UK.
+      // "UK days" for everything else.
+      var title = (t.title || "").toLowerCase();
+      var loc = (t.location || "").toLowerCase();
+      if (title.indexOf("golf school") !== -1 || title.indexOf("school") !== -1) return "school";
+      var ukKeywords = ["england","uk","kent","surrey","sussex","essex","london","hampshire","berkshire","hertfordshire","buckinghamshire","bedfordshire","oxfordshire","cambridgeshire","norfolk","suffolk","devon","dorset","somerset","wiltshire","gloucestershire","warwickshire","yorkshire","lancashire","cheshire","nottinghamshire","leicestershire","derbyshire","staffordshire","shropshire","worcestershire","scotland","wales","northern ireland"];
+      var isUk = ukKeywords.some(function(k) { return loc.indexOf(k) !== -1; });
+      // If no location, check title for country-sounding words
+      if (!isUk && loc) {
+        // Assume overseas if location doesn't match UK
+        return "overseas";
+      }
+      return "uk";
+    }
+
+    function renderAllTrips() {
+      var el = document.getElementById("allTripsScreen");
+      var trips = (DATA.allTrips || []).filter(function(t) {
+        return t.status === "UPCOMING" || t.status === "STARTED";
+      });
+
+      // Rebuild ALL_TRIPS to include allTrips for data-trip-idx
+      ALL_TRIPS = trips;
+
+      var h = '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>';
+      h += '<h1 style="font-size:1.3rem;margin-bottom:0.75rem">All trips</h1>';
+
+      // Filter chips
+      var filters = [
+        { key: "all", label: "All" },
+        { key: "uk", label: "UK days" },
+        { key: "overseas", label: "Overseas" },
+        { key: "school", label: "Golf school" },
+      ];
+      h += '<div style="display:flex;gap:0.4rem;margin-bottom:1rem;flex-wrap:wrap">';
+      filters.forEach(function(f) {
+        var active = tripFilter === f.key;
+        h += '<button class="pill" data-filter="' + f.key + '" style="' + (active ? 'background:var(--mg);color:#fff;border-color:var(--mg)' : '') + '">' + f.label + '</button>';
+      });
+      h += '</div>';
+
+      // Filter trips
+      var filtered = trips;
+      if (tripFilter !== "all") {
+        filtered = trips.filter(function(t) { return tripCategory(t) === tripFilter; });
+      }
+
+      // Group by month
+      var groups = {};
+      filtered.forEach(function(t) {
+        var key = t.startDate ? new Date(t.startDate).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "No date";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(t);
+      });
+
+      if (filtered.length === 0) {
+        h += '<p class="small" style="padding:1rem 0">No trips in this category.</p>';
+      }
+
+      Object.keys(groups).forEach(function(month) {
+        h += '<h2 style="font-size:1rem;font-weight:600;margin:0.75rem 0 0.5rem;color:var(--muted)">' + month + '</h2>';
+        groups[month].forEach(function(t) {
+          var tIdx = ALL_TRIPS.indexOf(t);
+          var soldOut = t.soldOut;
+          var booked = t.isBooked === true;
+          var opacity = soldOut && !booked ? 'opacity:0.5;' : '';
+
+          h += '<div class="card" data-trip-idx="' + tIdx + '" style="cursor:pointer;' + opacity + '">' +
+            '<div style="display:flex;gap:0.75rem;align-items:flex-start">';
+
+          if (t.imageUrl) {
+            h += '<img src="' + esc(t.imageUrl) + '" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:10px;flex-shrink:0">';
+          }
+
+          h += '<div style="flex:1;min-width:0">' +
+            '<div style="font-family:\'Poppins\',sans-serif;font-weight:600;font-size:0.95rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(t.title) + '</div>' +
+            '<div class="small">' + (t.startDate ? fmtShort(new Date(t.startDate)) : "") + (t.location ? ' \u00b7 ' + esc(t.location) : '') + '</div>';
+
+          if (booked) {
+            h += '<span class="badge badge-booked" style="margin-top:0.3rem;font-size:0.75rem">You\'re booked</span>';
+          } else if (soldOut) {
+            h += '<span class="badge badge-full" style="margin-top:0.3rem;font-size:0.75rem">Fully booked</span>';
+          } else if (t.price) {
+            h += '<div style="font-weight:700;font-size:0.85rem;margin-top:0.2rem">' + esc(t.price) + ' to secure your place</div>';
+          }
+
+          h += '</div></div></div>';
+        });
+      });
+
+      el.innerHTML = h;
+
+      // Filter chip listeners
+      el.querySelectorAll("[data-filter]").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          tripFilter = btn.getAttribute("data-filter");
+          renderAllTrips();
+        });
+      });
     }
 
     // --- UTILITIES ---

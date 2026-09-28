@@ -641,6 +641,10 @@ exports.handler = async (event) => {
   const tripsWorthALook = allEvents
     .filter(e => !bookedEventIdSet.has(e.id) && !e.soldOut && e.status === "UPCOMING")
     .slice(0, 5);
+  const allTripsWithStatus = allEvents.map(e => ({
+    ...e,
+    isBooked: bookedEventIdSet.has(e.id),
+  }));
 
   const MEMBER_DISCOUNT = 7.50;
   const memberPrice = servicePrice ? (servicePrice - MEMBER_DISCOUNT).toFixed(2) : null;
@@ -667,6 +671,7 @@ exports.handler = async (event) => {
     perks,
     yourTrips,
     events: tripsWorthALook,
+    allTrips: allTripsWithStatus,
     servicePrice,
     memberPrice,
     planCheckoutUrls,
