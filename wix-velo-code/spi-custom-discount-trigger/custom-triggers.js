@@ -46,6 +46,10 @@ export const getEligibleTriggers = async (options, context) => {
 
   // Trigger 1: Member coaching discount
   try {
+    const memberTrigger = (options.triggers || []).find(
+      (tr) => tr.customTrigger?._id === TRIGGER_MEMBER
+    );
+
     const elevatedList = auth.elevate(orders.managementListOrders);
     const result = await elevatedList({
       buyerIds: [memberId],
@@ -53,22 +57,73 @@ export const getEligibleTriggers = async (options, context) => {
       limit: 10,
     });
 
-    const hasEligiblePlan = (result.orders || []).some((order) =>
-      ELIGIBLE_PLAN_IDS.includes(order.planId)
-    );
+    const orderCount = (result.orders || []).length;
+    const matchedPlanIds = (result.orders || [])
+      .filter((o) => ELIGIBLE_PLAN_IDS.includes(o.planId))
+      .map((o) => o.planId);
+    const hasEligiblePlan = matchedPlanIds.length > 0;
 
-    if (hasEligiblePlan) {
-      const t = (options.triggers || []).find(
-        (tr) => tr.customTrigger?._id === TRIGGER_MEMBER
-      );
-      if (t) {
-        eligible.push({
-          customTriggerId: t.customTrigger._id,
-          identifier: t.identifier,
-        });
-      }
+    if (hasEligiblePlan && memberTrigger) {
+      eligible.push({
+        customTriggerId: memberTrigger.customTrigger._id,
+        identifier: memberTrigger.identifier,
+      });
     }
+
+    // Beacon: fire and forget (1s timeout, never blocks checkout)
+    try {
+      const debugSecret = await getSecret("LLG_SPI_SECRET").catch(() => null);
+      if (debugSecret) {
+        Promise.race([
+          fetch(
+            "https://llg-app-test.netlify.app/.netlify/functions/spi-debug",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-SPI-Secret": debugSecret,
+              },
+              body: JSON.stringify({
+                step: "member_trigger",
+                hasMemberId: true,
+                memberTriggerInOptions: !!memberTrigger,
+                triggerIds: (options.triggers || []).map(
+                  (tr) => tr.customTrigger?._id || "unknown"
+                ),
+                orderCount,
+                matchedPlanIds,
+                eligible: hasEligiblePlan && !!memberTrigger,
+              }),
+            }
+          ),
+          timeout(1000),
+        ]).catch(() => {});
+      }
+    } catch (e) {}
   } catch (err) {
+    // Beacon the error too
+    try {
+      const debugSecret = await getSecret("LLG_SPI_SECRET").catch(() => null);
+      if (debugSecret) {
+        Promise.race([
+          fetch(
+            "https://llg-app-test.netlify.app/.netlify/functions/spi-debug",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-SPI-Secret": debugSecret,
+              },
+              body: JSON.stringify({
+                step: "member_trigger_error",
+                error: err.message || String(err),
+              }),
+            }
+          ),
+          timeout(1000),
+        ]).catch(() => {});
+      }
+    } catch (e2) {}
     console.error("SPI member trigger error:", err.message || err);
   }
 

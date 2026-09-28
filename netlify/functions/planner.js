@@ -141,6 +141,12 @@ async function handleSessions(supabase, body, headers) {
     if (!cursor) break;
   }
 
+  // Temp: log session summary for verification
+  console.log("planner verify:", venue.name, year + "-" + month, "sessions:", wixSessions.length);
+  wixSessions.forEach(function(s) {
+    console.log("  ", s.startDate, "to", s.endDate, s.title, "type:" + s.type);
+  });
+
   // Get existing topic assignments for this venue and month
   const monthStart = new Date(year, month - 1, 1);
   const monthEnd = new Date(year, month, 0, 23, 59, 59);
