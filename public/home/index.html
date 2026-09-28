@@ -225,6 +225,7 @@
       var hash = window.location.hash.slice(1);
       var params = new URLSearchParams(hash);
       PASS = params.get("p") || null;
+      var justBooked = params.get("booked") === "1";
       if (PASS && window.history.replaceState) {
         window.history.replaceState(null, "", window.location.pathname);
       }
@@ -239,6 +240,7 @@
         var controller = new AbortController();
         var timer = setTimeout(function() { controller.abort(); }, 9000);
         var fetchBody = PASS ? { pass: PASS } : {};
+        if (justBooked) fetchBody.skipCache = true;
         var res = await fetch("/.netlify/functions/home-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

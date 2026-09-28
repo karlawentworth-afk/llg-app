@@ -34,7 +34,8 @@ $w.onReady(function () {
         return;
       }
 
-      wixLocation.to(`https://llg-app-test.netlify.app/home/#p=${pass}`);
+      const booked = wixLocation.query.booked === "1" ? "&booked=1" : "";
+      wixLocation.to(`https://llg-app-test.netlify.app/home/#p=${pass}${booked}`);
     } catch (err) {
       const msg = (err && err.message) || "";
       if (msg.includes("No permission") || msg.includes("not logged in")) {

@@ -28,7 +28,8 @@ $w.onReady(async function () {
       return;
     }
 
-    wixLocation.to(`https://llg-app-test.netlify.app/home/#p=${pass}`);
+    const booked = wixLocation.query.booked === "1" ? "&booked=1" : "";
+    wixLocation.to(`https://llg-app-test.netlify.app/home/#p=${pass}${booked}`);
   } catch (err) {
     loginMsg.text = "Something went wrong. Please try again.";
   }
