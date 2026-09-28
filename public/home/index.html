@@ -147,6 +147,12 @@
     .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--charcoal); color: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
     .avatar:active { opacity: 0.8; }
 
+    /* Trip about content */
+    .trip-about p { margin-bottom: 0.5rem; }
+    .trip-about h1,.trip-about h2,.trip-about h3,.trip-about h4 { font-size: 1.1rem; font-weight: 700; margin: 0.75rem 0 0.3rem; }
+    .trip-about ul,.trip-about ol { margin: 0.5rem 0; padding-left: 1.25rem; }
+    .trip-about li { margin-bottom: 0.25rem; }
+
     .error-msg { color: #c0392b; font-weight: 600; padding: 2rem 0; text-align: center; }
     .holding { text-align: center; padding: 2rem 0; }
   </style>
@@ -542,7 +548,8 @@
             action = '<div style="text-align:center"><span class="badge badge-booked">You\'re booked</span>' +
               '<div style="margin-top:0.3rem"><a class="mg" style="font-size:0.8rem" href="https://www.ladieslovegolf.com/account/my-bookings" onclick="tapNav(this)">Manage</a></div></div>';
           } else if (full && DATA.plan.eligible) {
-            action = '<a class="btn btn-sm" style="background:#fff;color:var(--mg-dark);border:1.5px solid var(--mg)" href="' + bookUrl + '" onclick="tapWaitlist(this)">Join waitlist</a>';
+            var waitlistUrl = "https://www.ladieslovegolf.com/booking-calendar?bookings_serviceId=" + encodeURIComponent(s.serviceId);
+            action = '<a class="btn btn-sm" style="background:#fff;color:var(--mg-dark);border:1.5px solid var(--mg)" href="' + waitlistUrl + '" onclick="tapWaitlist(this)">Join waitlist</a>';
           } else if (full) {
             action = '<span class="badge badge-full">Full</span>';
           } else {
@@ -676,8 +683,16 @@
       }
 
       // Description (cleaned up from Wix HTML)
-      if (trip.shortDescription) {
-        h += '<div style="margin:1rem 0;font-size:1rem;line-height:1.6">' + cleanDescription(trip.shortDescription) + '</div>';
+      // Description: short description bold as intro, then full About
+      if (trip.shortDescription || trip.aboutHtml) {
+        h += '<div style="margin:1rem 0;font-size:1rem;line-height:1.6">';
+        if (trip.shortDescription) {
+          h += '<p style="font-weight:700;margin-bottom:0.75rem">' + esc(trip.shortDescription) + '</p>';
+        }
+        if (trip.aboutHtml) {
+          h += '<div class="trip-about">' + cleanDescription(trip.aboutHtml) + '</div>';
+        }
+        h += '</div>';
       }
 
       // Bottom bar

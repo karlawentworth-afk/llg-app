@@ -372,6 +372,7 @@ async function fetchEvents(headers) {
             sort: [{ fieldName: "dateAndTimeSettings.startDate", order: "ASC" }],
             paging: { limit: 20 },
           },
+          fieldsets: ["DETAILS"],
         }),
       }
     );
@@ -388,9 +389,63 @@ async function fetchEvents(headers) {
       soldOut: e.summaries?.soldOut || false,
       imageUrl: e.mainImage?.url || null,
       shortDescription: e.shortDescription || "",
+      aboutHtml: richContentToHtml(e.description),
       price: e.registration?.tickets?.lowestPrice?.formattedValue || null,
     }));
   } catch { return []; }
+}
+
+function richContentToHtml(rc) {
+  if (!rc || !rc.nodes) return "";
+  var html = "";
+  rc.nodes.forEach(function(node) {
+    if (node.type === "PARAGRAPH") {
+      var text = nodesToText(node.nodes || []);
+      if (text.trim()) html += "<p>" + text + "</p>";
+    } else if (node.type === "HEADING") {
+      var level = node.headingData?.level || 3;
+      var text = nodesToText(node.nodes || []);
+      if (text.trim()) html += "<h" + level + ">" + text + "</h" + level + ">";
+    } else if (node.type === "BULLETED_LIST") {
+      html += "<ul>";
+      (node.nodes || []).forEach(function(li) {
+        var text = "";
+        (li.nodes || []).forEach(function(p) {
+          text += nodesToText(p.nodes || []);
+        });
+        if (text.trim()) html += "<li>" + text + "</li>";
+      });
+      html += "</ul>";
+    } else if (node.type === "ORDERED_LIST") {
+      html += "<ol>";
+      (node.nodes || []).forEach(function(li) {
+        var text = "";
+        (li.nodes || []).forEach(function(p) {
+          text += nodesToText(p.nodes || []);
+        });
+        if (text.trim()) html += "<li>" + text + "</li>";
+      });
+      html += "</ol>";
+    }
+  });
+  return html;
+}
+
+function nodesToText(nodes) {
+  var text = "";
+  (nodes || []).forEach(function(n) {
+    if (n.type === "TEXT") {
+      var t = n.textData?.text || "";
+      // Apply decorations
+      var decs = n.textData?.decorations || [];
+      decs.forEach(function(d) {
+        if (d.type === "BOLD") t = "<strong>" + t + "</strong>";
+        if (d.type === "ITALIC") t = "<em>" + t + "</em>";
+      });
+      text += t;
+    }
+  });
+  return text;
 }
 
 async function fetchMemberEventOrders(contactId, headers) {
