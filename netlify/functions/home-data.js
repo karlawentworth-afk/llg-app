@@ -111,7 +111,7 @@ async function fetchContactInfo(contactId, headers) {
     const email = c.primaryInfo?.email || "";
     const phone = c.primaryInfo?.phone || "";
     const handicap = c.info?.extendedFields?.items?.["custom.handicap"] ?? c.customFields?.["custom.handicap"]?.value ?? null;
-    const golfClub = c.info?.extendedFields?.items?.["custom.golf_club"] ?? c.customFields?.["custom.golf_club"]?.value ?? null;
+    const golfClub = c.info?.extendedFields?.items?.["custom.golfclub"] ?? c.customFields?.["custom.golfclub"]?.value ?? null;
     return { fullName, email, phone, handicap, golfClub };
   } catch { return { fullName: "", email: "", phone: "", handicap: null, golfClub: null }; }
 }

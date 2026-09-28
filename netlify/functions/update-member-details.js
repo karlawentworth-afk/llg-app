@@ -77,7 +77,7 @@ exports.handler = async (event) => {
     }
   }
   if (body.golfClub !== undefined) {
-    customFields["custom.golf_club"] = { value: String(body.golfClub || "") };
+    customFields["custom.golfclub"] = { value: String(body.golfClub || "") };
   }
 
   if (Object.keys(customFields).length === 0) {
