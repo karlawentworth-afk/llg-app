@@ -146,8 +146,9 @@
   let openPickerIdx = null;
 
   var PASSWORD = "";
+  try { PASSWORD = sessionStorage.getItem("llg_admin_pwd") || ""; } catch(e) {}
 
-  // Check admin access on load (session cookie first, then offer password)
+  // Check admin access on load (session cookie first, then saved password, then prompt)
   (async function() {
     try {
       var res = await fetch("/.netlify/functions/planner", {
@@ -160,7 +161,22 @@
         enterApp(await res.json());
         return;
       }
-      // Session failed — show password fallback
+      // Session failed — try saved password
+      if (PASSWORD) {
+        var res2 = await fetch("/.netlify/functions/planner", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Password": PASSWORD },
+          credentials: "same-origin",
+          body: JSON.stringify({ action: "venues" }),
+        });
+        if (res2.ok) {
+          enterApp(await res2.json());
+          return;
+        }
+        PASSWORD = "";
+        try { sessionStorage.removeItem("llg_admin_pwd"); } catch(e) {}
+      }
+      // Show password fallback
       document.getElementById("loginMsg").textContent = "";
       document.getElementById("passwordFallback").style.display = "";
     } catch(e) {
@@ -182,6 +198,7 @@
         document.getElementById("loginMsg").textContent = "Wrong password.";
         return;
       }
+      try { sessionStorage.setItem("llg_admin_pwd", PASSWORD); } catch(e) {}
       enterApp(await res.json());
     } catch(e) {
       document.getElementById("loginMsg").textContent = "Could not connect.";

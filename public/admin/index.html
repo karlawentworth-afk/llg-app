@@ -62,6 +62,7 @@
     }
 
     var PASSWORD = "";
+    try { PASSWORD = sessionStorage.getItem("llg_admin_pwd") || ""; } catch(e) {}
 
     function apiHeaders() {
       var h = { "Content-Type": "application/json" };
@@ -78,6 +79,21 @@
           credentials: "same-origin",
           body: JSON.stringify({ action: "preview", rows: [] }),
         });
+        if (res.status === 401 && PASSWORD) {
+          // Try saved password
+          var res2 = await fetch("/.netlify/functions/upload-topics", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Admin-Password": PASSWORD },
+            credentials: "same-origin",
+            body: JSON.stringify({ action: "preview", rows: [] }),
+          });
+          if (res2.ok || res2.status !== 401) {
+            document.getElementById("accessMsg").style.display = "none";
+            return;
+          }
+          PASSWORD = "";
+          try { sessionStorage.removeItem("llg_admin_pwd"); } catch(e) {}
+        }
         if (res.status === 401) {
           document.getElementById("accessMsg").textContent = "";
           document.getElementById("passwordFallback").style.display = "";
@@ -104,6 +120,7 @@
           document.getElementById("accessMsg").style.display = "";
           return;
         }
+        try { sessionStorage.setItem("llg_admin_pwd", PASSWORD); } catch(e) {}
         document.getElementById("accessMsg").style.display = "none";
         document.getElementById("passwordFallback").style.display = "none";
       } catch(e) {
