@@ -93,27 +93,30 @@ async function handleSessions(supabase, body, headers) {
   const lastDay = new Date(year, month, 0).getDate();
   const toDate = `${year}-${String(month).padStart(2, "0")}-${lastDay}T23:59`;
 
-  const res = await fetchWithTimeout(
-    "https://www.wixapis.com/calendar/v3/events/query",
-    {
-      method: "POST",
-      headers: wixHeaders(),
-      body: JSON.stringify({
-        query: {
-          filter: { "location.id": venue.wix_location_id },
-          sort: [{ fieldName: "start", order: "ASC" }],
-          cursorPaging: { limit: 50 },
-        },
-        fromLocalDate: fromDate,
-        toLocalDate: toDate,
-      }),
-    }
-  );
-
+  // Paginate through all sessions for this venue and month
   let wixSessions = [];
-  if (res.ok) {
+  let cursor = null;
+  for (let page = 0; page < 5; page++) {
+    const paging = cursor ? { limit: 100, cursor } : { limit: 100 };
+    const res = await fetchWithTimeout(
+      "https://www.wixapis.com/calendar/v3/events/query",
+      {
+        method: "POST",
+        headers: wixHeaders(),
+        body: JSON.stringify({
+          query: {
+            filter: { "location.id": venue.wix_location_id },
+            sort: [{ fieldName: "start", order: "ASC" }],
+            cursorPaging: paging,
+          },
+          fromLocalDate: fromDate,
+          toLocalDate: toDate,
+        }),
+      }
+    );
+    if (!res.ok) break;
     const data = await res.json();
-    wixSessions = (data.events || [])
+    const batch = (data.events || [])
       .filter(e => e.status !== "CANCELLED")
       .map(e => ({
         eventId: e.id,
@@ -125,6 +128,9 @@ async function handleSessions(supabase, body, headers) {
         totalCapacity: e.totalCapacity || 0,
         remainingCapacity: e.remainingCapacity || 0,
       }));
+    wixSessions = wixSessions.concat(batch);
+    cursor = data.pagingMetadata?.cursors?.next || null;
+    if (!cursor) break;
   }
 
   // Get existing topic assignments for this venue and month
