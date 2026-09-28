@@ -198,6 +198,7 @@
 
   <script>
     var USE_APP_BOOK = false;
+    var USE_DIRECT_CHECKOUT = false; // Spike: skip booking form, go straight to Wix checkout
 
     var DATA = null;
     var PASS = null;
@@ -1192,6 +1193,15 @@
     function tapNav(el, text) { if (text) el.textContent = text; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("trip_tapped"); }
 
     function buildBookingUrl(s) {
+      if (USE_DIRECT_CHECKOUT) {
+        var q = new URLSearchParams();
+        if (s.serviceId) q.set("serviceId", s.serviceId);
+        if (s.resourceId) q.set("resourceId", s.resourceId);
+        if (s.startDate) q.set("startDate", s.startDate);
+        if (s.endDate) q.set("endDate", s.endDate);
+        q.set("timezone", s.timeZone || "Europe/London");
+        return "https://www.ladieslovegolf.com/app-checkout?" + q.toString();
+      }
       var p = new URLSearchParams();
       if (s.serviceId) p.set("bookings_serviceId", s.serviceId);
       if (s.resourceId) p.set("bookings_resourceId", s.resourceId);
