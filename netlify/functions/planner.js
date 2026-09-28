@@ -58,6 +58,12 @@ exports.handler = async (event) => {
     if (action === "copyLastMonth") return await handleCopyLastMonth(supabase, body, headers);
     if (action === "addLibraryTopic") return await handleAddLibraryTopic(supabase, body, headers);
     if (action === "lastUsed") return await handleLastUsed(supabase, body, headers);
+    if (action === "editLibraryTopic") return await handleEditLibraryTopic(supabase, body, headers);
+    if (action === "removeLibraryTopic") return await handleRemoveLibraryTopic(supabase, body, headers);
+    if (action === "clearSessionTopic") return await handleClearSessionTopic(supabase, body, headers);
+    if (action === "bulkNoSession") return await handleBulkNoSession(supabase, body, headers);
+    if (action === "tidyPreview") return await handleTidyPreview(supabase, body, headers);
+    if (action === "cancelSession") return await handleCancelSession(supabase, body, headers, admin);
     return { statusCode: 400, headers, body: JSON.stringify({ error: "unknown_action" }) };
   } catch (err) {
     console.error("Planner error:", err.message);
@@ -107,13 +113,18 @@ async function handleSessions(supabase, body, headers) {
   let wixSessions = [];
   if (res.ok) {
     const data = await res.json();
-    wixSessions = (data.events || []).map(e => ({
-      eventId: e.id,
-      title: e.title || "Session",
-      startDate: e.start?.localDate || null,
-      endDate: e.end?.localDate || null,
-      locationName: e.location?.name || "",
-    }));
+    wixSessions = (data.events || [])
+      .filter(e => e.status !== "CANCELLED")
+      .map(e => ({
+        eventId: e.id,
+        title: e.title || "Session",
+        startDate: e.start?.localDate || null,
+        endDate: e.end?.localDate || null,
+        locationName: e.location?.name || "",
+        status: e.status || "",
+        totalCapacity: e.totalCapacity || 0,
+        remainingCapacity: e.remainingCapacity || 0,
+      }));
   }
 
   // Get existing topic assignments for this venue and month
@@ -335,4 +346,208 @@ async function handleLastUsed(supabase, body, headers) {
     headers,
     body: JSON.stringify({ lastUsed: data?.[0]?.start_utc || null }),
   };
+}
+
+async function handleEditLibraryTopic(supabase, body, headers) {
+  const { topicId, title, description, category } = body;
+  if (!topicId) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_topic_id" }) };
+
+  const update = {};
+  if (title !== undefined) update.title = title.trim();
+  if (description !== undefined) update.description = description || null;
+  if (category !== undefined) update.category = category || null;
+
+  if (Object.keys(update).length === 0) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "nothing_to_update" }) };
+  }
+
+  const { error } = await supabase.from("topic_library").update(update).eq("id", topicId);
+  if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "update_failed", detail: error.message }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+}
+
+async function handleRemoveLibraryTopic(supabase, body, headers) {
+  const { topicId } = body;
+  if (!topicId) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_topic_id" }) };
+
+  // Soft-delete: set active = false (keeps history)
+  const { error } = await supabase.from("topic_library").update({ active: false }).eq("id", topicId);
+  if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "remove_failed", detail: error.message }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+}
+
+async function handleClearSessionTopic(supabase, body, headers) {
+  const { venueId, startDate } = body;
+  if (!venueId || !startDate) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_fields" }) };
+
+  // Delete the assignment entirely (rather than setting to "(none)")
+  const sessionStart = new Date(startDate);
+  const windowStart = new Date(sessionStart.getTime() - 2 * 60 * 60 * 1000);
+  const windowEnd = new Date(sessionStart.getTime() + 2 * 60 * 60 * 1000);
+
+  const { error } = await supabase
+    .from("session_topics")
+    .delete()
+    .eq("venue_id", venueId)
+    .gte("start_utc", windowStart.toISOString())
+    .lte("start_utc", windowEnd.toISOString());
+
+  if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "clear_failed", detail: error.message }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+}
+
+async function handleBulkNoSession(supabase, body, headers) {
+  // Convert all blank (unassigned) sessions in a month to "No session this day"
+  const { venueId, year, month, sessions } = body;
+  if (!venueId || !sessions || !Array.isArray(sessions)) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_fields" }) };
+  }
+
+  const rows = sessions.map(function(s) {
+    return {
+      venue_id: venueId,
+      start_utc: s.startDate,
+      title: "No session this day",
+      description: null,
+    };
+  });
+
+  if (rows.length === 0) return { statusCode: 200, headers, body: JSON.stringify({ marked: 0 }) };
+
+  const { data, error } = await supabase
+    .from("session_topics")
+    .upsert(rows, { onConflict: "venue_id,start_utc", ignoreDuplicates: true })
+    .select();
+
+  if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "bulk_failed", detail: error.message }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ marked: data?.length || 0 }) };
+}
+
+async function handleTidyPreview(supabase, body, headers) {
+  // List sessions marked "No session this day" with their booking counts
+  const { venueId, year, month } = body;
+  if (!venueId || !year || !month) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_fields" }) };
+
+  const monthStart = new Date(year, month - 1, 1);
+  const lastDay = new Date(year, month, 0).getDate();
+  const monthEnd = new Date(year, month - 1, lastDay, 23, 59, 59);
+
+  // Get session_topics marked as "No session this day"
+  const { data: noSessions } = await supabase
+    .from("session_topics")
+    .select("start_utc")
+    .eq("venue_id", venueId)
+    .eq("title", "No session this day")
+    .gte("start_utc", monthStart.toISOString())
+    .lte("start_utc", monthEnd.toISOString());
+
+  if (!noSessions || noSessions.length === 0) {
+    return { statusCode: 200, headers, body: JSON.stringify({ canCancel: [], hasBookings: [] }) };
+  }
+
+  // Get venue for Wix location
+  const { data: venue } = await supabase.from("venues").select("wix_location_id").eq("id", venueId).single();
+  if (!venue?.wix_location_id) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "venue_not_found" }) };
+  }
+
+  // Fetch Wix sessions for this month
+  const fromDate = year + "-" + String(month).padStart(2, "0") + "-01T00:00";
+  const toDate = year + "-" + String(month).padStart(2, "0") + "-" + lastDay + "T23:59";
+
+  const res = await fetchWithTimeout(
+    "https://www.wixapis.com/calendar/v3/events/query",
+    {
+      method: "POST",
+      headers: wixHeaders(),
+      body: JSON.stringify({
+        query: {
+          filter: { "location.id": venue.wix_location_id },
+          sort: [{ fieldName: "start", order: "ASC" }],
+          cursorPaging: { limit: 50 },
+        },
+        fromLocalDate: fromDate,
+        toLocalDate: toDate,
+      }),
+    }
+  );
+
+  if (!res.ok) return { statusCode: 500, headers, body: JSON.stringify({ error: "wix_fetch_failed" }) };
+  const wixData = await res.json();
+  const wixEvents = wixData.events || [];
+
+  // Match "No session" markers to Wix events
+  var canCancel = [];
+  var hasBookings = [];
+
+  noSessions.forEach(function(ns) {
+    var nsTime = new Date(ns.start_utc).getTime();
+    var match = wixEvents.find(function(e) {
+      if (e.status === "CANCELLED") return false;
+      var eTime = e.start?.localDate ? new Date(e.start.localDate).getTime() : 0;
+      return Math.abs(eTime - nsTime) < 2 * 60 * 60 * 1000;
+    });
+    if (!match) return;
+
+    var booked = (match.totalCapacity || 0) - (match.remainingCapacity || 0);
+    var entry = {
+      eventId: match.id,
+      startDate: match.start?.localDate || null,
+      title: match.title || "Session",
+      booked: booked,
+    };
+
+    if (booked > 0) {
+      hasBookings.push(entry);
+    } else {
+      canCancel.push(entry);
+    }
+  });
+
+  return { statusCode: 200, headers, body: JSON.stringify({ canCancel, hasBookings }) };
+}
+
+async function handleCancelSession(supabase, body, headers, admin) {
+  // Cancel a single Wix calendar event (INSTANCE of recurring)
+  const { eventId, venueId } = body;
+  if (!eventId) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_event_id" }) };
+
+  var writeKey = process.env.WIX_CONTACTS_WRITE_KEY;
+  var siteId = process.env.WIX_SITE_ID;
+  if (!writeKey || !siteId) return { statusCode: 500, headers, body: JSON.stringify({ error: "not_configured" }) };
+
+  try {
+    var res = await fetchWithTimeout(
+      "https://www.wixapis.com/calendar/v3/events/" + encodeURIComponent(eventId) + "/cancel",
+      {
+        method: "POST",
+        headers: {
+          Authorization: writeKey,
+          "wix-site-id": siteId,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          participantNotification: { notifyParticipants: false },
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      var errText = await res.text().catch(function() { return ""; });
+      console.error("cancelSession: Wix cancel failed", res.status, errText);
+      return { statusCode: 500, headers, body: JSON.stringify({ error: "cancel_failed", detail: errText.slice(0, 200) }) };
+    }
+
+    // Log the cancellation
+    await supabase.from("session_cancellations").insert({
+      wix_event_id: eventId,
+      venue_id: venueId || null,
+      cancelled_by: admin?.email || "unknown",
+    }).catch(function(err) { console.error("Cancel log error:", err.message); });
+
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+  } catch (err) {
+    console.error("cancelSession error:", err.message);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "server_error" }) };
+  }
 }

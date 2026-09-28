@@ -37,6 +37,7 @@
     .topic-current { font-weight: 600; color: #2B2A29; cursor: pointer; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid transparent; min-height: 36px; display: flex; align-items: center; }
     .topic-current:hover { border-color: #DE0082; background: #fff5f9; }
     .topic-empty { color: #aaa; font-style: italic; }
+    .topic-no-session { color: #e65100; font-style: italic; }
     .picker-dropdown {
       display: none;
       position: absolute;
@@ -107,6 +108,8 @@
     <select id="monthSelect" onchange="loadSessions()"></select>
     <button class="btn-secondary" onclick="copyLastMonth()">Copy last month</button>
     <button class="btn-secondary" onclick="openAddTopic()">+ New topic</button>
+    <button class="btn-secondary" onclick="markBlanksNoSession()">Mark blanks "No session"</button>
+    <button class="btn-secondary" onclick="tidyCalendar()" style="background:#fff3e0;color:#e65100">Tidy Wix calendar</button>
   </div>
 
   <div class="main">
@@ -246,8 +249,9 @@
         lastDate = dateStr;
       }
 
-      const topicTitle = s.currentTopic?.title || "";
-      const topicClass = topicTitle ? "" : "topic-empty";
+      var topicTitle = s.currentTopic ? s.currentTopic.title : "";
+      var isNoSession = topicTitle === "No session this day";
+      var topicClass = topicTitle ? (isNoSession ? "topic-no-session" : "") : "topic-empty";
 
       html += `<tr>
         <td style="white-space:nowrap">${esc(dateStr)}</td>
@@ -305,37 +309,81 @@
     }
   });
 
-  let searchTimer = null;
+  var SEARCH_RESULTS = []; // current search results for data attribute lookups
+
+  var searchTimer = null;
   function searchTopics(idx, query) {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(async () => {
+    searchTimer = setTimeout(async function() {
       try {
-        const venueId = document.getElementById("venueSelect").value;
-        const resultsEl = document.getElementById("results-" + idx);
+        var venueId = document.getElementById("venueSelect").value;
+        var resultsEl = document.getElementById("results-" + idx);
         resultsEl.innerHTML = '<div style="padding:0.75rem;color:#999">Searching...</div>';
 
-        const data = await api({ action: "searchTopics", query, venueId });
+        var data = await api({ action: "searchTopics", query: query, venueId: venueId });
+        SEARCH_RESULTS = data.topics || [];
 
-        if (data.topics.length === 0) {
-          resultsEl.innerHTML = '<div style="padding:1rem;color:#999">No topics found</div>';
-          return;
+        var html = "";
+
+        // "No session this day" always first
+        html += '<div class="picker-item" data-pick-idx="' + idx + '" data-pick-title="No session this day" data-pick-desc="" style="border-left:3px solid #e65100">' +
+          '<div class="picker-item-title" style="color:#e65100">No session this day</div>' +
+        '</div>';
+
+        if (SEARCH_RESULTS.length === 0 && query) {
+          html += '<div style="padding:1rem;color:#999">No topics found</div>';
         }
 
-        let html = "";
-        for (const t of data.topics) {
-          let lastUsedText = "";
+        SEARCH_RESULTS.forEach(function(t, ti) {
+          var lastUsedText = "";
           if (t.lastUsed) {
-            const d = new Date(t.lastUsed);
+            var d = new Date(t.lastUsed);
             lastUsedText = "Last run: " + d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
           }
 
-          html += `<div class="picker-item" onclick="pickTopic(${idx}, '${escAttr(t.title)}', '${escAttr(t.description || "")}')">
-            <div class="picker-item-title">${esc(t.title)}</div>
-            ${t.description ? `<div class="picker-item-desc">${esc(t.description)}</div>` : ""}
-            ${lastUsedText ? `<div class="picker-item-meta">${lastUsedText}</div>` : ""}
-          </div>`;
-        }
+          html += '<div class="picker-item" data-pick-idx="' + idx + '" data-pick-result="' + ti + '">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+              '<div class="picker-item-title">' + esc(t.title) + '</div>' +
+              '<div style="display:flex;gap:0.3rem;flex-shrink:0">' +
+                '<button class="btn-small btn-secondary" data-edit-topic="' + ti + '" style="padding:0.2rem 0.5rem;font-size:0.75rem" onclick="event.stopPropagation()">Edit</button>' +
+                '<button class="btn-small btn-secondary" data-remove-topic="' + ti + '" style="padding:0.2rem 0.5rem;font-size:0.75rem;color:#c62828" onclick="event.stopPropagation()">Hide</button>' +
+              '</div>' +
+            '</div>' +
+            (t.description ? '<div class="picker-item-desc">' + esc(t.description) + '</div>' : '') +
+            (lastUsedText ? '<div class="picker-item-meta">' + lastUsedText + '</div>' : '') +
+          '</div>';
+        });
         resultsEl.innerHTML = html;
+
+        // Wire pick handlers
+        resultsEl.querySelectorAll("[data-pick-result]").forEach(function(el) {
+          el.addEventListener("click", function() {
+            var ti = parseInt(el.getAttribute("data-pick-result"), 10);
+            var t = SEARCH_RESULTS[ti];
+            if (t) pickTopic(idx, t.title, t.description || "");
+          });
+        });
+        resultsEl.querySelectorAll("[data-pick-title]").forEach(function(el) {
+          el.addEventListener("click", function() {
+            pickTopic(idx, el.getAttribute("data-pick-title"), el.getAttribute("data-pick-desc") || "");
+          });
+        });
+
+        // Wire edit/remove handlers
+        resultsEl.querySelectorAll("[data-edit-topic]").forEach(function(el) {
+          el.addEventListener("click", function() {
+            var ti = parseInt(el.getAttribute("data-edit-topic"), 10);
+            var t = SEARCH_RESULTS[ti];
+            if (t) editLibraryTopic(t);
+          });
+        });
+        resultsEl.querySelectorAll("[data-remove-topic]").forEach(function(el) {
+          el.addEventListener("click", function() {
+            var ti = parseInt(el.getAttribute("data-remove-topic"), 10);
+            var t = SEARCH_RESULTS[ti];
+            if (t) removeLibraryTopic(t);
+          });
+        });
       } catch (err) {
         document.getElementById("results-" + idx).innerHTML = '<div style="padding:1rem;color:#c62828">' + esc(err.message) + '</div>';
       }
@@ -343,29 +391,143 @@
   }
 
   async function pickTopic(idx, title, description) {
-    const session = SESSIONS[idx];
-    if (!session?.startDate) return;
-    const venueId = document.getElementById("venueSelect").value;
+    var session = SESSIONS[idx];
+    if (!session || !session.startDate) return;
+    var venueId = document.getElementById("venueSelect").value;
 
     try {
-      await api({ action: "saveTopic", venueId, startDate: session.startDate, title, description });
-      session.currentTopic = { title, description };
+      await api({ action: "saveTopic", venueId: venueId, startDate: session.startDate, title: title, description: description });
+      session.currentTopic = { title: title, description: description };
       renderTable("");
       showStatus("Saved: " + title, "ok");
     } catch (err) { showStatus("Save failed: " + err.message, "err"); }
   }
 
   async function clearTopic(idx) {
-    const session = SESSIONS[idx];
-    if (!session?.startDate) return;
-    const venueId = document.getElementById("venueSelect").value;
+    var session = SESSIONS[idx];
+    if (!session || !session.startDate) return;
+    var venueId = document.getElementById("venueSelect").value;
 
     try {
-      await api({ action: "saveTopic", venueId, startDate: session.startDate, title: "(none)", description: "" });
+      await api({ action: "clearSessionTopic", venueId: venueId, startDate: session.startDate });
       session.currentTopic = null;
       renderTable("");
       showStatus("Topic cleared", "ok");
     } catch (err) { showStatus("Clear failed: " + err.message, "err"); }
+  }
+
+  async function editLibraryTopic(topic) {
+    var newTitle = prompt("Edit title:", topic.title);
+    if (newTitle === null) return;
+    var newDesc = prompt("Edit description:", topic.description || "");
+    if (newDesc === null) return;
+
+    try {
+      await api({ action: "editLibraryTopic", topicId: topic.id, title: newTitle.trim(), description: newDesc.trim() });
+      showStatus("Updated: " + newTitle.trim(), "ok");
+      if (openPickerIdx !== null) searchTopics(openPickerIdx, "");
+    } catch (err) { showStatus("Edit failed: " + err.message, "err"); }
+  }
+
+  async function removeLibraryTopic(topic) {
+    if (!confirm("Hide \"" + topic.title + "\" from the picker? It won't appear in searches but past assignments are kept.")) return;
+
+    try {
+      await api({ action: "removeLibraryTopic", topicId: topic.id });
+      showStatus("Hidden: " + topic.title, "ok");
+      if (openPickerIdx !== null) searchTopics(openPickerIdx, "");
+    } catch (err) { showStatus("Hide failed: " + err.message, "err"); }
+  }
+
+  async function markBlanksNoSession() {
+    var venueId = document.getElementById("venueSelect").value;
+    if (!venueId) { showStatus("Choose a venue first", "err"); return; }
+
+    var blanks = SESSIONS.filter(function(s) { return !s.currentTopic; });
+    if (blanks.length === 0) { showStatus("No blank sessions to mark", "info"); return; }
+
+    var list = blanks.map(function(s) {
+      var d = s.startDate ? new Date(s.startDate) : null;
+      return d ? d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + formatTime(d) : "Unknown";
+    }).join("\n");
+
+    if (!confirm("Mark " + blanks.length + " blank session(s) as \"No session this day\"?\n\n" + list)) return;
+
+    try {
+      showStatus("Marking...", "info");
+      var data = await api({
+        action: "bulkNoSession",
+        venueId: venueId,
+        sessions: blanks.map(function(s) { return { startDate: s.startDate }; }),
+      });
+      showStatus("Marked " + (data.marked || 0) + " session(s)", "ok");
+      loadSessions();
+    } catch (err) { showStatus("Failed: " + err.message, "err"); }
+  }
+
+  async function tidyCalendar() {
+    var venueId = document.getElementById("venueSelect").value;
+    var monthVal = document.getElementById("monthSelect").value;
+    if (!venueId || !monthVal) { showStatus("Choose a venue and month first", "err"); return; }
+
+    var parts = monthVal.split("-").map(Number);
+    var year = parts[0], month = parts[1];
+
+    try {
+      showStatus("Checking sessions...", "info");
+      var data = await api({ action: "tidyPreview", venueId: venueId, year: year, month: month });
+
+      var canCancel = data.canCancel || [];
+      var hasBookings = data.hasBookings || [];
+
+      if (canCancel.length === 0 && hasBookings.length === 0) {
+        showStatus("No sessions marked \"No session this day\" this month", "info");
+        return;
+      }
+
+      var msg = "Tidy the Wix calendar\n\n";
+
+      if (canCancel.length > 0) {
+        msg += "Can cancel (" + canCancel.length + " with 0 bookings):\n";
+        canCancel.forEach(function(s) {
+          var d = s.startDate ? new Date(s.startDate) : null;
+          msg += "  - " + (d ? d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + formatTime(d) : s.title) + "\n";
+        });
+      }
+
+      if (hasBookings.length > 0) {
+        msg += "\nCannot cancel (" + hasBookings.length + " with bookings):\n";
+        hasBookings.forEach(function(s) {
+          var d = s.startDate ? new Date(s.startDate) : null;
+          msg += "  - " + (d ? d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + formatTime(d) : s.title) + " (" + s.booked + " booked)\n";
+        });
+      }
+
+      if (canCancel.length > 0) {
+        msg += "\nCancel the " + canCancel.length + " empty session(s) in Wix?";
+        if (!confirm(msg)) return;
+
+        showStatus("Cancelling " + canCancel.length + " session(s)...", "info");
+        var cancelled = 0;
+        var failed = 0;
+        for (var i = 0; i < canCancel.length; i++) {
+          try {
+            await api({ action: "cancelSession", eventId: canCancel[i].eventId, venueId: venueId });
+            cancelled++;
+          } catch (err) {
+            failed++;
+            console.error("Cancel failed for", canCancel[i].eventId, err.message);
+          }
+        }
+
+        var result = "Cancelled " + cancelled + " session(s)";
+        if (failed > 0) result += ", " + failed + " failed";
+        showStatus(result, failed > 0 ? "err" : "ok");
+        loadSessions();
+      } else {
+        alert(msg);
+      }
+    } catch (err) { showStatus("Tidy failed: " + err.message, "err"); }
   }
 
   async function copyLastMonth() {

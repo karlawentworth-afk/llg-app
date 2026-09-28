@@ -63,11 +63,12 @@
   Always tell Karla to paste into discount-trigger.js.
 
 ## Go-live checklist
-- Replace WIX_CONTACTS_WRITE_KEY with a Contacts-only key. The
-  current key has broader permissions during testing. Code must
-  only use it to update the verified member's own handicap and
-  golf club fields via update-member-details. Never use it for
-  anything else.
+- Replace WIX_CONTACTS_WRITE_KEY with a key that has only:
+  Contacts (manage custom fields) and Calendar (manage events).
+  During testing the key is broader than needed. Code uses it for:
+  (1) update-member-details: member's own handicap and golf club
+  (2) planner cancelSession: cancel single calendar occurrences
+  Never use it for anything else.
 
 ## Known limitations (parked)
 - Points discount applies to any item in the basket from the
