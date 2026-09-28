@@ -340,7 +340,7 @@ async function fetchVenueSessions(locationId, headers) {
     if (!res.ok) return [];
     const data = await res.json();
     return (data.events || [])
-      .filter(e => e.status !== "CANCELLED")
+      .filter(e => e.status !== "CANCELLED" && e.type === "CLASS")
       .map(e => ({
         eventId: e.id,
         title: e.title || "Session",

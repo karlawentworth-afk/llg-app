@@ -357,8 +357,8 @@
       // Your next session (only when booked)
       var nextBooked = (DATA.bookings || []).find(function(b) { return b.startDate; });
       if (nextBooked) {
-        var nbStart = new Date(nextBooked.startDate);
-        var nbEnd = nextBooked.endDate ? new Date(nextBooked.endDate) : null;
+        var nbStart = nextBooked.startDate;
+        var nbEnd = nextBooked.endDate || null;
         h += '<div class="next-sess">' +
           '<div class="next-sess-label">Your next session</div>' +
           '<div style="font-weight:700;font-size:1rem">' + fmtLong(nbStart) + '</div>' +
@@ -524,8 +524,8 @@
           : 'No sessions that day. Days with a dot have sessions.') + '</p>';
       } else {
         daySess.forEach(function(s, i) {
-          var start = new Date(s.startDate);
-          var end = s.endDate ? new Date(s.endDate) : null;
+          var start = s.startDate;
+          var end = s.endDate || null;
           var topic = s.topic && s.topic.title ? sentenceCase(s.topic.title) : "";
           var places = s.remainingCapacity;
           var full = places === 0;
@@ -1212,9 +1212,21 @@
 
     function timeGreeting() { var h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; }
     function firstName() { var n = (DATA && DATA.firstName ? DATA.firstName : "").split(" ")[0].trim(); return n ? ", " + esc(n) : ""; }
-    function fmtLong(d) { return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }); }
+    function fmtLong(d) {
+      if (typeof d === "string") { var p = d.split("T")[0].split("-"); d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])); }
+      return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+    }
     function fmtShort(d) { return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
-    function fmtTime(d) { var h = d.getHours(), m = d.getMinutes(); var a = h >= 12 ? "pm" : "am"; if (h > 12) h -= 12; if (h === 0) h = 12; return m === 0 ? h + a : h + "." + String(m).padStart(2,"0") + a; }
+    function fmtTime(d) {
+      var h, m;
+      if (typeof d === "string" && d.indexOf("T") !== -1) {
+        var parts = d.split("T")[1].split(":");
+        h = parseInt(parts[0], 10); m = parseInt(parts[1], 10);
+      } else if (d instanceof Date) { h = d.getHours(); m = d.getMinutes(); }
+      else { return "?"; }
+      var a = h >= 12 ? "pm" : "am"; if (h > 12) h -= 12; if (h === 0) h = 12;
+      return m === 0 ? h + a : h + "." + String(m).padStart(2,"0") + a;
+    }
     function sentenceCase(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ""; }
     function dropThe(s) { return s.replace(/^The\s+/i, ""); }
     function pts(n) { return Number(n).toLocaleString(); }

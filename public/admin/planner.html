@@ -290,10 +290,9 @@
 
     let lastDate = "";
     SESSIONS.forEach((s, i) => {
-      const d = s.startDate ? new Date(s.startDate) : null;
-      const dateStr = d ? d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }) : "Unknown";
-      const timeStr = d ? formatTime(d) : "?";
-      const endStr = s.endDate ? formatTime(new Date(s.endDate)) : "";
+      const dateStr = s.startDate ? formatDate(s.startDate) : "Unknown";
+      const timeStr = s.startDate ? formatTime(s.startDate) : "?";
+      const endStr = s.endDate ? formatTime(s.endDate) : "";
 
       if (dateStr !== lastDate) {
         html += `<tr class="day-header"><td colspan="3">${esc(dateStr)}</td></tr>`;
@@ -628,12 +627,31 @@
   }
 
   function formatTime(d) {
-    let h = d.getHours();
-    let m = d.getMinutes();
-    const ampm = h >= 12 ? "pm" : "am";
+    // If d is a string like "2026-10-10T10:00:00", parse hours/minutes directly
+    // to avoid timezone misinterpretation
+    var h, m;
+    if (typeof d === "string" && d.indexOf("T") !== -1) {
+      var parts = d.split("T")[1].split(":");
+      h = parseInt(parts[0], 10);
+      m = parseInt(parts[1], 10);
+    } else if (d instanceof Date) {
+      h = d.getHours();
+      m = d.getMinutes();
+    } else {
+      return "?";
+    }
+    var ampm = h >= 12 ? "pm" : "am";
     if (h > 12) h -= 12;
     if (h === 0) h = 12;
     return m === 0 ? h + ampm : h + "." + String(m).padStart(2, "0") + ampm;
+  }
+
+  function formatDate(dateStr) {
+    // Parse "2026-10-10T10:00:00" as local date without timezone issues
+    if (!dateStr) return "Unknown";
+    var parts = dateStr.split("T")[0].split("-");
+    var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
   }
 
   function esc(str) {

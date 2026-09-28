@@ -116,21 +116,8 @@ async function handleSessions(supabase, body, headers) {
     );
     if (!res.ok) break;
     const data = await res.json();
-    // Log raw Wix data for first page to diagnose event types and times
-    if (page === 0) {
-      console.log("planner raw events count:", (data.events || []).length);
-      (data.events || []).slice(0, 5).forEach(function(e) {
-        console.log("planner raw:", JSON.stringify({
-          id: e.id, type: e.type, status: e.status, title: e.title,
-          scheduleId: e.scheduleId, externalScheduleId: e.externalScheduleId,
-          startLocal: e.start?.localDate, startUtc: e.start?.utcDate, tz: e.start?.timeZone,
-          endLocal: e.end?.localDate, endUtc: e.end?.utcDate,
-          locName: e.location?.name, locId: e.location?.id,
-        }));
-      });
-    }
     const batch = (data.events || [])
-      .filter(e => e.status !== "CANCELLED" && e.type !== "WORKING_HOURS")
+      .filter(e => e.status !== "CANCELLED" && e.type === "CLASS")
       .map(e => ({
         eventId: e.id,
         title: e.title || "Session",
