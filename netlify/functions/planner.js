@@ -116,21 +116,37 @@ async function handleSessions(supabase, body, headers) {
     );
     if (!res.ok) break;
     const data = await res.json();
+    // Log raw Wix data for first page to diagnose event types and times
+    if (page === 0) {
+      console.log("planner raw events count:", (data.events || []).length);
+      (data.events || []).slice(0, 5).forEach(function(e) {
+        console.log("planner raw:", JSON.stringify({
+          id: e.id, type: e.type, status: e.status, title: e.title,
+          scheduleId: e.scheduleId, externalScheduleId: e.externalScheduleId,
+          startLocal: e.start?.localDate, startUtc: e.start?.utcDate, tz: e.start?.timeZone,
+          endLocal: e.end?.localDate, endUtc: e.end?.utcDate,
+          locName: e.location?.name, locId: e.location?.id,
+        }));
+      });
+    }
     const batch = (data.events || [])
-      .filter(e => e.status !== "CANCELLED")
+      .filter(e => e.status !== "CANCELLED" && e.type !== "WORKING_HOURS")
       .map(e => ({
         eventId: e.id,
         title: e.title || "Session",
         startDate: e.start?.localDate || null,
         endDate: e.end?.localDate || null,
+        startUtc: e.start?.utcDate || null,
+        endUtc: e.end?.utcDate || null,
+        timeZone: e.start?.timeZone || "Europe/London",
         locationName: e.location?.name || "",
+        scheduleId: e.scheduleId || "",
+        externalScheduleId: e.externalScheduleId || "",
         status: e.status || "",
+        type: e.type || "",
         totalCapacity: e.totalCapacity || 0,
         remainingCapacity: e.remainingCapacity || 0,
       }));
-    if (page === 0) {
-      console.log("planner ALL sessions:", JSON.stringify(batch.map(function(s) { return { start: s.startDate, end: s.endDate }; })));
-    }
     wixSessions = wixSessions.concat(batch);
     cursor = data.pagingMetadata?.cursors?.next || null;
     if (!cursor) break;
