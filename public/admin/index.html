@@ -27,6 +27,11 @@
   <h1>Upload Session Topics</h1>
 
   <div id="accessMsg" style="color:#999">Checking access...</div>
+  <div id="passwordFallback" style="display:none;margin-bottom:1rem">
+    <label for="password">Admin password</label>
+    <input type="password" id="password" placeholder="Enter password" style="margin-bottom:0.5rem">
+    <button id="pwdLoginBtn" style="padding:0.4rem 1rem;background:#DE0082;color:#fff;border:none;border-radius:6px;cursor:pointer">Sign in</button>
+  </div>
 
   <label for="csvFile">CSV file</label>
   <p class="help">Columns: venue, date (YYYY-MM-DD), start_time (HH:MM), title, description</p>
@@ -56,6 +61,14 @@
       });
     }
 
+    var PASSWORD = "";
+
+    function apiHeaders() {
+      var h = { "Content-Type": "application/json" };
+      if (PASSWORD) h["X-Admin-Password"] = PASSWORD;
+      return h;
+    }
+
     // Check access on load
     (async function() {
       try {
@@ -66,8 +79,8 @@
           body: JSON.stringify({ action: "preview", rows: [] }),
         });
         if (res.status === 401) {
-          document.getElementById("accessMsg").textContent = "No access. Open the LLG app first to sign in, then try again.";
-          document.getElementById("previewBtn").disabled = true;
+          document.getElementById("accessMsg").textContent = "";
+          document.getElementById("passwordFallback").style.display = "";
           return;
         }
         document.getElementById("accessMsg").style.display = "none";
@@ -75,6 +88,29 @@
         document.getElementById("accessMsg").textContent = "Could not connect.";
       }
     })();
+
+    document.getElementById("pwdLoginBtn").addEventListener("click", async function() {
+      PASSWORD = document.getElementById("password").value;
+      if (!PASSWORD) return;
+      try {
+        var res = await fetch("/.netlify/functions/upload-topics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Password": PASSWORD },
+          credentials: "same-origin",
+          body: JSON.stringify({ action: "preview", rows: [] }),
+        });
+        if (!res.ok) {
+          document.getElementById("accessMsg").textContent = "Wrong password.";
+          document.getElementById("accessMsg").style.display = "";
+          return;
+        }
+        document.getElementById("accessMsg").style.display = "none";
+        document.getElementById("passwordFallback").style.display = "none";
+      } catch(e) {
+        document.getElementById("accessMsg").textContent = "Could not connect.";
+        document.getElementById("accessMsg").style.display = "";
+      }
+    });
 
     async function preview() {
       var file = document.getElementById("csvFile").files[0];
@@ -96,7 +132,7 @@
       try {
         const res = await fetch("/.netlify/functions/upload-topics", {
           method: "POST",
-          headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+          headers: apiHeaders(), credentials: "same-origin",
           body: JSON.stringify({ action: "preview", rows }),
         });
         const data = await res.json();
@@ -144,7 +180,7 @@
       try {
         const res = await fetch("/.netlify/functions/upload-topics", {
           method: "POST",
-          headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+          headers: apiHeaders(), credentials: "same-origin",
           body: JSON.stringify({ action: "save", rows: previewedRows }),
         });
         const data = await res.json();

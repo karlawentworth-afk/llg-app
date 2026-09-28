@@ -24,10 +24,17 @@ function base64urlDecode(str) { return Buffer.from(str.replace(/-/g, "+").replac
 function base64urlEncode(buf) { return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
 
 async function verifyAdminMember(event) {
+  // Try admin password first (laptop access)
+  var adminPwd = process.env.ADMIN_PASSWORD;
+  var headerPwd = event.headers["x-admin-password"];
+  if (adminPwd && headerPwd && headerPwd === adminPwd) {
+    return { contactId: null, memberId: null, email: "admin-password" };
+  }
+
+  // Then try session cookie (app access)
   var secret = process.env.WIX_EMBED_SECRET;
   if (!secret) return null;
 
-  // Parse session cookie
   var cookieHeader = event.headers.cookie || event.headers.Cookie || "";
   var match = cookieHeader.match(/llg_session=([^;]+)/);
   if (!match) return null;

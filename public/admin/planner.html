@@ -93,6 +93,11 @@
 <div id="loginGate" class="login-gate">
   <h1>Session Planner</h1>
   <p id="loginMsg">Checking access...</p>
+  <div id="passwordFallback" style="display:none;margin-top:1rem">
+    <label>Admin password</label>
+    <input type="password" id="passwordInput" placeholder="Enter password" style="width:100%;margin-bottom:0.5rem">
+    <button class="btn-primary" id="pwdLoginBtn">Sign in</button>
+  </div>
 </div>
 
 <div id="app" style="display:none">
@@ -140,7 +145,9 @@
   let SESSIONS = [];
   let openPickerIdx = null;
 
-  // Check admin access on load
+  var PASSWORD = "";
+
+  // Check admin access on load (session cookie first, then offer password)
   (async function() {
     try {
       var res = await fetch("/.netlify/functions/planner", {
@@ -149,25 +156,52 @@
         credentials: "same-origin",
         body: JSON.stringify({ action: "venues" }),
       });
-      if (!res.ok) {
-        document.getElementById("loginMsg").textContent = "No access. Open the LLG app first to sign in, then try again.";
+      if (res.ok) {
+        enterApp(await res.json());
         return;
       }
-      document.getElementById("loginGate").style.display = "none";
-      document.getElementById("app").style.display = "block";
-      var data = await res.json();
-      VENUES = data.venues || [];
-      renderVenueSelect();
-      populateMonths();
+      // Session failed — show password fallback
+      document.getElementById("loginMsg").textContent = "";
+      document.getElementById("passwordFallback").style.display = "";
     } catch(e) {
       document.getElementById("loginMsg").textContent = "Could not connect. Please try again.";
     }
   })();
 
+  document.getElementById("pwdLoginBtn").addEventListener("click", async function() {
+    PASSWORD = document.getElementById("passwordInput").value;
+    if (!PASSWORD) return;
+    try {
+      var res = await fetch("/.netlify/functions/planner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Password": PASSWORD },
+        credentials: "same-origin",
+        body: JSON.stringify({ action: "venues" }),
+      });
+      if (!res.ok) {
+        document.getElementById("loginMsg").textContent = "Wrong password.";
+        return;
+      }
+      enterApp(await res.json());
+    } catch(e) {
+      document.getElementById("loginMsg").textContent = "Could not connect.";
+    }
+  });
+
+  function enterApp(data) {
+    document.getElementById("loginGate").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    VENUES = data.venues || [];
+    renderVenueSelect();
+    populateMonths();
+  }
+
   async function api(body) {
+    var hdrs = { "Content-Type": "application/json" };
+    if (PASSWORD) hdrs["X-Admin-Password"] = PASSWORD;
     var res = await fetch("/.netlify/functions/planner", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: hdrs,
       credentials: "same-origin",
       body: JSON.stringify(body),
     });
