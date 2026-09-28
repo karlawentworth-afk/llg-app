@@ -46,27 +46,71 @@ export const getEligibleTriggers = async (options, context) => {
 
   // Trigger 1: Member coaching discount
   try {
-    const elevatedList = auth.elevate(orders.managementListOrders);
-    const result = await elevatedList({
-      buyerIds: [memberId],
-      orderStatuses: ["ACTIVE"],
-      limit: 10,
-    });
-
-    const hasEligiblePlan = (result.orders || []).some((order) =>
-      ELIGIBLE_PLAN_IDS.includes(order.planId)
+    const memberTrigger = (options.triggers || []).find(
+      (tr) => tr.customTrigger?._id === TRIGGER_MEMBER
     );
 
-    if (hasEligiblePlan) {
-      const t = (options.triggers || []).find(
-        (tr) => tr.customTrigger?._id === TRIGGER_MEMBER
-      );
-      if (t) {
-        eligible.push({
-          customTriggerId: t.customTrigger._id,
-          identifier: t.identifier,
-        });
+    // Beacon: member trigger diagnostics
+    try {
+      const debugSecret = await getSecret("LLG_SPI_SECRET").catch(() => null);
+      if (debugSecret) {
+        const beaconBody = {
+          step: "member_trigger",
+          hasMemberId: !!memberId,
+          memberTriggerInOptions: !!memberTrigger,
+          triggerIds: (options.triggers || []).map(
+            (tr) => tr.customTrigger?._id || "unknown"
+          ),
+        };
+
+        // Fetch orders for the beacon too
+        let orderCount = 0;
+        let matchedPlanIds = [];
+        let orderError = null;
+        try {
+          const elevatedList = auth.elevate(orders.managementListOrders);
+          const result = await elevatedList({
+            buyerIds: [memberId],
+            orderStatuses: ["ACTIVE"],
+            limit: 10,
+          });
+          orderCount = (result.orders || []).length;
+          matchedPlanIds = (result.orders || [])
+            .filter((o) => ELIGIBLE_PLAN_IDS.includes(o.planId))
+            .map((o) => o.planId);
+
+          if (matchedPlanIds.length > 0 && memberTrigger) {
+            eligible.push({
+              customTriggerId: memberTrigger.customTrigger._id,
+              identifier: memberTrigger.identifier,
+            });
+          }
+        } catch (orderErr) {
+          orderError = orderErr.message || String(orderErr);
+        }
+
+        beaconBody.orderCount = orderCount;
+        beaconBody.matchedPlanIds = matchedPlanIds;
+        beaconBody.eligible = matchedPlanIds.length > 0 && !!memberTrigger;
+        if (orderError) beaconBody.orderError = orderError;
+
+        Promise.race([
+          fetch(
+            "https://llg-app-test.netlify.app/.netlify/functions/spi-debug",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-SPI-Secret": debugSecret,
+              },
+              body: JSON.stringify(beaconBody),
+            }
+          ),
+          timeout(1000),
+        ]).catch(() => {});
       }
+    } catch (beaconErr) {
+      // Beacon failure must never block checkout
     }
   } catch (err) {
     console.error("SPI member trigger error:", err.message || err);
