@@ -64,6 +64,8 @@ exports.handler = async (event) => {
     if (action === "bulkNoSession") return await handleBulkNoSession(supabase, body, headers);
     if (action === "tidyPreview") return await handleTidyPreview(supabase, body, headers);
     if (action === "cancelSession") return await handleCancelSession(supabase, body, headers, admin);
+    if (action === "findOrphans") return await handleFindOrphans(supabase, body, headers);
+    if (action === "deleteOrphans") return await handleDeleteOrphans(supabase, body, headers);
     return { statusCode: 400, headers, body: JSON.stringify({ error: "unknown_action" }) };
   } catch (err) {
     console.error("Planner error:", err.message);
@@ -562,4 +564,98 @@ async function handleCancelSession(supabase, body, headers, admin) {
     console.error("cancelSession error:", err.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: "server_error" }) };
   }
+}
+
+async function handleFindOrphans(supabase, body, headers) {
+  var { venueId, year, month } = body;
+  if (!venueId || !year || !month) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_fields" }) };
+
+  var venue = (await supabase.from("venues").select("*").eq("id", venueId).single()).data;
+  if (!venue || !venue.wix_location_id) return { statusCode: 400, headers, body: JSON.stringify({ error: "venue_not_found" }) };
+
+  // Get all topic assignments for this venue and month
+  var monthStart = new Date(year, month - 1, 1);
+  var lastDay = new Date(year, month, 0).getDate();
+  var monthEnd = new Date(year, month - 1, lastDay, 23, 59, 59);
+
+  var { data: topics } = await supabase
+    .from("session_topics")
+    .select("id, start_utc, title, description")
+    .eq("venue_id", venueId)
+    .gte("start_utc", monthStart.toISOString())
+    .lte("start_utc", monthEnd.toISOString())
+    .order("start_utc");
+
+  if (!topics || topics.length === 0) {
+    return { statusCode: 200, headers, body: JSON.stringify({ orphans: [] }) };
+  }
+
+  // Fetch Wix sessions for this month (paginated)
+  var fromDate = year + "-" + String(month).padStart(2, "0") + "-01T00:00";
+  var toDate = year + "-" + String(month).padStart(2, "0") + "-" + lastDay + "T23:59";
+  var wixTimes = [];
+  var cursor = null;
+
+  for (var page = 0; page < 5; page++) {
+    var paging = cursor ? { limit: 100, cursor: cursor } : { limit: 100 };
+    var res = await fetchWithTimeout(
+      "https://www.wixapis.com/calendar/v3/events/query",
+      {
+        method: "POST",
+        headers: wixHeaders(),
+        body: JSON.stringify({
+          query: {
+            filter: { "location.id": venue.wix_location_id },
+            sort: [{ fieldName: "start", order: "ASC" }],
+            cursorPaging: paging,
+          },
+          fromLocalDate: fromDate,
+          toLocalDate: toDate,
+        }),
+      }
+    );
+    if (!res.ok) break;
+    var data = await res.json();
+    (data.events || []).forEach(function(e) {
+      if (e.status !== "CANCELLED" && e.type === "CLASS" && e.start && e.start.localDate) {
+        wixTimes.push(new Date(e.start.localDate).getTime());
+      }
+    });
+    cursor = data.pagingMetadata && data.pagingMetadata.cursors ? data.pagingMetadata.cursors.next : null;
+    if (!cursor) break;
+  }
+
+  // Find orphans: topic assignments with no matching Wix session (within 2 hours)
+  var orphans = topics.filter(function(t) {
+    if (t.title === "No session this day") return false; // expected to have no session
+    var topicTime = new Date(t.start_utc).getTime();
+    return !wixTimes.some(function(wt) {
+      return Math.abs(wt - topicTime) < 2 * 60 * 60 * 1000;
+    });
+  });
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      orphans: orphans.map(function(o) {
+        return { id: o.id, startUtc: o.start_utc, title: o.title };
+      }),
+    }),
+  };
+}
+
+async function handleDeleteOrphans(supabase, body, headers) {
+  var { orphanIds } = body;
+  if (!orphanIds || !Array.isArray(orphanIds) || orphanIds.length === 0) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_orphan_ids" }) };
+  }
+
+  var { error } = await supabase
+    .from("session_topics")
+    .delete()
+    .in("id", orphanIds);
+
+  if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "delete_failed", detail: error.message }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ deleted: orphanIds.length }) };
 }

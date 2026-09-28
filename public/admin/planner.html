@@ -116,6 +116,7 @@
     <button class="btn-secondary" onclick="openAddTopic()">+ New topic</button>
     <button class="btn-secondary" onclick="markBlanksNoSession()">Mark blanks "No session"</button>
     <button class="btn-secondary" onclick="tidyCalendar()">Tidy Wix calendar</button>
+    <button class="btn-secondary" onclick="findOrphans()">Find orphaned topics</button>
   </div>
 
   <div class="main">
@@ -653,6 +654,63 @@
     var parts = dateStr.split("T")[0].split("-");
     var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+  }
+
+  async function findOrphans() {
+    var venueId = document.getElementById("venueSelect").value;
+    var monthVal = document.getElementById("monthSelect").value;
+    if (!venueId || !monthVal) { showStatus("Choose a venue and month first", "err"); return; }
+
+    var parts = monthVal.split("-").map(Number);
+    var year = parts[0], month = parts[1];
+    var venueName = VENUES.find(function(v) { return v.id === venueId; });
+    venueName = venueName ? venueName.name : "this venue";
+    var monthLabel = document.getElementById("monthSelect").selectedOptions[0].text;
+
+    showStatus("Checking for orphaned topics...", "info");
+
+    try {
+      var data = await api({ action: "findOrphans", venueId: venueId, year: year, month: month });
+      var orphans = data.orphans || [];
+
+      if (orphans.length === 0) {
+        showStatus("No orphaned topics at " + venueName + " in " + monthLabel, "ok");
+        return;
+      }
+
+      var msg = orphans.length + " orphaned topic(s) at " + venueName + " in " + monthLabel + ":\n\n";
+      msg += "These topics are assigned to sessions that no longer exist in Wix.\n\n";
+      orphans.forEach(function(o) {
+        msg += "  - " + formatDateStr(o.startUtc) + " " + formatTimeStr(o.startUtc) + ": " + o.title + "\n";
+      });
+      msg += "\nRemove them?";
+
+      if (!confirm(msg)) return;
+
+      showStatus("Removing " + orphans.length + " orphan(s)...", "info");
+      var ids = orphans.map(function(o) { return o.id; });
+      var result = await api({ action: "deleteOrphans", orphanIds: ids });
+      showStatus("Removed " + (result.deleted || 0) + " orphaned topic(s)", "ok");
+      loadSessions();
+    } catch (err) {
+      showStatus("Failed: " + err.message, "err");
+    }
+  }
+
+  function formatDateStr(dateStr) {
+    if (!dateStr) return "?";
+    var p = dateStr.split("T")[0].split("-");
+    var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+    return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  }
+
+  function formatTimeStr(dateStr) {
+    if (!dateStr || dateStr.indexOf("T") === -1) return "?";
+    var p = dateStr.split("T")[1].split(":");
+    var h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+    var ampm = h >= 12 ? "pm" : "am";
+    if (h > 12) h -= 12; if (h === 0) h = 12;
+    return m === 0 ? h + ampm : h + "." + String(m).padStart(2, "0") + ampm;
   }
 
   function esc(str) {
