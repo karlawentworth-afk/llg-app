@@ -2,6 +2,9 @@
   publish = "public"
   functions = "netlify/functions"
 
+[functions]
+  region = "eu-west-2"
+
 # CSP frame-ancestors temporarily removed to allow Wix app web view.
 # Will restore with correct origin once we identify it from logs.
 [[headers]]
