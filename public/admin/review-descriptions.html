@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LLG Admin - Review Short Descriptions</title>
+  <title>LLG Admin - Topic Library</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #222; }
@@ -19,46 +19,62 @@
     .btn-primary { background: #DE0082; color: #fff; }
     .btn-secondary { background: #e0e0e0; color: #333; }
     .btn-small { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
-    .topic-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
-    .topic-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; }
-    .topic-full { font-size: 0.9rem; color: #555; margin-bottom: 0.75rem; line-height: 1.5; }
-    .topic-short { font-size: 0.95rem; margin-bottom: 0.5rem; }
-    .topic-short textarea { width: 100%; font-size: 0.95rem; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; resize: vertical; min-height: 50px; }
-    .topic-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    .badge { padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
-    .badge-draft { background: #fff3e0; color: #e65100; }
-    .badge-approved { background: #e8f5e9; color: #2e7d32; }
-    .toolbar { padding: 1rem 2rem; background: #fff; border-bottom: 1px solid #ddd; display: flex; gap: 1rem; align-items: center; }
+    input, textarea { font-size: 0.95rem; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; width: 100%; }
+    textarea { resize: vertical; min-height: 50px; }
+    .topic-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+    .topic-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.4rem; }
+    .topic-full { font-size: 0.85rem; color: #555; margin-bottom: 0.5rem; line-height: 1.4; }
+    .topic-row { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.4rem; }
+    .topic-row label { font-weight: 600; font-size: 0.8rem; min-width: 80px; padding-top: 0.5rem; flex-shrink: 0; }
+    .topic-row textarea, .topic-row input { flex: 1; }
+    .toolbar { padding: 1rem 2rem; background: #fff; border-bottom: 1px solid #ddd; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .search-box { padding: 0.5rem 0.75rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; min-width: 250px; }
     .login-gate { max-width: 400px; margin: 4rem auto; background: #fff; padding: 2rem; border-radius: 12px; }
     .login-gate h1 { margin-bottom: 1rem; }
+    .add-form { background: #fff; border: 2px solid #DE0082; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
+    .add-form h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
   </style>
 </head>
 <body>
 
 <div id="loginGate" class="login-gate">
-  <h1>Review Descriptions</h1>
+  <h1>Topic Library</h1>
   <p id="loginMsg">Checking access...</p>
   <div id="passwordFallback" style="display:none;margin-top:1rem">
     <label>Admin password</label>
-    <input type="password" id="passwordInput" placeholder="Enter password" style="width:100%;padding:0.5rem;border:1px solid #ccc;border-radius:6px;margin-bottom:0.5rem;font-size:1rem">
+    <input type="password" id="passwordInput" placeholder="Enter password" style="margin-bottom:0.5rem">
     <button class="btn-primary" id="pwdLoginBtn">Sign in</button>
   </div>
 </div>
 
 <div id="app" style="display:none">
   <div class="header">
-    <h1>Review Short Descriptions</h1>
+    <h1>Topic Library</h1>
     <a href="/admin/planner.html">Planner</a>
     <a href="/admin/posters.html">Posters</a>
   </div>
 
   <div class="toolbar">
-    <button class="btn-primary" id="approveAllBtn">Approve all on this page</button>
+    <input type="text" class="search-box" id="searchBox" placeholder="Search topics...">
+    <button class="btn-primary" id="showAddBtn">+ New topic</button>
     <span id="countInfo" style="font-size:0.9rem;color:#666"></span>
   </div>
 
   <div class="main">
     <div id="statusBar" style="display:none"></div>
+
+    <div id="addForm" class="add-form" style="display:none">
+      <h2>Add new topic</h2>
+      <div class="topic-row"><label>Title</label><input type="text" id="newTitle"></div>
+      <div class="topic-row"><label>Full desc</label><textarea id="newDesc" rows="3"></textarea></div>
+      <div class="topic-row"><label>Short desc</label><textarea id="newShort" rows="2" placeholder="Max 25 words, for posters"></textarea></div>
+      <div class="topic-row"><label>Category</label><input type="text" id="newCategory" placeholder="Optional"></div>
+      <div style="margin-top:0.5rem;display:flex;gap:0.5rem">
+        <button class="btn-primary" id="addTopicBtn">Add topic</button>
+        <button class="btn-secondary" id="cancelAddBtn">Cancel</button>
+      </div>
+    </div>
+
     <div id="topicList"></div>
   </div>
 </div>
@@ -67,20 +83,13 @@
   var PASSWORD = "";
   try { PASSWORD = sessionStorage.getItem("llg_admin_pwd") || ""; } catch(e) {}
   var TOPICS = [];
+  var searchTimer = null;
 
-  // Auth (same pattern as other admin pages)
+  // Auth
   (async function() {
-    try {
-      var data = await api({ action: "listTopicsForReview" });
-      enterApp(data);
-      return;
-    } catch(e) {}
+    try { enterApp(await api({ action: "listTopicsForReview" })); return; } catch(e) {}
     if (PASSWORD) {
-      try {
-        var data = await apiPwd({ action: "listTopicsForReview" });
-        enterApp(data);
-        return;
-      } catch(e) {}
+      try { enterApp(await apiPwd({ action: "listTopicsForReview" })); return; } catch(e) {}
       PASSWORD = "";
     }
     document.getElementById("loginMsg").textContent = "";
@@ -94,9 +103,7 @@
       var data = await apiPwd({ action: "listTopicsForReview" });
       try { sessionStorage.setItem("llg_admin_pwd", PASSWORD); } catch(e) {}
       enterApp(data);
-    } catch(e) {
-      document.getElementById("loginMsg").textContent = "Wrong password.";
-    }
+    } catch(e) { document.getElementById("loginMsg").textContent = "Wrong password."; }
   });
 
   function enterApp(data) {
@@ -109,115 +116,123 @@
   async function api(body) {
     var hdrs = { "Content-Type": "application/json" };
     if (PASSWORD) hdrs["X-Admin-Password"] = PASSWORD;
-    var res = await fetch("/.netlify/functions/planner", {
-      method: "POST", headers: hdrs, credentials: "same-origin",
-      body: JSON.stringify(body),
-    });
+    var res = await fetch("/.netlify/functions/planner", { method: "POST", headers: hdrs, credentials: "same-origin", body: JSON.stringify(body) });
     if (!res.ok) throw new Error("api_error");
     return await res.json();
   }
   async function apiPwd(body) {
-    var res = await fetch("/.netlify/functions/planner", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Admin-Password": PASSWORD },
-      credentials: "same-origin",
-      body: JSON.stringify(body),
-    });
+    var res = await fetch("/.netlify/functions/planner", { method: "POST", headers: { "Content-Type": "application/json", "X-Admin-Password": PASSWORD }, credentials: "same-origin", body: JSON.stringify(body) });
     if (!res.ok) throw new Error("api_error");
     return await res.json();
   }
 
+  // Search
+  document.getElementById("searchBox").addEventListener("input", function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(render, 200);
+  });
+
+  // Add topic
+  document.getElementById("showAddBtn").addEventListener("click", function() {
+    document.getElementById("addForm").style.display = "";
+    document.getElementById("newTitle").focus();
+  });
+  document.getElementById("cancelAddBtn").addEventListener("click", function() {
+    document.getElementById("addForm").style.display = "none";
+  });
+  document.getElementById("addTopicBtn").addEventListener("click", async function() {
+    var title = document.getElementById("newTitle").value.trim();
+    var desc = document.getElementById("newDesc").value.trim();
+    var short = document.getElementById("newShort").value.trim();
+    var cat = document.getElementById("newCategory").value.trim();
+    if (!title) { showStatus("Title is required", "err"); return; }
+    try {
+      var result = await api({ action: "addLibraryTopic", title: title, description: desc, category: cat });
+      if (short) {
+        await api({ action: "updateShortDescription", topicId: result.topic.id, shortDescription: short, status: "approved" });
+      }
+      showStatus("Added: " + title, "ok");
+      document.getElementById("addForm").style.display = "none";
+      document.getElementById("newTitle").value = "";
+      document.getElementById("newDesc").value = "";
+      document.getElementById("newShort").value = "";
+      document.getElementById("newCategory").value = "";
+      // Reload
+      var data = await api({ action: "listTopicsForReview" });
+      TOPICS = data.topics || [];
+      render();
+    } catch(e) { showStatus("Failed to add: " + e.message, "err"); }
+  });
+
   function render() {
-    var approved = TOPICS.filter(function(t) { return t.short_description_status === "approved"; }).length;
-    var drafts = TOPICS.filter(function(t) { return t.short_description && t.short_description_status === "draft"; }).length;
-    var empty = TOPICS.filter(function(t) { return !t.short_description; }).length;
-    document.getElementById("countInfo").textContent = TOPICS.length + " topics: " + approved + " approved, " + drafts + " drafts, " + empty + " empty";
+    var query = (document.getElementById("searchBox").value || "").toLowerCase().trim();
+    var filtered = TOPICS;
+    if (query) {
+      filtered = TOPICS.filter(function(t) { return (t.title || "").toLowerCase().indexOf(query) !== -1; });
+    }
+
+    document.getElementById("countInfo").textContent = filtered.length + " of " + TOPICS.length + " topics";
 
     var html = "";
-    TOPICS.forEach(function(t, i) {
-      var statusBadge = t.short_description_status === "approved"
-        ? '<span class="badge badge-approved">Approved</span>'
-        : (t.short_description ? '<span class="badge badge-draft">Draft</span>' : '<span class="badge badge-draft">Empty</span>');
-
-      html += '<div class="topic-card" data-idx="' + i + '">' +
-        '<div class="topic-title">' + esc(t.title) + ' ' + statusBadge + '</div>' +
-        '<div class="topic-full"><strong>Full:</strong> ' + esc(t.description || "(no full description)") + '</div>' +
-        '<div class="topic-short">' +
-          '<label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:0.25rem">Short (for posters, max 25 words):</label>' +
-          '<textarea data-topic-id="' + t.id + '" data-field="short">' + esc(t.short_description || "") + '</textarea>' +
-        '</div>' +
-        '<div class="topic-actions">' +
-          '<button class="btn-small btn-primary" data-approve="' + t.id + '">Approve</button>' +
-          '<button class="btn-small btn-secondary" data-save="' + t.id + '">Save draft</button>' +
+    filtered.forEach(function(t) {
+      html += '<div class="topic-card">' +
+        '<div class="topic-title">' + esc(t.title) + '</div>' +
+        '<div class="topic-full">' + esc(t.description || "(no full description)") + '</div>' +
+        '<div class="topic-row"><label>Short</label><textarea data-id="' + t.id + '" data-field="short">' + esc(t.short_description || "") + '</textarea></div>' +
+        '<div class="topic-row"><label>Full</label><textarea data-id="' + t.id + '" data-field="desc" rows="3">' + esc(t.description || "") + '</textarea></div>' +
+        '<div style="display:flex;gap:0.5rem;margin-top:0.4rem">' +
+          '<button class="btn-small btn-primary" data-save="' + t.id + '">Save</button>' +
+          '<button class="btn-small btn-secondary" data-hide="' + t.id + '">Hide from library</button>' +
         '</div>' +
       '</div>';
     });
 
     document.getElementById("topicList").innerHTML = html;
 
-    // Wire handlers
-    document.querySelectorAll("[data-approve]").forEach(function(btn) {
-      btn.addEventListener("click", function() { saveTopic(btn.getAttribute("data-approve"), "approved"); });
-    });
+    // Wire save buttons
     document.querySelectorAll("[data-save]").forEach(function(btn) {
-      btn.addEventListener("click", function() { saveTopic(btn.getAttribute("data-save"), "draft"); });
+      btn.addEventListener("click", function() { saveTopic(btn.getAttribute("data-save")); });
+    });
+    document.querySelectorAll("[data-hide]").forEach(function(btn) {
+      btn.addEventListener("click", function() { hideTopic(btn.getAttribute("data-hide")); });
     });
   }
 
-  async function saveTopic(topicId, status) {
-    var textarea = document.querySelector('textarea[data-topic-id="' + topicId + '"]');
-    if (!textarea) return;
-    var text = textarea.value.trim();
+  async function saveTopic(id) {
+    var shortEl = document.querySelector('textarea[data-id="' + id + '"][data-field="short"]');
+    var descEl = document.querySelector('textarea[data-id="' + id + '"][data-field="desc"]');
+    var short = shortEl ? shortEl.value.trim() : "";
+    var desc = descEl ? descEl.value.trim() : "";
 
     try {
-      await api({ action: "updateShortDescription", topicId: topicId, shortDescription: text, status: status });
-      // Update local data
-      var t = TOPICS.find(function(t) { return t.id === topicId; });
-      if (t) { t.short_description = text; t.short_description_status = status; }
-      render();
-      showStatus(status === "approved" ? "Approved" : "Saved as draft", "ok");
-    } catch(e) {
-      showStatus("Failed to save", "err");
-    }
+      // Save short description
+      await api({ action: "updateShortDescription", topicId: id, shortDescription: short, status: short ? "approved" : "draft" });
+      // Save full description
+      await api({ action: "editLibraryTopic", topicId: id, description: desc });
+      // Update local
+      var t = TOPICS.find(function(t) { return t.id === id; });
+      if (t) { t.short_description = short; t.short_description_status = short ? "approved" : "draft"; t.description = desc; }
+      showStatus("Saved", "ok");
+    } catch(e) { showStatus("Save failed", "err"); }
   }
 
-  document.getElementById("approveAllBtn").addEventListener("click", async function() {
-    var ids = TOPICS.filter(function(t) { return t.short_description && t.short_description_status !== "approved"; }).map(function(t) { return t.id; });
-    // Also save any edited text first
-    var textareas = document.querySelectorAll("textarea[data-topic-id]");
-    for (var i = 0; i < textareas.length; i++) {
-      var ta = textareas[i];
-      var tid = ta.getAttribute("data-topic-id");
-      var text = ta.value.trim();
-      var topic = TOPICS.find(function(t) { return t.id === tid; });
-      if (topic && text !== (topic.short_description || "")) {
-        await api({ action: "updateShortDescription", topicId: tid, shortDescription: text, status: "draft" });
-        topic.short_description = text;
-        if (text && !ids.includes(tid)) ids.push(tid);
-      }
-    }
-
-    if (ids.length === 0) { showStatus("Nothing to approve", "info"); return; }
-
+  async function hideTopic(id) {
+    var t = TOPICS.find(function(t) { return t.id === id; });
+    if (!confirm("Hide \"" + (t ? t.title : "") + "\" from the library? Past assignments are kept.")) return;
     try {
-      await api({ action: "approveShortDescriptions", topicIds: ids });
-      ids.forEach(function(id) {
-        var t = TOPICS.find(function(t) { return t.id === id; });
-        if (t) t.short_description_status = "approved";
-      });
+      await api({ action: "removeLibraryTopic", topicId: id });
+      TOPICS = TOPICS.filter(function(t) { return t.id !== id; });
       render();
-      showStatus("Approved " + ids.length + " description(s)", "ok");
-    } catch(e) {
-      showStatus("Failed to approve", "err");
-    }
-  });
+      showStatus("Hidden", "ok");
+    } catch(e) { showStatus("Hide failed", "err"); }
+  }
 
   function showStatus(msg, type) {
     var el = document.getElementById("statusBar");
     el.className = "status status-" + type;
     el.textContent = msg;
     el.style.display = "block";
-    if (type === "ok") setTimeout(function() { el.style.display = "none"; }, 3000);
+    if (type === "ok") setTimeout(function() { el.style.display = "none"; }, 2000);
   }
 
   function esc(s) { var d = document.createElement("div"); d.textContent = String(s || ""); return d.innerHTML; }
