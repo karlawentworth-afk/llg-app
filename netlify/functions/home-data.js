@@ -585,27 +585,36 @@ exports.handler = async (event) => {
 
   const wixH = wixHeaders();
   const supabase = getSupabase();
-  // Parallel fetch: Wix data + Supabase home venue
+
+  // Timed parallel fetch
+  function timed(name, fn) {
+    var start = Date.now();
+    return fn.then(function(r) { console.log("TIMING", name, Date.now() - start, "ms"); return r; }).catch(function(e) { console.log("TIMING", name, Date.now() - start, "ms ERROR"); throw e; });
+  }
+
+  var t0 = Date.now();
   let [plan, bookings, pointsData, allEvents, memberEventIds, contactInfo, homeVenueResult, allVenues, bookingHistory, profilePhoto] = await Promise.all([
-    fetchPlan(memberId, wixH),
-    fetchBookings(contactId, wixH),
-    fetchPoints(contactId, wixH),
-    fetchEvents(wixH),
-    fetchMemberEventOrders(contactId, wixH),
-    fetchContactInfo(contactId, wixH),
-    supabase ? getHomeVenue(supabase, memberId, contactId, wixH) : { venue: null, source: "none" },
-    supabase ? getAllVenues(supabase) : [],
-    fetchBookingHistory(contactId, wixH),
-    fetchProfilePhoto(memberId, wixH),
+    timed("fetchPlan", fetchPlan(memberId, wixH)),
+    timed("fetchBookings", fetchBookings(contactId, wixH)),
+    timed("fetchPoints", fetchPoints(contactId, wixH)),
+    timed("fetchEvents", fetchEvents(wixH)),
+    timed("fetchMemberEventOrders", fetchMemberEventOrders(contactId, wixH)),
+    timed("fetchContactInfo", fetchContactInfo(contactId, wixH)),
+    timed("getHomeVenue", supabase ? getHomeVenue(supabase, memberId, contactId, wixH) : Promise.resolve({ venue: null, source: "none" })),
+    timed("getAllVenues", supabase ? getAllVenues(supabase) : Promise.resolve([])),
+    timed("fetchBookingHistory", fetchBookingHistory(contactId, wixH)),
+    timed("fetchProfilePhoto", fetchProfilePhoto(memberId, wixH)),
   ]);
+  console.log("TIMING batch1_total", Date.now() - t0, "ms");
 
   let points = pointsData.balance;
   const loyaltyAccountId = pointsData.accountId;
 
-  // Second parallel batch: loyalty transactions + admin check
+  var t1 = Date.now();
   const [loyaltyTransactions] = await Promise.all([
-    fetchLoyaltyTransactions(loyaltyAccountId, wixH),
+    timed("fetchLoyaltyTransactions", fetchLoyaltyTransactions(loyaltyAccountId, wixH)),
   ]);
+  console.log("TIMING batch2_total", Date.now() - t1, "ms");
 
   // Admin check
   const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
@@ -623,12 +632,14 @@ exports.handler = async (event) => {
     const now = new Date();
     const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+    var t2 = Date.now();
     [sessions, perks, topics, servicePrice] = await Promise.all([
-      homeVenue.wix_location_id ? fetchVenueSessions(homeVenue.wix_location_id, wixH) : [],
-      getVenuePerks(supabase, homeVenue.id),
-      getSessionTopics(supabase, homeVenue.id, now, end),
-      homeVenue.wix_location_id ? fetchServicePrice(homeVenue.wix_location_id, wixH) : null,
+      timed("fetchVenueSessions", homeVenue.wix_location_id ? fetchVenueSessions(homeVenue.wix_location_id, wixH) : Promise.resolve([])),
+      timed("getVenuePerks", getVenuePerks(supabase, homeVenue.id)),
+      timed("getSessionTopics", getSessionTopics(supabase, homeVenue.id, now, end)),
+      timed("fetchServicePrice", homeVenue.wix_location_id ? fetchServicePrice(homeVenue.wix_location_id, wixH) : Promise.resolve(null)),
     ]);
+    console.log("TIMING batch3_venue", Date.now() - t2, "ms");
 
     // Match topics to sessions by date+time
     sessions = sessions.map(s => {
