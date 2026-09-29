@@ -128,57 +128,50 @@
     .trip-bar-price { font-family: 'Poppins',sans-serif; font-size: 1.2rem; font-weight: 700; }
     .trip-bar .btn { background: var(--mg); }
 
-    /* Loading animation 1: Home opening */
-    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem 2rem; }
-    .loading-logo { height: 52px; margin-bottom: 1.5rem; }
-    .loading-anim { width: 200px; height: 60px; position: relative; margin-bottom: 1.25rem; overflow: hidden; }
-    .loading-green { position: absolute; bottom: 0; left: 0; right: 0; height: 8px; background: #4caf50; border-radius: 4px; }
-    .loading-hole { position: absolute; bottom: 4px; right: 28px; width: 14px; height: 8px; background: #2B2A29; border-radius: 50%; }
-    .loading-flag { position: absolute; bottom: 12px; right: 33px; width: 2px; height: 28px; background: #fff; }
-    .loading-flag::after { content: ''; position: absolute; top: 0; left: 2px; width: 12px; height: 8px; background: var(--mg); clip-path: polygon(0 0, 100% 50%, 0 100%); }
-    .loading-ball { position: absolute; bottom: 8px; left: 0; width: 10px; height: 10px; background: #fff; border-radius: 50%; box-shadow: 0 0 2px rgba(0,0,0,0.3); animation: ballroll 2.8s ease-in-out infinite; }
-    .loading-heart { position: absolute; bottom: 12px; right: 28px; font-size: 14px; opacity: 0; animation: heartpop 2.8s ease-in-out infinite; }
-    @keyframes ballroll {
-      0% { left: 0; bottom: 8px; } 40% { left: 120px; bottom: 20px; } 65% { left: 155px; bottom: 8px; }
-      72% { left: 155px; bottom: 2px; opacity: 1; } 73% { opacity: 0; } 100% { opacity: 0; left: 155px; }
-    }
-    @keyframes heartpop { 0%,72% { opacity: 0; transform: scale(0); } 78% { opacity: 1; transform: scale(1.3); } 85% { transform: scale(1); } 100% { opacity: 0; } }
-    .loading-text { font-size: 0.95rem; color: var(--muted); margin-bottom: 0.5rem; min-height: 1.5em; text-align: center; }
-    .loading-dots { display: flex; gap: 6px; margin-top: 0.5rem; }
-    .loading-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--mg); animation: dotpulse 1.4s ease-in-out infinite; }
-    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
-    .loading-dots span:nth-child(4) { animation-delay: 0.6s; }
-    @keyframes dotpulse { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+    /* === HOME LOADER === */
+    .llg-load{position:fixed;inset:0;z-index:9999;background:#F7F4F0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;font-family:Mulish,"Segoe UI",sans-serif;color:#2B2A29;transition:opacity .3s ease}
+    .llg-load.is-done{opacity:0;pointer-events:none}
+    .llg-load-logo{width:90px;height:auto;display:block}
+    .llg-scene{position:relative;width:280px;height:150px}
+    .llg-scene-svg{position:absolute;left:0;top:0}
+    .llg-ball{position:absolute;left:40px;top:90px;width:18px;height:18px;animation:llgRoll 2.8s cubic-bezier(.25,.6,.35,1) infinite}
+    .llg-ball-spin{animation:llgSpin 2.8s linear infinite;transform-origin:9px 9px}
+    .llg-heart{position:absolute;left:216px;top:88px;animation:llgHeart 2.8s ease-out infinite;transform-origin:center bottom}
+    .llg-flag{animation:llgFlag 1.4s ease-in-out infinite;transform-origin:left center;transform-box:fill-box}
+    .llg-msg{margin:0;height:28px;font-size:18px;font-weight:600;animation:llgFade 2s ease-in-out infinite}
+    .llg-dots{display:flex;gap:8px}
+    .llg-dots span{display:block;width:8px;height:8px;border-radius:999px;background:#E6E1DA;transition:all .3s ease}
+    .llg-dots span.on{background:#DE0082}
+    .llg-dots span.now{width:22px;background:#DE0082}
+    @keyframes llgRoll{0%{transform:translate(0,0);opacity:0}8%{opacity:1}62%{transform:translate(168px,0)}70%{transform:translate(176px,4px) scale(.9)}78%{transform:translate(178px,10px) scale(.25);opacity:1}80%{opacity:0}100%{transform:translate(178px,10px) scale(.2);opacity:0}}
+    @keyframes llgSpin{from{transform:rotate(0)}to{transform:rotate(720deg)}}
+    @keyframes llgHeart{0%,76%{transform:translateY(0) scale(0);opacity:0}84%{transform:translateY(-26px) scale(1.15);opacity:1}94%{transform:translateY(-34px) scale(1);opacity:1}100%{transform:translateY(-40px) scale(.9);opacity:0}}
+    @keyframes llgFlag{0%,100%{transform:skewY(0)}50%{transform:skewY(-6deg)}}
+    @keyframes llgFade{0%{opacity:0;transform:translateY(6px)}15%,85%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-6px)}}
 
-    /* Loading animation 2: Booking */
-    .booking-loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--charcoal); color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 500; padding: 2rem; }
-    .booking-loading.active { display: flex; }
-    .booking-anim { width: 240px; height: 80px; position: relative; margin-bottom: 1.5rem; overflow: hidden; }
-    .booking-tee { position: absolute; bottom: 8px; left: 20px; width: 2px; height: 12px; background: #fff; }
-    .booking-ball { position: absolute; bottom: 20px; left: 16px; width: 10px; height: 10px; background: #fff; border-radius: 50%; animation: teeshot 2.5s ease-out infinite; }
-    .booking-trail { position: absolute; bottom: 20px; left: 21px; width: 0; height: 2px; background: var(--mg); border-radius: 1px; opacity: 0; animation: trail 2.5s ease-out infinite; }
-    .booking-flag { position: absolute; bottom: 8px; right: 30px; width: 2px; height: 24px; background: #fff; }
-    .booking-flag::after { content: ''; position: absolute; top: 0; left: 2px; width: 10px; height: 7px; background: var(--mg); clip-path: polygon(0 0, 100% 50%, 0 100%); }
-    .booking-ripple { position: absolute; bottom: 6px; right: 22px; width: 20px; height: 6px; border: 1.5px solid var(--mg); border-radius: 50%; opacity: 0; animation: ripple 2.5s ease-out infinite; }
-    @keyframes teeshot {
-      0% { left: 16px; bottom: 20px; } 15% { left: 60px; bottom: 55px; } 50% { left: 170px; bottom: 40px; }
-      70% { left: 195px; bottom: 12px; } 100% { left: 195px; bottom: 12px; }
-    }
-    @keyframes trail { 0% { width: 0; opacity: 0; } 10% { opacity: 0.8; } 50% { width: 160px; opacity: 0.3; } 70% { opacity: 0; } 100% { opacity: 0; } }
-    @keyframes ripple { 0%,65% { opacity: 0; transform: scale(0.5); } 75% { opacity: 0.8; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5); } }
-    .booking-title { font-family: 'Poppins',sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .booking-step { font-size: 0.9rem; color: #ccc; min-height: 1.4em; margin-bottom: 1rem; }
-    .booking-bar-wrap { width: 200px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin-bottom: 1rem; }
-    .booking-bar { height: 100%; background: var(--mg); border-radius: 2px; width: 0; transition: width 0.5s ease; }
-    .booking-note { font-size: 0.8rem; color: #999; }
+    /* === CHECKOUT LOADER === */
+    .llg-book{position:fixed;inset:0;z-index:9999;background:#2B2A29;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:0 36px;font-family:Mulish,"Segoe UI",sans-serif;text-align:center}
+    .llg-book[hidden]{display:none}
+    .llg-shot{position:relative;width:300px;height:160px;margin-bottom:8px}
+    .llg-shot-svg{position:absolute;left:0;top:0;overflow:visible}
+    .llg-fly{position:absolute;left:0;top:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:999px;background:#fff;box-shadow:0 0 10px rgba(255,255,255,.6);offset-path:path('M 40 128 Q 150 -30 250 108');offset-rotate:0deg;animation:llgFly 2.6s cubic-bezier(.3,.1,.4,1) infinite}
+    .llg-trail{stroke-dasharray:300;animation:llgTrail 2.6s cubic-bezier(.3,.1,.4,1) infinite,llgTrailFade 2.6s linear infinite}
+    .llg-land{animation:llgLand 2.6s ease-out infinite;transform-origin:250px 110px;transform-box:view-box}
+    .llg-book-logo{width:64px;height:auto}
+    .llg-book-title{margin:0;font-family:Poppins,"Segoe UI",sans-serif;font-size:22px;font-weight:700}
+    .llg-book-step{margin:0;font-size:16px;color:#E8E6E3;animation:llgPulse 1.6s ease-in-out infinite}
+    .llg-bar-track{width:100%;max-width:320px;height:8px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}
+    .llg-bar{height:8px;width:6%;border-radius:999px;background:#DE0082}
+    .llg-book.is-running .llg-bar{animation:llgFill 9s cubic-bezier(.2,.7,.3,1) forwards}
+    .llg-book-note{margin:0;font-size:14px;color:#C9C6C2}
+    @keyframes llgFly{0%,12%{offset-distance:0%;opacity:1}72%,80%{offset-distance:100%;opacity:1}90%,100%{offset-distance:100%;opacity:0}}
+    @keyframes llgTrail{0%,12%{stroke-dashoffset:300}72%,100%{stroke-dashoffset:0}}
+    @keyframes llgTrailFade{0%,80%{opacity:1}92%,100%{opacity:0}}
+    @keyframes llgLand{0%,72%{transform:scale(0);opacity:0}78%{transform:scale(1.4);opacity:.6}90%,100%{transform:scale(2.2);opacity:0}}
+    @keyframes llgFill{0%{width:6%}40%{width:55%}75%{width:80%}100%{width:92%}}
+    @keyframes llgPulse{0%,100%{opacity:1}50%{opacity:.45}}
 
-    /* Reduce motion */
-    @media (prefers-reduced-motion: reduce) {
-      .loading-ball, .loading-heart, .booking-ball, .booking-trail, .booking-ripple, .loading-dots span { animation: none; }
-      .loading-ball { left: 155px; bottom: 2px; opacity: 0; }
-      .booking-bar { transition: none; }
-    }
+    @media (prefers-reduced-motion:reduce){.llg-ball,.llg-ball-spin,.llg-heart,.llg-flag,.llg-msg{animation:none}.llg-ball{transform:translate(120px,0)}.llg-fly,.llg-trail,.llg-land,.llg-book-step{animation:none}.llg-fly{display:none}}
 
     /* Skeleton */
     .skel { background: #e0ddd8; border-radius: var(--r); animation: pulse 1.5s ease-in-out infinite; }
@@ -201,35 +194,47 @@
 </head>
 <body>
   <div class="wrap" id="app">
-    <!-- Loading animation 1: Home opening -->
-    <div id="loadingWrap">
-      <div class="loading-screen" id="loadingSplash">
-        <img class="loading-logo" src="LLG_Logo.png" alt="LLG">
-        <div class="loading-anim">
-          <div class="loading-green"></div>
-          <div class="loading-hole"></div>
-          <div class="loading-flag"></div>
-          <div class="loading-ball"></div>
-          <div class="loading-heart">💗</div>
-        </div>
-        <div class="loading-text" id="loadingMsg">Lining up your putt...</div>
-        <div class="loading-dots"><span></span><span></span><span></span><span></span></div>
+    <!-- HOME LOADER -->
+    <div id="llg-home-loader" class="llg-load" role="status" aria-live="polite">
+      <img class="llg-load-logo" src="/img/llg-logo.png" alt="Ladies Love Golf" width="90">
+      <div class="llg-scene" aria-hidden="true">
+        <svg width="280" height="150" viewBox="0 0 280 150" class="llg-scene-svg">
+          <ellipse cx="140" cy="112" rx="136" ry="30" fill="#E3EDE3"/>
+          <ellipse cx="140" cy="112" rx="108" ry="21" fill="#D3E3D3"/>
+          <ellipse cx="227" cy="108" rx="11" ry="4" fill="#2B2A29"/>
+          <line x1="227" y1="108" x2="227" y2="30" stroke="#2B2A29" stroke-width="2.5" stroke-linecap="round"/>
+          <g class="llg-flag"><path d="M227 31 L262 41 L227 52 Z" fill="#DE0082"/></g>
+        </svg>
+        <div class="llg-ball"><svg class="llg-ball-spin" width="18" height="18" viewBox="0 0 18 18">
+          <circle cx="9" cy="9" r="8" fill="#fff" stroke="#C9C3BA"/>
+          <circle cx="6" cy="7" r="1" fill="#D9D3CB"/><circle cx="10" cy="5" r="1" fill="#D9D3CB"/>
+          <circle cx="12" cy="10" r="1" fill="#D9D3CB"/><circle cx="7" cy="12" r="1" fill="#D9D3CB"/>
+        </svg></div>
+        <svg class="llg-heart" width="22" height="22" viewBox="0 0 24 24" fill="#DE0082"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.5 3 4.5 6.8 4.5c2.2 0 3.9 1.2 5.2 3 1.3-1.8 3-3 5.2-3 3.8 0 5.9 4 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg>
       </div>
+      <p class="llg-msg">Lining up your putt...</p>
+      <div class="llg-dots" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     </div>
 
-    <!-- Loading animation 2: Booking -->
-    <div class="booking-loading" id="bookingLoading">
-      <div class="booking-anim">
-        <div class="booking-tee"></div>
-        <div class="booking-ball"></div>
-        <div class="booking-trail"></div>
-        <div class="booking-flag"></div>
-        <div class="booking-ripple"></div>
+    <!-- CHECKOUT LOADER -->
+    <div id="llg-book-loader" class="llg-book" role="status" aria-live="polite" hidden>
+      <div class="llg-shot" aria-hidden="true">
+        <svg width="300" height="160" viewBox="0 0 300 160" class="llg-shot-svg">
+          <path d="M0 136 Q150 120 300 136 L300 160 L0 160 Z" fill="#3A4A3F"/>
+          <ellipse cx="250" cy="112" rx="34" ry="8" fill="#4F6B55"/>
+          <circle class="llg-land" cx="250" cy="110" r="10" fill="none" stroke="#FFB3DC" stroke-width="2"/>
+          <line x1="258" y1="112" x2="258" y2="62" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M258 63 L284 71 L258 79 Z" fill="#DE0082"/>
+          <path class="llg-trail" d="M40 128 Q150 -30 250 108" fill="none" stroke="#FFB3DC" stroke-width="2" stroke-linecap="round" stroke-opacity=".7"/>
+          <rect x="37" y="130" width="6" height="10" rx="1" fill="#fff"/>
+        </svg>
+        <div class="llg-fly"></div>
       </div>
-      <div class="booking-title">Getting your booking ready</div>
-      <div class="booking-step" id="bookingStep">Holding your place...</div>
-      <div class="booking-bar-wrap"><div class="booking-bar" id="bookingBar"></div></div>
-      <div class="booking-note">You'll pay securely on the next screen</div>
+      <img class="llg-book-logo" src="/img/llg-logo-white.svg" alt="" width="64">
+      <p class="llg-book-title">Getting your booking ready</p>
+      <p class="llg-book-step">Holding your place...</p>
+      <div class="llg-bar-track"><div class="llg-bar"></div></div>
+      <p class="llg-book-note">You'll pay securely on the next screen</p>
     </div>
 
     <!-- Home screen -->
@@ -255,39 +260,33 @@
     var USE_APP_BOOK = false;
     var USE_DIRECT_CHECKOUT = false; // Spike parked: too slow (4 API calls + 2 redirects)
 
-    // Loading message rotation
-    var loadingMsgs = ["Lining up your putt...", "Finding your sessions...", "Counting your points...", "Nearly on the green..."];
-    var loadingMsgIdx = 0;
-    var loadingMsgTimer = setInterval(function() {
-      loadingMsgIdx = (loadingMsgIdx + 1) % loadingMsgs.length;
-      var el = document.getElementById("loadingMsg");
-      if (el) el.textContent = loadingMsgs[loadingMsgIdx];
-    }, 2000);
+    // === HOME LOADER ===
+    (function(){
+      var el=document.getElementById('llg-home-loader'); if(!el) return;
+      var msgs=['Lining up your putt...','Finding your sessions...','Counting your points...','Nearly on the green...'];
+      var msg=el.querySelector('.llg-msg'), dots=el.querySelectorAll('.llg-dots span'), i=0;
+      function paint(){ msg.textContent=msgs[i]; dots.forEach(function(d,n){ d.className=(n<i?'on':'')+(n===i?' now':''); }); }
+      paint();
+      var t=setInterval(function(){ i=(i+1)%msgs.length; paint(); },2000);
+      window.hideHomeLoader=function(){ clearInterval(t); el.classList.add('is-done'); setTimeout(function(){ el.remove(); },350); };
+    })();
 
-    // Booking loading helpers
-    var bookingSteps = ["Holding your place...", "Applying your member price...", "Nearly there..."];
-    var bookingStepIdx = 0;
-    var bookingStepTimer = null;
-
-    function showBookingLoading() {
-      document.getElementById("bookingLoading").classList.add("active");
-      bookingStepIdx = 0;
-      var bar = document.getElementById("bookingBar");
-      var step = document.getElementById("bookingStep");
-      bar.style.width = "10%";
-      step.textContent = bookingSteps[0];
-      bookingStepTimer = setInterval(function() {
-        bookingStepIdx = Math.min(bookingStepIdx + 1, bookingSteps.length - 1);
-        step.textContent = bookingSteps[bookingStepIdx];
-        var pct = Math.min(10 + bookingStepIdx * 35, 90);
-        bar.style.width = pct + "%";
-      }, 2500);
-    }
-
-    function hideBookingLoading() {
-      clearInterval(bookingStepTimer);
-      document.getElementById("bookingLoading").classList.remove("active");
-    }
+    // === CHECKOUT LOADER ===
+    window.showBookLoader=function(){
+      var el=document.getElementById('llg-book-loader'); if(!el) return;
+      var steps=['Holding your place...','Applying your member price...','Nearly there...'], i=0;
+      var s=el.querySelector('.llg-book-step');
+      el.hidden=false; el.classList.add('is-running');
+      clearInterval(window.__llgBookT);
+      window.__llgBookT=setInterval(function(){ i=(i+1)%steps.length; s.textContent=steps[i]; },2400);
+    };
+    // Hide booking loader if user comes back (bfcache)
+    window.addEventListener('pageshow', function(e) {
+      if (e.persisted) {
+        var el=document.getElementById('llg-book-loader');
+        if (el) { el.hidden=true; el.classList.remove('is-running'); clearInterval(window.__llgBookT); }
+      }
+    });
 
     var DATA = null;
     var PASS = null;
@@ -367,14 +366,14 @@
     })();
 
     function showError(msg) {
-      document.getElementById("loadingWrap").style.display = "none"; clearInterval(loadingMsgTimer);
+      if (window.hideHomeLoader) window.hideHomeLoader();
       var el = document.getElementById("error");
       el.style.display = "block";
       el.innerHTML = '<p class="error-msg">' + esc(msg) + '</p>';
     }
 
     function showScreen(name, extra) {
-      document.getElementById("loadingWrap").style.display = "none"; clearInterval(loadingMsgTimer);
+      if (window.hideHomeLoader) window.hideHomeLoader();
       ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen"].forEach(function(id) {
         document.getElementById(id).classList.remove("active");
       });
@@ -1256,13 +1255,12 @@
     }
 
     function tapBookBtn(el) {
-      if (USE_DIRECT_CHECKOUT) { showBookingLoading(); }
-      else { el.textContent = "Opening booking..."; el.style.opacity = "0.6"; }
+      if (window.showBookLoader) window.showBookLoader();
       el.style.pointerEvents = "none"; trackEvent("book_tapped");
     }
 
     async function usePoints(serviceId, sessionStart, ptsAmount, moneyAmount, bookUrl, el) {
-      el.textContent = "Setting up...";
+      if (window.showBookLoader) window.showBookLoader();
       el.disabled = true;
       el.style.opacity = "0.6";
       try {
