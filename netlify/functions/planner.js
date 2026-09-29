@@ -65,6 +65,9 @@ exports.handler = async (event) => {
     if (action === "tidyPreview") return await handleTidyPreview(supabase, body, headers);
     if (action === "cancelSession") return await handleCancelSession(supabase, body, headers, admin);
     if (action === "findOrphans") return await handleFindOrphans(supabase, body, headers);
+    if (action === "listTopicsForReview") return await handleListTopicsForReview(supabase, body, headers);
+    if (action === "updateShortDescription") return await handleUpdateShortDescription(supabase, body, headers);
+    if (action === "approveShortDescriptions") return await handleApproveShortDescriptions(supabase, body, headers);
     if (action === "deleteOrphans") return await handleDeleteOrphans(supabase, body, headers);
     return { statusCode: 400, headers, body: JSON.stringify({ error: "unknown_action" }) };
   } catch (err) {
@@ -152,6 +155,21 @@ async function handleSessions(supabase, body, headers) {
     .gte("start_utc", monthStart.toISOString())
     .lte("start_utc", monthEnd.toISOString());
 
+  // Fetch short descriptions from topic library for poster use
+  const topicTitles = [...new Set((existingTopics || []).map(t => t.title).filter(Boolean))];
+  let shortDescMap = {};
+  if (topicTitles.length > 0) {
+    const { data: libTopics } = await supabase
+      .from("topic_library")
+      .select("title, short_description, short_description_status")
+      .in("title", topicTitles);
+    (libTopics || []).forEach(lt => {
+      if (lt.short_description && lt.short_description_status === "approved") {
+        shortDescMap[lt.title] = lt.short_description;
+      }
+    });
+  }
+
   // Match topics to sessions
   const sessions = wixSessions.map(s => {
     const sessionStart = s.startDate ? new Date(s.startDate) : null;
@@ -164,7 +182,7 @@ async function handleSessions(supabase, body, headers) {
     }
     return {
       ...s,
-      currentTopic: topic ? { title: topic.title, description: topic.description } : null,
+      currentTopic: topic ? { title: topic.title, description: topic.description, shortDescription: shortDescMap[topic.title] || null } : null,
     };
   });
 
@@ -658,4 +676,43 @@ async function handleDeleteOrphans(supabase, body, headers) {
 
   if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "delete_failed", detail: error.message }) };
   return { statusCode: 200, headers, body: JSON.stringify({ deleted: orphanIds.length }) };
+}
+
+async function handleListTopicsForReview(supabase, body, headers) {
+  var { data, error } = await supabase
+    .from("topic_library")
+    .select("id, title, description, short_description, short_description_status")
+    .eq("active", true)
+    .order("title");
+
+  if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "fetch_failed", detail: error.message }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ topics: data || [] }) };
+}
+
+async function handleUpdateShortDescription(supabase, body, headers) {
+  var { topicId, shortDescription, status } = body;
+  if (!topicId) return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_topic_id" }) };
+
+  var update = {};
+  if (shortDescription !== undefined) update.short_description = shortDescription;
+  if (status) update.short_description_status = status;
+
+  var { error } = await supabase.from("topic_library").update(update).eq("id", topicId);
+  if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "update_failed", detail: error.message }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+}
+
+async function handleApproveShortDescriptions(supabase, body, headers) {
+  var { topicIds } = body;
+  if (!topicIds || !Array.isArray(topicIds) || topicIds.length === 0) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "missing_topic_ids" }) };
+  }
+
+  var { error } = await supabase
+    .from("topic_library")
+    .update({ short_description_status: "approved" })
+    .in("id", topicIds);
+
+  if (error) return { statusCode: 500, headers, body: JSON.stringify({ error: "approve_failed", detail: error.message }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ approved: topicIds.length }) };
 }

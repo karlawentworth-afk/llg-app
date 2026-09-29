@@ -256,6 +256,7 @@
           date: dateKey,
           title: s.currentTopic.title,
           description: s.currentTopic.description || "",
+          shortDescription: s.currentTopic.shortDescription || null,
           times: [],
         };
       }
@@ -306,7 +307,8 @@
       html += '<div class="poster-content">';
       html += '<div class="poster-time">' + esc(timeStr) + '</div>';
       html += '<div class="poster-topic">' + esc(row.title) + '</div>';
-      if (row.description) html += '<div class="poster-desc">' + esc(row.description) + '</div>';
+      var posterDesc = row.shortDescription || (row.description ? row.description.split('.').slice(0, 2).join('.').trim() + '.' : "");
+      if (posterDesc) html += '<div class="poster-desc">' + esc(posterDesc) + '</div>';
       html += '</div></div>';
     });
 
