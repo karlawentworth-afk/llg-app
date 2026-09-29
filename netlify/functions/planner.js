@@ -177,7 +177,7 @@ async function handleSessions(supabase, body, headers) {
     if (sessionStart && existingTopics) {
       topic = existingTopics.find(t => {
         const topicStart = new Date(t.start_utc);
-        return Math.abs(topicStart.getTime() - sessionStart.getTime()) < 2 * 60 * 60 * 1000;
+        return Math.abs(topicStart.getTime() - sessionStart.getTime()) < 15 * 60 * 1000;
       });
     }
     return {
@@ -414,8 +414,8 @@ async function handleClearSessionTopic(supabase, body, headers) {
 
   // Delete the assignment entirely (rather than setting to "(none)")
   const sessionStart = new Date(startDate);
-  const windowStart = new Date(sessionStart.getTime() - 2 * 60 * 60 * 1000);
-  const windowEnd = new Date(sessionStart.getTime() + 2 * 60 * 60 * 1000);
+  const windowStart = new Date(sessionStart.getTime() - 15 * 60 * 1000);
+  const windowEnd = new Date(sessionStart.getTime() + 15 * 60 * 1000);
 
   const { error } = await supabase
     .from("session_topics")
@@ -517,7 +517,7 @@ async function handleTidyPreview(supabase, body, headers) {
     var match = wixEvents.find(function(e) {
       if (e.status === "CANCELLED") return false;
       var eTime = e.start?.localDate ? new Date(e.start.localDate).getTime() : 0;
-      return Math.abs(eTime - nsTime) < 2 * 60 * 60 * 1000;
+      return Math.abs(eTime - nsTime) < 15 * 60 * 1000;
     });
     if (!match) return;
 
@@ -648,7 +648,7 @@ async function handleFindOrphans(supabase, body, headers) {
     if (t.title === "No session this day") return false; // expected to have no session
     var topicTime = new Date(t.start_utc).getTime();
     return !wixTimes.some(function(wt) {
-      return Math.abs(wt - topicTime) < 2 * 60 * 60 * 1000;
+      return Math.abs(wt - topicTime) < 15 * 60 * 1000;
     });
   });
 

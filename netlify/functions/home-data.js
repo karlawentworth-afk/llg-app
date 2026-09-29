@@ -648,7 +648,7 @@ exports.handler = async (event) => {
       if (sessionStart) {
         topic = topics.find(t => {
           const topicStart = new Date(t.start_utc);
-          return Math.abs(topicStart.getTime() - sessionStart.getTime()) < 2 * 60 * 60 * 1000; // 2hr tolerance
+          return Math.abs(topicStart.getTime() - sessionStart.getTime()) < 15 * 60 * 1000; // 15min tolerance
         });
       }
       return {
