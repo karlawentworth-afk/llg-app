@@ -1,28 +1,27 @@
 // ────────────────────────────────────────────────────────────
 // PAGE CODE for the app-checkout page
 //
-// SPIKE: Skip the Wix booking form entirely.
+// SPIKE v2: Skip the Wix booking form entirely.
+// Uses non-deprecated APIs: Bookings V2 + eCommerce checkout.
 //
 // This page is called from our app with slot details in the URL:
-//   /app-checkout?serviceId=X&startDate=Y&endDate=Z&resourceId=R
+//   /app-checkout?serviceId=X&startDate=Y&endDate=Z&scheduleId=S
 //
-// It calls checkoutBooking() which handles payment inline.
-// The member is already logged in on Wix, so the member discount
-// and points triggers get her member ID.
+// It calls the backend web module (checkoutSession.web.js)
+// which creates a booking and checkout as the logged-in member,
+// then redirects to the Wix checkout page for payment.
 //
-// After payment: Wix redirects to the thank-you page, which
-// redirects back to our app.
+// After payment: Wix thank-you page -> app-home-test -> Home.
 //
 // Create in Wix Editor:
 // 1. Add a new page called "app-checkout"
-// 2. Add a #statusMessage text element
-// 3. Paste this code into the page's { } code panel
-// 4. Set page to "Members Only" (ensures login)
-//
-// Packages: wix-bookings-frontend, wix-location
+// 2. Set Page Permissions to "Members Only"
+// 3. Add a #statusMessage text element
+// 4. Paste this code into the page's { } code panel
+// 5. Paste checkoutSession.web.js into Backend
 // ────────────────────────────────────────────────────────────
 
-import wixBookingsFrontend from "wix-bookings-frontend";
+import { createCheckoutSession } from "backend/checkoutSession.web";
 import wixLocation from "wix-location";
 
 $w.onReady(function () {
@@ -31,57 +30,53 @@ $w.onReady(function () {
   msg.show();
 
   const query = wixLocation.query;
-  const serviceId = query.serviceId;
-  const startDate = query.startDate;
-  const endDate = query.endDate;
-  const resourceId = query.resourceId || undefined;
-  const timezone = query.timezone || "Europe/London";
 
-  if (!serviceId || !startDate) {
+  const slotParams = {
+    serviceId: query.serviceId || "",
+    startDate: query.startDate || "",
+    endDate: query.endDate || "",
+    scheduleId: query.scheduleId || "",
+    resourceId: query.resourceId || "",
+    eventId: query.eventId || "",
+    timezone: query.timezone || "Europe/London",
+  };
+
+  if (!slotParams.serviceId || !slotParams.startDate) {
     msg.text = "Missing booking details. Please go back and try again.";
     return;
   }
 
-  // Build the slot object
-  const slot = {
-    serviceId,
-    startDate,
-    endDate: endDate || undefined,
-    timezone,
-  };
-
-  if (resourceId) {
-    slot.resource = { id: resourceId };
-  }
-
-  // Call checkoutBooking — this opens the Wix payment popup
-  // The member is already logged in, so discounts apply
-  wixBookingsFrontend
-    .checkoutBooking({
-      slot,
-      // No form fields needed — Wix uses the logged-in member's details
-    })
+  createCheckoutSession(slotParams)
     .then(function (result) {
-      // Payment complete — Wix handles the redirect to thank-you
-      msg.text = "You're booked!";
-    })
-    .catch(function (err) {
-      const errMsg = err.message || String(err);
-      console.error("app-checkout error:", errMsg);
+      if (result.error) {
+        console.error("app-checkout:", result.error, result.detail || "");
 
-      if (errMsg.includes("ALREADY_BOOKED") || errMsg.includes("already booked")) {
-        msg.text = "You're already booked for this session.";
-      } else if (errMsg.includes("FULLY_BOOKED") || errMsg.includes("fully booked")) {
-        msg.text = "This session is now full. Please go back and choose another.";
-      } else if (errMsg.includes("canceled") || errMsg.includes("cancelled")) {
-        msg.text = "Payment was cancelled.";
-      } else {
-        msg.text = "Something went wrong: " + errMsg;
+        if (result.error === "not_logged_in") {
+          msg.text = "Please log in first.";
+        } else if (result.detail && result.detail.indexOf("ALREADY_BOOKED") !== -1) {
+          msg.text = "You're already booked for this session.";
+        } else if (result.detail && result.detail.indexOf("FULLY_BOOKED") !== -1) {
+          msg.text = "This session is now full.";
+        } else {
+          msg.text = "Could not set up booking: " + (result.detail || result.error);
+        }
+
+        // Return to Home after 4 seconds
+        setTimeout(function () {
+          wixLocation.to("/app-home-test?booked=0");
+        }, 4000);
+        return;
       }
 
-      // Show a back button after error
+      // Redirect to Wix checkout page
+      msg.text = "Taking you to checkout...";
+      wixLocation.to(result.checkoutUrl);
+    })
+    .catch(function (err) {
+      console.error("app-checkout catch:", err);
+      msg.text = "Something went wrong. Taking you back...";
       setTimeout(function () {
         wixLocation.to("/app-home-test");
-      }, 4000);
+      }, 3000);
     });
 });

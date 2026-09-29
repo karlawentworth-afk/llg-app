@@ -1196,9 +1196,11 @@
       if (USE_DIRECT_CHECKOUT) {
         var q = new URLSearchParams();
         if (s.serviceId) q.set("serviceId", s.serviceId);
+        if (s.scheduleId) q.set("scheduleId", s.scheduleId);
         if (s.resourceId) q.set("resourceId", s.resourceId);
         if (s.startDate) q.set("startDate", s.startDate);
         if (s.endDate) q.set("endDate", s.endDate);
+        if (s.eventId) q.set("eventId", s.eventId);
         q.set("timezone", s.timeZone || "Europe/London");
         return "https://www.ladieslovegolf.com/app-checkout?" + q.toString();
       }
