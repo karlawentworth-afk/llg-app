@@ -128,15 +128,57 @@
     .trip-bar-price { font-family: 'Poppins',sans-serif; font-size: 1.2rem; font-weight: 700; }
     .trip-bar .btn { background: var(--mg); }
 
-    /* Loading */
-    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 1rem 2rem; }
-    .loading-logo { height: 56px; margin-bottom: 1.5rem; }
-    .loading-text { font-size: 0.95rem; color: var(--muted); margin-bottom: 1rem; }
-    .loading-dots { display: flex; gap: 6px; }
+    /* Loading animation 1: Home opening */
+    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem 2rem; }
+    .loading-logo { height: 52px; margin-bottom: 1.5rem; }
+    .loading-anim { width: 200px; height: 60px; position: relative; margin-bottom: 1.25rem; overflow: hidden; }
+    .loading-green { position: absolute; bottom: 0; left: 0; right: 0; height: 8px; background: #4caf50; border-radius: 4px; }
+    .loading-hole { position: absolute; bottom: 4px; right: 28px; width: 14px; height: 8px; background: #2B2A29; border-radius: 50%; }
+    .loading-flag { position: absolute; bottom: 12px; right: 33px; width: 2px; height: 28px; background: #fff; }
+    .loading-flag::after { content: ''; position: absolute; top: 0; left: 2px; width: 12px; height: 8px; background: var(--mg); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+    .loading-ball { position: absolute; bottom: 8px; left: 0; width: 10px; height: 10px; background: #fff; border-radius: 50%; box-shadow: 0 0 2px rgba(0,0,0,0.3); animation: ballroll 2.8s ease-in-out infinite; }
+    .loading-heart { position: absolute; bottom: 12px; right: 28px; font-size: 14px; opacity: 0; animation: heartpop 2.8s ease-in-out infinite; }
+    @keyframes ballroll {
+      0% { left: 0; bottom: 8px; } 40% { left: 120px; bottom: 20px; } 65% { left: 155px; bottom: 8px; }
+      72% { left: 155px; bottom: 2px; opacity: 1; } 73% { opacity: 0; } 100% { opacity: 0; left: 155px; }
+    }
+    @keyframes heartpop { 0%,72% { opacity: 0; transform: scale(0); } 78% { opacity: 1; transform: scale(1.3); } 85% { transform: scale(1); } 100% { opacity: 0; } }
+    .loading-text { font-size: 0.95rem; color: var(--muted); margin-bottom: 0.5rem; min-height: 1.5em; text-align: center; }
+    .loading-dots { display: flex; gap: 6px; margin-top: 0.5rem; }
     .loading-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--mg); animation: dotpulse 1.4s ease-in-out infinite; }
     .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
     .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes dotpulse { 0%,100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+    .loading-dots span:nth-child(4) { animation-delay: 0.6s; }
+    @keyframes dotpulse { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+
+    /* Loading animation 2: Booking */
+    .booking-loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--charcoal); color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 500; padding: 2rem; }
+    .booking-loading.active { display: flex; }
+    .booking-anim { width: 240px; height: 80px; position: relative; margin-bottom: 1.5rem; overflow: hidden; }
+    .booking-tee { position: absolute; bottom: 8px; left: 20px; width: 2px; height: 12px; background: #fff; }
+    .booking-ball { position: absolute; bottom: 20px; left: 16px; width: 10px; height: 10px; background: #fff; border-radius: 50%; animation: teeshot 2.5s ease-out infinite; }
+    .booking-trail { position: absolute; bottom: 20px; left: 21px; width: 0; height: 2px; background: var(--mg); border-radius: 1px; opacity: 0; animation: trail 2.5s ease-out infinite; }
+    .booking-flag { position: absolute; bottom: 8px; right: 30px; width: 2px; height: 24px; background: #fff; }
+    .booking-flag::after { content: ''; position: absolute; top: 0; left: 2px; width: 10px; height: 7px; background: var(--mg); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+    .booking-ripple { position: absolute; bottom: 6px; right: 22px; width: 20px; height: 6px; border: 1.5px solid var(--mg); border-radius: 50%; opacity: 0; animation: ripple 2.5s ease-out infinite; }
+    @keyframes teeshot {
+      0% { left: 16px; bottom: 20px; } 15% { left: 60px; bottom: 55px; } 50% { left: 170px; bottom: 40px; }
+      70% { left: 195px; bottom: 12px; } 100% { left: 195px; bottom: 12px; }
+    }
+    @keyframes trail { 0% { width: 0; opacity: 0; } 10% { opacity: 0.8; } 50% { width: 160px; opacity: 0.3; } 70% { opacity: 0; } 100% { opacity: 0; } }
+    @keyframes ripple { 0%,65% { opacity: 0; transform: scale(0.5); } 75% { opacity: 0.8; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5); } }
+    .booking-title { font-family: 'Poppins',sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .booking-step { font-size: 0.9rem; color: #ccc; min-height: 1.4em; margin-bottom: 1rem; }
+    .booking-bar-wrap { width: 200px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin-bottom: 1rem; }
+    .booking-bar { height: 100%; background: var(--mg); border-radius: 2px; width: 0; transition: width 0.5s ease; }
+    .booking-note { font-size: 0.8rem; color: #999; }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+      .loading-ball, .loading-heart, .booking-ball, .booking-trail, .booking-ripple, .loading-dots span { animation: none; }
+      .loading-ball { left: 155px; bottom: 2px; opacity: 0; }
+      .booking-bar { transition: none; }
+    }
 
     /* Skeleton */
     .skel { background: #e0ddd8; border-radius: var(--r); animation: pulse 1.5s ease-in-out infinite; }
@@ -159,22 +201,35 @@
 </head>
 <body>
   <div class="wrap" id="app">
-    <!-- Loading + skeleton -->
+    <!-- Loading animation 1: Home opening -->
     <div id="loadingWrap">
       <div class="loading-screen" id="loadingSplash">
         <img class="loading-logo" src="LLG_Logo.png" alt="LLG">
-        <div class="loading-text">Loading your golf</div>
-        <div class="loading-dots"><span></span><span></span><span></span></div>
-      </div>
-      <div id="skeleton" style="display:none">
-        <div class="skel-section"><div class="skel" style="height:1.8rem;width:55%;margin-bottom:0.5rem"></div><div class="skel" style="height:1rem;width:70%;margin-bottom:0"></div></div>
-        <div class="skel-section" style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem">
-          <div class="skel" style="height:85px"></div>
-          <div class="skel" style="height:85px"></div>
+        <div class="loading-anim">
+          <div class="loading-green"></div>
+          <div class="loading-hole"></div>
+          <div class="loading-flag"></div>
+          <div class="loading-ball"></div>
+          <div class="loading-heart">💗</div>
         </div>
-        <div class="skel-section"><div class="skel" style="height:1.2rem;width:40%;margin-bottom:0.5rem"></div><div class="skel" style="height:44px;margin-bottom:0.5rem"></div></div>
-        <div class="skel-section"><div class="skel" style="height:90px;margin-bottom:0.5rem"></div><div class="skel" style="height:90px"></div></div>
+        <div class="loading-text" id="loadingMsg">Lining up your putt...</div>
+        <div class="loading-dots"><span></span><span></span><span></span><span></span></div>
       </div>
+    </div>
+
+    <!-- Loading animation 2: Booking -->
+    <div class="booking-loading" id="bookingLoading">
+      <div class="booking-anim">
+        <div class="booking-tee"></div>
+        <div class="booking-ball"></div>
+        <div class="booking-trail"></div>
+        <div class="booking-flag"></div>
+        <div class="booking-ripple"></div>
+      </div>
+      <div class="booking-title">Getting your booking ready</div>
+      <div class="booking-step" id="bookingStep">Holding your place...</div>
+      <div class="booking-bar-wrap"><div class="booking-bar" id="bookingBar"></div></div>
+      <div class="booking-note">You'll pay securely on the next screen</div>
     </div>
 
     <!-- Home screen -->
@@ -199,6 +254,40 @@
   <script>
     var USE_APP_BOOK = false;
     var USE_DIRECT_CHECKOUT = true; // Spike: skip booking form, go straight to Wix checkout
+
+    // Loading message rotation
+    var loadingMsgs = ["Lining up your putt...", "Finding your sessions...", "Counting your points...", "Nearly on the green..."];
+    var loadingMsgIdx = 0;
+    var loadingMsgTimer = setInterval(function() {
+      loadingMsgIdx = (loadingMsgIdx + 1) % loadingMsgs.length;
+      var el = document.getElementById("loadingMsg");
+      if (el) el.textContent = loadingMsgs[loadingMsgIdx];
+    }, 2000);
+
+    // Booking loading helpers
+    var bookingSteps = ["Holding your place...", "Applying your member price...", "Nearly there..."];
+    var bookingStepIdx = 0;
+    var bookingStepTimer = null;
+
+    function showBookingLoading() {
+      document.getElementById("bookingLoading").classList.add("active");
+      bookingStepIdx = 0;
+      var bar = document.getElementById("bookingBar");
+      var step = document.getElementById("bookingStep");
+      bar.style.width = "10%";
+      step.textContent = bookingSteps[0];
+      bookingStepTimer = setInterval(function() {
+        bookingStepIdx = Math.min(bookingStepIdx + 1, bookingSteps.length - 1);
+        step.textContent = bookingSteps[bookingStepIdx];
+        var pct = Math.min(10 + bookingStepIdx * 35, 90);
+        bar.style.width = pct + "%";
+      }, 2500);
+    }
+
+    function hideBookingLoading() {
+      clearInterval(bookingStepTimer);
+      document.getElementById("bookingLoading").classList.remove("active");
+    }
 
     var DATA = null;
     var PASS = null;
@@ -271,14 +360,14 @@
     })();
 
     function showError(msg) {
-      document.getElementById("loadingWrap").style.display = "none";
+      document.getElementById("loadingWrap").style.display = "none"; clearInterval(loadingMsgTimer);
       var el = document.getElementById("error");
       el.style.display = "block";
       el.innerHTML = '<p class="error-msg">' + esc(msg) + '</p>';
     }
 
     function showScreen(name, extra) {
-      document.getElementById("loadingWrap").style.display = "none";
+      document.getElementById("loadingWrap").style.display = "none"; clearInterval(loadingMsgTimer);
       ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen"].forEach(function(id) {
         document.getElementById(id).classList.remove("active");
       });
@@ -1159,7 +1248,11 @@
       btn.textContent = el.classList.contains("open") ? "Less" : "More";
     }
 
-    function tapBookBtn(el) { el.textContent = "Opening booking..."; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("book_tapped"); }
+    function tapBookBtn(el) {
+      if (USE_DIRECT_CHECKOUT) { showBookingLoading(); }
+      else { el.textContent = "Opening booking..."; el.style.opacity = "0.6"; }
+      el.style.pointerEvents = "none"; trackEvent("book_tapped");
+    }
 
     async function usePoints(serviceId, sessionStart, ptsAmount, moneyAmount, bookUrl, el) {
       el.textContent = "Setting up...";
