@@ -311,6 +311,8 @@
       }
     });
 
+    var WIX_PASS_URL = "https://www.ladieslovegolf.com/app-home-test";
+
     (async function () {
       var hash = window.location.hash.slice(1);
       var params = new URLSearchParams(hash);
@@ -320,12 +322,7 @@
         window.history.replaceState(null, "", window.location.pathname);
       }
 
-      // Show skeleton after a brief moment (logo shows first)
-      setTimeout(function() {
-        var skel = document.getElementById("skeleton");
-        if (skel) skel.style.display = "";
-      }, 600);
-
+      // Try loading data: with pass if we have one, or with session cookie
       try {
         var controller = new AbortController();
         var timer = setTimeout(function() { controller.abort(); }, 9000);
@@ -342,9 +339,19 @@
 
         if (!res.ok) {
           var err = await res.json().catch(function() { return {}; });
+
+          // No session and no pass: redirect to Wix to get a pass
+          if (err.error === "no_session" || err.error === "pass_expired" || err.error === "invalid_signature") {
+            // Only redirect once — prevent loops
+            if (!PASS && !window.location.hash.includes("retry")) {
+              window.location.href = WIX_PASS_URL;
+              return;
+            }
+          }
+
           var msgs = {
             invalid_signature: "Access denied.",
-            pass_expired: "Your session has expired. Please reload the page on the LLG website.",
+            pass_expired: "Session expired. Redirecting...",
             no_session: "Please open this page from the LLG app.",
             server_config: "Server configuration error. Please contact LLG.",
           };
