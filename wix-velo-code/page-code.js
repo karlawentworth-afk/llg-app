@@ -17,20 +17,19 @@ import wixLocation from "wix-location";
 $w.onReady(async function () {
   const loginMsg = $w("#loginMessage");
 
-  loginMsg.text = "Loading your golf...";
-  loginMsg.show();
+  loginMsg.hide();
 
   try {
     const pass = await getEmbedPass();
 
     if (!pass) {
-      loginMsg.text = "Please log in to access the app.";
+      loginMsg.show(); loginMsg.text = "Please log in to access the app.";
       return;
     }
 
     const booked = wixLocation.query.booked === "1" ? "&booked=1" : "";
     wixLocation.to(`https://llg-app-test.netlify.app/home/#p=${pass}${booked}`);
   } catch (err) {
-    loginMsg.text = "Something went wrong. Please try again.";
+    loginMsg.show(); loginMsg.text = "Something went wrong. Please try again.";
   }
 });

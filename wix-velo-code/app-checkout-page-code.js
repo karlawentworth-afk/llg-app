@@ -26,8 +26,7 @@ import wixLocation from "wix-location";
 
 $w.onReady(function () {
   const msg = $w("#statusMessage");
-  msg.text = "Setting up your booking...";
-  msg.show();
+  msg.hide();
 
   const query = wixLocation.query;
 
@@ -42,7 +41,7 @@ $w.onReady(function () {
   };
 
   if (!slotParams.serviceId || !slotParams.startDate) {
-    msg.text = "Missing booking details. Please go back and try again.";
+    msg.show(); msg.text = "Missing booking details. Please go back and try again.";
     return;
   }
 
@@ -51,6 +50,7 @@ $w.onReady(function () {
       if (result.error) {
         console.error("app-checkout:", result.error, result.detail || "");
 
+        msg.show();
         if (result.error === "not_logged_in") {
           msg.text = "Please log in first.";
         } else if (result.detail && result.detail.indexOf("ALREADY_BOOKED") !== -1) {
@@ -74,7 +74,7 @@ $w.onReady(function () {
     })
     .catch(function (err) {
       console.error("app-checkout catch:", err);
-      msg.text = "Something went wrong. Taking you back...";
+      msg.show(); msg.text = "Something went wrong. Taking you back...";
       setTimeout(function () {
         wixLocation.to("/app-home-test");
       }, 3000);
