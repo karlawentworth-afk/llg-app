@@ -801,7 +801,7 @@
 
       // Bottom bar
       if (booked) {
-        h += '<button class="btn btn-dark" data-portal-event="' + esc(trip.id) + '" style="width:100%;margin-top:0.5rem">Open your trip portal</button>';
+        h += '<button class="btn btn-dark" data-portal-event="' + esc(trip.id) + '" data-portal-name="' + esc(trip.title) + '" style="width:100%;margin-top:0.5rem">Open your trip portal</button>';
       } else if (trip.soldOut) {
         h += '<div class="trip-bar" style="justify-content:center">' +
           '<span style="font-size:1rem;font-weight:600;opacity:0.7">Fully booked</span>' +
@@ -1295,6 +1295,7 @@
     }
     async function openPortal(el) {
       var eventId = el.getAttribute("data-portal-event");
+      var eventName = el.getAttribute("data-portal-name") || "";
       el.textContent = "Opening...";
       el.disabled = true;
       el.style.opacity = "0.6";
@@ -1303,7 +1304,7 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
-          body: JSON.stringify({ eventId: eventId }),
+          body: JSON.stringify({ eventId: eventId, eventName: eventName }),
         });
         var data = await res.json();
         if (data.portalUrl) {

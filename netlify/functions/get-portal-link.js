@@ -112,7 +112,7 @@ exports.handler = async (event) => {
     var body;
     try { body = JSON.parse(event.body); } catch { body = {}; }
 
-    console.log("get-portal-link: got", (data.links || []).length, "links, requested eventId:", body.eventId || "none");
+    console.log("get-portal-link: got", (data.links || []).length, "links, requested:", body.eventId || "none", body.eventName || "none");
 
     if (data.links && data.links.length > 0) {
       // Try matching by eventId first
@@ -122,8 +122,31 @@ exports.handler = async (event) => {
           return { statusCode: 200, headers: CORS, body: JSON.stringify({ portalUrl: match.portalUrl }) };
         }
       }
-      // No specific match — return the first link (most likely her upcoming trip)
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ portalUrl: data.links[0].portalUrl }) };
+      // Try matching by event name (Wix event ID differs from golf school Supabase ID)
+      if (body.eventName) {
+        var nameMatch = data.links.find(function(l) {
+          return l.eventName && body.eventName &&
+            l.eventName.toLowerCase().trim() === body.eventName.toLowerCase().trim();
+        });
+        if (nameMatch) {
+          return { statusCode: 200, headers: CORS, body: JSON.stringify({ portalUrl: nameMatch.portalUrl }) };
+        }
+        // Fuzzy: check if one contains the other
+        var fuzzyMatch = data.links.find(function(l) {
+          var a = (l.eventName || "").toLowerCase();
+          var b = (body.eventName || "").toLowerCase();
+          return a.indexOf(b) !== -1 || b.indexOf(a) !== -1;
+        });
+        if (fuzzyMatch) {
+          return { statusCode: 200, headers: CORS, body: JSON.stringify({ portalUrl: fuzzyMatch.portalUrl }) };
+        }
+      }
+      // Still no match — if only one link, use it
+      if (data.links.length === 1) {
+        return { statusCode: 200, headers: CORS, body: JSON.stringify({ portalUrl: data.links[0].portalUrl }) };
+      }
+      // Multiple links, can't determine which — return all for the front-end to handle
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ links: data.links }) };
     }
 
     // No links at all
