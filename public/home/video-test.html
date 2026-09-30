@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Playback Test</title>
+<style>
+  body { font-family: -apple-system, sans-serif; background: #F7F4F0; margin: 0; padding: 1rem; }
+  h1 { font-size: 1.2rem; }
+  video { width: 100%; max-width: 480px; border-radius: 12px; background: #000; }
+  .card { background: #fff; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #E6E1DA; }
+  .status { font-size: 0.85rem; color: #5E5D5B; margin-top: 0.5rem; }
+  button { background: #DE0082; color: #fff; border: none; border-radius: 10px; padding: 0.6rem 1.2rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Video Playback Test</h1>
+
+<div class="card">
+  <h2 style="font-size:1rem">1. Direct MP4 URL (public)</h2>
+  <video id="v1" controls playsinline preload="metadata"
+    poster="https://static.wixstatic.com/media/3fcc04_478a3c560256407ba7c233f7dbd03f83f002.jpg">
+    <source src="https://video.wixstatic.com/video/3fcc04_478a3c560256407ba7c233f7dbd03f83/file" type="video/mp4">
+  </video>
+  <div class="status" id="s1">Tap play to test direct MP4</div>
+</div>
+
+<div class="card">
+  <h2 style="font-size:1rem">2. HLS Stream (from API)</h2>
+  <video id="v2" controls playsinline preload="none"
+    poster="https://static.wixstatic.com/media/3fcc04_478a3c560256407ba7c233f7dbd03f83f002.jpg">
+  </video>
+  <button onclick="loadHLS()">Load HLS stream</button>
+  <div class="status" id="s2">Tap button to generate streaming URL and play</div>
+</div>
+
+<script>
+  // Test 1: direct MP4 (public URL, no auth)
+  var v1 = document.getElementById('v1');
+  v1.addEventListener('playing', function() { document.getElementById('s1').textContent = 'Playing (direct MP4)'; });
+  v1.addEventListener('error', function() { document.getElementById('s1').textContent = 'Error: ' + (v1.error?.message || 'unknown'); });
+
+  // Test 2: HLS via API
+  async function loadHLS() {
+    var s2 = document.getElementById('s2');
+    s2.textContent = 'Generating stream URL...';
+    try {
+      var res = await fetch('/.netlify/functions/video-inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stream', fileId: '3fcc04_478a3c560256407ba7c233f7dbd03f83' }),
+      });
+      var data = await res.json();
+      if (!data.downloadUrl?.url) { s2.textContent = 'No URL returned: ' + JSON.stringify(data); return; }
+
+      var url = data.downloadUrl.url;
+      s2.textContent = 'Got HLS URL. Loading...';
+
+      var v2 = document.getElementById('v2');
+
+      // Safari supports HLS natively
+      if (v2.canPlayType('application/vnd.apple.mpegurl')) {
+        v2.src = url;
+        v2.play();
+        s2.textContent = 'Playing (native HLS)';
+      } else {
+        s2.textContent = 'HLS not supported natively. Would need HLS.js library.';
+      }
+    } catch(e) {
+      s2.textContent = 'Error: ' + e.message;
+    }
+  }
+</script>
+</body>
+</html>
