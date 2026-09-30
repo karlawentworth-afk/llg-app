@@ -58,7 +58,7 @@ exports.handler = async (event) => {
       var allFolders = [];
       var folderCursor = null;
       for (var p = 0; p < 5; p++) {
-        var fpath = '/site-media/v1/folders?paging.limit=100' + (folderCursor ? '&paging.cursor=' + folderCursor : '');
+        var fpath = '/site-media/v1/folders?paging.limit=100' + (folderCursor ? '&paging.cursor=' + encodeURIComponent(folderCursor) : '');
         var fRes = await wixGet(fpath);
         if (fRes.folders) allFolders = allFolders.concat(fRes.folders);
         folderCursor = fRes.nextCursor || null;
@@ -69,7 +69,7 @@ exports.handler = async (event) => {
       var allVideos = [];
       var videoCursor = null;
       for (var vp = 0; vp < 10; vp++) {
-        var vpath = '/site-media/v1/files?mediaTypes=VIDEO&paging.limit=100' + (videoCursor ? '&paging.cursor=' + videoCursor : '');
+        var vpath = '/site-media/v1/files?mediaTypes=VIDEO&paging.limit=100' + (videoCursor ? '&paging.cursor=' + encodeURIComponent(videoCursor) : '');
         var vRes = await wixGet(vpath);
         if (vRes.files) allVideos = allVideos.concat(vRes.files);
         videoCursor = vRes.nextCursor || null;
