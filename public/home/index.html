@@ -786,9 +786,9 @@
         '</div>';
       }
 
-      // Description (cleaned up from Wix HTML)
-      // Description: short description bold as intro, then full About
-      if (trip.shortDescription || trip.aboutHtml) {
+      // Description: full description for unbooked trips only
+      // Booked trips skip the long description — she knows what she booked
+      if (!booked && (trip.shortDescription || trip.aboutHtml)) {
         h += '<div style="margin:1rem 0;font-size:1rem;line-height:1.6">';
         if (trip.shortDescription) {
           h += '<p style="font-weight:700;margin-bottom:0.75rem">' + esc(trip.shortDescription) + '</p>';
