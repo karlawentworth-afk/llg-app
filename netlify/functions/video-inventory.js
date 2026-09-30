@@ -187,6 +187,38 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ count: allItems.length, items: allItems }, null, 2) };
     }
 
+    if (action === 'list-collections') {
+      var colRes = await wixGet('/wix-data/v2/collections?paging.limit=100');
+      return { statusCode: 200, headers: CORS, body: JSON.stringify(colRes, null, 2) };
+    }
+
+    if (action === 'all-videos-csv') {
+      // Export all 520 videos with details for spreadsheet
+      var allV = [];
+      var vc = null;
+      for (var vp2 = 0; vp2 < 10; vp2++) {
+        var vp2path = '/site-media/v1/files?mediaTypes=VIDEO&paging.limit=100' + (vc ? '&paging.cursor=' + encodeURIComponent(vc) : '');
+        var vr = await wixGet(vp2path);
+        if (vr.files) allV = allV.concat(vr.files);
+        vc = vr.nextCursor || null;
+        if (!vc) break;
+      }
+
+      var rows = allV.map(function(v) {
+        return {
+          fileId: v.id || '',
+          title: (v.displayName || '').replace(/\.(mp4|mov)$/i, ''),
+          uploadDate: v.createdDate || v._createdDate || '',
+          thumbnailUrl: v.thumbnailUrl || '',
+          isPrivate: v.private || false,
+          url: v.url || '',
+          parentFolderId: v.parentFolderId || 'root',
+        };
+      });
+
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ count: rows.length, videos: rows }, null, 2) };
+    }
+
     return { statusCode: 400, headers: CORS, body: '{"error":"unknown action"}' };
 
   } catch (err) {
