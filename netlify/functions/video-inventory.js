@@ -122,6 +122,71 @@ exports.handler = async (event) => {
       };
     }
 
+    if (action === 'programs') {
+      // Try Online Programs via CMS Data Items API
+      var results = {};
+
+      // Try common Wix app collection names
+      var collNames = [
+        'OnlinePrograms/Programs',
+        'OnlinePrograms/Sections',
+        'OnlinePrograms/Steps',
+        'online-programs/programs',
+        'online-programs/sections',
+        'online-programs/steps',
+        'Video/Videos',
+        'Video/Channels',
+        'video/videos',
+        'video/channels',
+      ];
+
+      for (var ci = 0; ci < collNames.length; ci++) {
+        var cname = collNames[ci];
+        try {
+          var cRes = await wixPost('/wix-data/v2/items/query', {
+            dataCollectionId: cname,
+            query: { paging: { limit: 5 } },
+          });
+          if (cRes.dataItems) {
+            results[cname] = {
+              count: cRes.dataItems.length,
+              totalCount: cRes.pagingMetadata?.total || cRes.dataItems.length,
+              sample: cRes.dataItems.slice(0, 2).map(function(i) { return i.data || i; }),
+            };
+          } else {
+            results[cname] = { error: cRes.message || cRes.error || 'empty' };
+          }
+        } catch (e) {
+          results[cname] = { error: e.message };
+        }
+      }
+
+      return { statusCode: 200, headers: CORS, body: JSON.stringify(results, null, 2) };
+    }
+
+    if (action === 'cms-query') {
+      // Query a specific CMS collection with full pagination
+      var body2 = JSON.parse(event.body || '{}');
+      var collection = body2.collection;
+      var limit = body2.limit || 100;
+      if (!collection) return { statusCode: 400, headers: CORS, body: '{"error":"missing collection"}' };
+
+      var allItems = [];
+      var offset = 0;
+      for (var pg = 0; pg < 20; pg++) {
+        var qRes = await wixPost('/wix-data/v2/items/query', {
+          dataCollectionId: collection,
+          query: { paging: { limit: Math.min(limit, 100), offset: offset } },
+        });
+        if (!qRes.dataItems || qRes.dataItems.length === 0) break;
+        allItems = allItems.concat(qRes.dataItems.map(function(i) { return i.data || i; }));
+        offset += qRes.dataItems.length;
+        if (allItems.length >= (qRes.pagingMetadata?.total || 9999)) break;
+      }
+
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ count: allItems.length, items: allItems }, null, 2) };
+    }
+
     return { statusCode: 400, headers: CORS, body: '{"error":"unknown action"}' };
 
   } catch (err) {
