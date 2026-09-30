@@ -303,6 +303,12 @@
         if (ALL_TRIPS[idx]) showScreen("trip", ALL_TRIPS[idx]);
         return;
       }
+      // Portal link
+      var portalEl = e.target.closest("[data-portal-event]");
+      if (portalEl) {
+        openPortal(portalEl);
+        return;
+      }
       // Screen navigation (avatar, tiles, etc.)
       var screenEl = e.target.closest("[data-screen]");
       if (screenEl) {
@@ -754,7 +760,7 @@
     function renderTrip(trip) {
       var el = document.getElementById("tripScreen");
       var ticketUrl = "https://www.ladieslovegolf.com/event-details/" + trip.slug;
-      var portalUrl = "https://llggolfschool.netlify.app/llg/trip-portal.html";
+      // Portal link fetched on tap, not in advance
       var booked = trip.isBooked === true;
       var cd = countdown(trip);
 
@@ -795,7 +801,7 @@
 
       // Bottom bar
       if (booked) {
-        h += '<a class="btn btn-dark" href="' + portalUrl + '" onclick="tapNav(this,\'Opening...\')" style="width:100%;margin-top:0.5rem">Open your trip portal</a>';
+        h += '<button class="btn btn-dark" data-portal-event="' + esc(trip.id) + '" style="width:100%;margin-top:0.5rem">Open your trip portal</button>';
       } else if (trip.soldOut) {
         h += '<div class="trip-bar" style="justify-content:center">' +
           '<span style="font-size:1rem;font-weight:600;opacity:0.7">Fully booked</span>' +
@@ -1287,6 +1293,36 @@
         el.style.opacity = "1";
       }
     }
+    async function openPortal(el) {
+      var eventId = el.getAttribute("data-portal-event");
+      el.textContent = "Opening...";
+      el.disabled = true;
+      el.style.opacity = "0.6";
+      try {
+        var res = await fetch("/.netlify/functions/get-portal-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ eventId: eventId }),
+        });
+        var data = await res.json();
+        if (data.portalUrl) {
+          window.location.href = data.portalUrl;
+          return;
+        }
+        if (data.error === "no_match") {
+          el.textContent = "We couldn't find your trip. We'll sort it.";
+          el.style.opacity = "1";
+          return;
+        }
+        el.textContent = "Could not open portal. Try again.";
+        el.style.opacity = "1"; el.disabled = false;
+      } catch (err) {
+        el.textContent = "Could not connect. Try again.";
+        el.style.opacity = "1"; el.disabled = false;
+      }
+    }
+
     function tapWaitlist(el) { el.textContent = "Opening waitlist..."; el.style.background = "#F0D9E6"; el.style.color = "#8A0050"; el.style.borderColor = "#F0D9E6"; el.style.pointerEvents = "none"; trackEvent("waitlist_tapped"); }
     function tapNav(el, text) { if (text) el.textContent = text; el.style.opacity = "0.6"; el.style.pointerEvents = "none"; trackEvent("trip_tapped"); }
 
