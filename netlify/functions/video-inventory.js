@@ -61,7 +61,7 @@ exports.handler = async (event) => {
         var fpath = '/site-media/v1/folders?paging.limit=100' + (folderCursor ? '&paging.cursor=' + encodeURIComponent(folderCursor) : '');
         var fRes = await wixGet(fpath);
         if (fRes.folders) allFolders = allFolders.concat(fRes.folders);
-        folderCursor = fRes.nextCursor || null;
+        folderCursor = (fRes.pagingMetadata && fRes.pagingMetadata.cursors && fRes.pagingMetadata.cursors.next) || null;
         if (!folderCursor) break;
       }
 
@@ -72,7 +72,7 @@ exports.handler = async (event) => {
         var vpath = '/site-media/v1/files?mediaTypes=VIDEO&paging.limit=100' + (videoCursor ? '&paging.cursor=' + encodeURIComponent(videoCursor) : '');
         var vRes = await wixGet(vpath);
         if (vRes.files) allVideos = allVideos.concat(vRes.files);
-        videoCursor = vRes.nextCursor || null;
+        videoCursor = (vRes.pagingMetadata && vRes.pagingMetadata.cursors && vRes.pagingMetadata.cursors.next) || null;
         if (!videoCursor) break;
       }
 
@@ -187,20 +187,58 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ count: allItems.length, items: allItems }, null, 2) };
     }
 
+    if (action === 'programs-v2') {
+      // Try Online Programs via dedicated REST API paths
+      var results = {};
+      var tryPaths = [
+        { name: 'programs', path: '/online-programs/v1/programs?paging.limit=50' },
+        { name: 'programs-v3', path: '/online-programs/v3/programs/query' },
+        { name: 'cms-programs', path: '/wix-data/v2/items/query' },
+      ];
+
+      // Try the CMS collections with the correct names
+      var cmsNames = [
+        'OnlinePrograms/Programs',
+        'OnlinePrograms/Sections',
+        'OnlinePrograms/Steps',
+        'OnlinePrograms/Quizzes',
+      ];
+      for (var ci2 = 0; ci2 < cmsNames.length; ci2++) {
+        try {
+          var cr = await wixPost('/wix-data/v2/items/query', {
+            dataCollectionId: cmsNames[ci2],
+            query: { paging: { limit: 100 } },
+            returnTotalCount: true,
+          });
+          results[cmsNames[ci2]] = {
+            total: cr.pagingMetadata?.total || (cr.dataItems || []).length,
+            items: (cr.dataItems || []).map(function(i) { return i.data || i; }),
+          };
+        } catch (e) {
+          results[cmsNames[ci2]] = { error: e.message };
+        }
+      }
+
+      return { statusCode: 200, headers: CORS, body: JSON.stringify(results, null, 2) };
+    }
+
     if (action === 'list-collections') {
       var colRes = await wixGet('/wix-data/v2/collections?paging.limit=100');
       return { statusCode: 200, headers: CORS, body: JSON.stringify(colRes, null, 2) };
     }
 
     if (action === 'all-videos-csv') {
-      // Export all 520 videos with details for spreadsheet
+      // Export ALL videos, paginating with cursor properly
       var allV = [];
       var vc = null;
-      for (var vp2 = 0; vp2 < 10; vp2++) {
+      var seen = {};
+      for (var vp2 = 0; vp2 < 20; vp2++) {
         var vp2path = '/site-media/v1/files?mediaTypes=VIDEO&paging.limit=100' + (vc ? '&paging.cursor=' + encodeURIComponent(vc) : '');
         var vr = await wixGet(vp2path);
-        if (vr.files) allV = allV.concat(vr.files);
-        vc = vr.nextCursor || null;
+        if (!vr.files || vr.files.length === 0) break;
+        vr.files.forEach(function(f) { if (!seen[f.id]) { seen[f.id] = true; allV.push(f); } });
+        // Follow the cursor from pagingMetadata
+        vc = (vr.pagingMetadata && vr.pagingMetadata.cursors && vr.pagingMetadata.cursors.next) || null;
         if (!vc) break;
       }
 
