@@ -257,6 +257,100 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ count: rows.length, videos: rows }, null, 2) };
     }
 
+    if (action === 'deep-folder-search') {
+      // List ALL folders recursively, then search for videos by title
+      var searchTitles = ['Master 8-Foot Putts', 'Pace Control Secrets', 'Anti-Slice Setup', 'Plugged Lies Made Simple', 'Uneven Lies Made Simple'];
+      try { var b = JSON.parse(event.body || '{}'); if (b.searchTitles) searchTitles = b.searchTitles; } catch {}
+
+      // 1. Get ALL folders, following cursor
+      var allFolders = [];
+      var fc = null;
+      for (var fp = 0; fp < 20; fp++) {
+        var fpath = '/site-media/v1/folders?paging.limit=100' + (fc ? '&paging.cursor=' + encodeURIComponent(fc) : '');
+        var fRes = await wixGet(fpath);
+        if (fRes.folders) allFolders = allFolders.concat(fRes.folders);
+        fc = (fRes.pagingMetadata && fRes.pagingMetadata.cursors && fRes.pagingMetadata.cursors.next) || null;
+        if (!fc) break;
+      }
+
+      // 2. For each folder, list its video files
+      var folderContents = {};
+      for (var fi = 0; fi < allFolders.length; fi++) {
+        var folder = allFolders[fi];
+        var folderVideos = [];
+        var fvc = null;
+        for (var fvp = 0; fvp < 5; fvp++) {
+          var fvpath = '/site-media/v1/files?parentFolderId=' + encodeURIComponent(folder.id) + '&mediaTypes=VIDEO&paging.limit=100' + (fvc ? '&paging.cursor=' + encodeURIComponent(fvc) : '');
+          var fvRes = await wixGet(fvpath);
+          if (fvRes.files) folderVideos = folderVideos.concat(fvRes.files);
+          fvc = (fvRes.pagingMetadata && fvRes.pagingMetadata.cursors && fvRes.pagingMetadata.cursors.next) || null;
+          if (!fvc) break;
+        }
+        if (folderVideos.length > 0) {
+          folderContents[folder.displayName || folder.id] = folderVideos.map(function(v) {
+            return { id: v.id, name: v.displayName, thumbnailUrl: v.thumbnailUrl || null };
+          });
+        }
+      }
+
+      // 3. Also list root-level videos
+      var rootVideos = [];
+      var rvc = null;
+      for (var rvp = 0; rvp < 5; rvp++) {
+        var rvpath = '/site-media/v1/files?mediaTypes=VIDEO&paging.limit=100' + (rvc ? '&paging.cursor=' + encodeURIComponent(rvc) : '');
+        var rvRes = await wixGet(rvpath);
+        if (rvRes.files) rootVideos = rootVideos.concat(rvRes.files);
+        rvc = (rvRes.pagingMetadata && rvRes.pagingMetadata.cursors && rvRes.pagingMetadata.cursors.next) || null;
+        if (!rvc) break;
+      }
+
+      // 4. Search all videos (root + folders) for the target titles
+      var allVids = rootVideos.slice();
+      Object.keys(folderContents).forEach(function(fn) {
+        folderContents[fn].forEach(function(v) { allVids.push(v); });
+      });
+
+      var searchResults = {};
+      searchTitles.forEach(function(st) {
+        var lower = st.toLowerCase();
+        var matches = allVids.filter(function(v) {
+          return (v.displayName || v.name || '').toLowerCase().indexOf(lower) !== -1;
+        });
+        searchResults[st] = matches.map(function(v) {
+          return { id: v.id, name: v.displayName || v.name, parentFolderId: v.parentFolderId || 'root' };
+        });
+      });
+
+      // 5. Try the file search API too
+      var searchApiResults = {};
+      for (var si = 0; si < searchTitles.length; si++) {
+        try {
+          var sRes = await wixPost('/site-media/v1/files/search', {
+            search: { expression: searchTitles[si] },
+            mediaTypes: ['VIDEO'],
+            paging: { limit: 10 },
+          });
+          searchApiResults[searchTitles[si]] = (sRes.files || []).map(function(v) {
+            return { id: v.id, name: v.displayName, parentFolderId: v.parentFolderId || 'root' };
+          });
+        } catch (e) {
+          searchApiResults[searchTitles[si]] = { error: e.message };
+        }
+      }
+
+      return {
+        statusCode: 200, headers: CORS,
+        body: JSON.stringify({
+          totalFolders: allFolders.length,
+          folders: allFolders.map(function(f) { return { id: f.id, name: f.displayName, parent: f.parentFolderId || 'root', videoCount: (folderContents[f.displayName] || []).length }; }),
+          folderContents: folderContents,
+          rootVideoCount: rootVideos.length,
+          titleSearchResults: searchResults,
+          searchApiResults: searchApiResults,
+        }, null, 2),
+      };
+    }
+
     return { statusCode: 400, headers: CORS, body: '{"error":"unknown action"}' };
 
   } catch (err) {
