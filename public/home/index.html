@@ -1503,7 +1503,7 @@
       var tip = featured[0];
       if (tip) {
         var tipLocked = !access && !tip.is_free;
-        h += '<div class="vid-featured" data-vid-id="' + tip.id + '" onclick="playVideo(\'' + tip.id + '\')">' +
+        h += '<div class="vid-featured" data-vid-play="' + tip.id + '">' +
           '<img src="' + esc(tip.thumbnail_url || "") + '" alt="">' +
           '<div class="vid-featured-overlay">' +
             '<div class="vid-featured-label">This week\'s tip</div>' +
@@ -1524,7 +1524,7 @@
         h += '<div class="vid-cw-scroll">';
         continuing.forEach(function(v) {
           var pct = v.progress ? Math.min(100, Math.round(v.progress.position_seconds / 3)) : 0; // rough estimate
-          h += '<div class="vid-cw-item" onclick="playVideo(\'' + v.id + '\')">' +
+          h += '<div class="vid-cw-item" data-vid-play="' + v.id + '">' +
             '<div class="vid-thumb">' +
               '<img src="' + esc(v.thumbnail_url || "") + '" alt="" loading="lazy">' +
               '<div class="vid-play-sm">' + PLAY_SVG + '</div>' +
@@ -1536,13 +1536,13 @@
         h += '</div>';
       }
 
-      // Filter chips
-      h += '<div class="vid-chips">';
+      // Filter chips (using data attributes, not onclick with escaped strings)
+      h += '<div class="vid-chips" id="vidChips">';
       var allCats = ["All", "Free"].concat(categories);
       allCats.forEach(function(cat) {
-        h += '<div class="vid-chip' + (VIDEO_FILTER === cat ? ' active' : '') + '" onclick="setVideoFilter(\'' + esc(cat) + '\')">' + esc(cat) + '</div>';
+        h += '<div class="vid-chip' + (VIDEO_FILTER === cat ? ' active' : '') + '" data-vid-cat="' + esc(cat) + '">' + esc(cat) + '</div>';
       });
-      h += '<div class="vid-chip' + (VIDEO_ON_COURSE ? ' active' : '') + '" onclick="toggleOnCourse()" style="border-color:' + (VIDEO_ON_COURSE ? 'var(--mg)' : 'var(--border)') + '">\u26f3 On the course</div>';
+      h += '<div class="vid-chip' + (VIDEO_ON_COURSE ? ' active' : '') + '" data-vid-oncourse="1">\u26f3 On the course</div>';
       h += '</div>';
 
       // Video grid
@@ -1554,7 +1554,7 @@
         filtered.forEach(function(v) {
           var locked = !access && !v.is_free;
           var pct = v.progress && v.progress.position_seconds > 0 ? Math.min(100, Math.round(v.progress.position_seconds / 3)) : 0;
-          h += '<div onclick="playVideo(\'' + v.id + '\')">' +
+          h += '<div data-vid-play="' + v.id + '">' +
             '<div class="vid-thumb">' +
               '<img src="' + esc(v.thumbnail_url || "") + '" alt="" loading="lazy">' +
               '<div class="vid-play-sm">' + PLAY_SVG + '</div>' +
@@ -1569,15 +1569,47 @@
       }
 
       el.innerHTML = h;
+      wireVideoEvents(el);
+    }
 
-      // Wire search
+    var _vidSearchTimer = null;
+    var _vidEventsWired = false;
+    function wireVideoEvents(el) {
+      // Search with debounce
       var searchInput = document.getElementById("vidSearchInput");
       if (searchInput) {
         searchInput.addEventListener("input", function() {
-          VIDEO_SEARCH = this.value.trim();
-          renderVideos();
+          var val = this.value.trim();
+          clearTimeout(_vidSearchTimer);
+          _vidSearchTimer = setTimeout(function() {
+            VIDEO_SEARCH = val;
+            renderVideos();
+          }, 300);
         });
       }
+
+      // Event delegation: wire once on the screen container
+      if (_vidEventsWired) return;
+      _vidEventsWired = true;
+      el.addEventListener("click", function(e) {
+        var catChip = e.target.closest("[data-vid-cat]");
+        if (catChip) {
+          VIDEO_FILTER = catChip.getAttribute("data-vid-cat");
+          renderVideos();
+          return;
+        }
+        var ocChip = e.target.closest("[data-vid-oncourse]");
+        if (ocChip) {
+          VIDEO_ON_COURSE = !VIDEO_ON_COURSE;
+          renderVideos();
+          return;
+        }
+        var playEl = e.target.closest("[data-vid-play]");
+        if (playEl) {
+          playVideo(playEl.getAttribute("data-vid-play"));
+          return;
+        }
+      });
     }
 
     function setVideoFilter(cat) {
@@ -1626,7 +1658,7 @@
         h += '<div class="vid-grid">';
         others.forEach(function(o) {
           var oLocked = !access && !o.is_free;
-          h += '<div onclick="playVideo(\'' + o.id + '\')">' +
+          h += '<div data-vid-play="' + o.id + '">' +
             '<div class="vid-thumb">' +
               '<img src="' + esc(o.thumbnail_url || "") + '" alt="" loading="lazy">' +
               '<div class="vid-play-sm">' + PLAY_SVG + '</div>' +
@@ -1641,6 +1673,7 @@
 
       el.innerHTML = h;
       VIDEO_PLAYING = v;
+      wireVideoEvents(el);
 
       // Load stream
       var player = document.getElementById("vidPlayer");
