@@ -78,5 +78,15 @@
   catalogReference structure for bookings needs live verification.
 - No points refund on cancellation (by design, same as money).
 
+## Videos and programmes
+- Wix runs the video library (Wix Video) and online programmes
+  (Wix Online Programs). Our app does not stream or host videos.
+- Home shows a "This week's tip" card (admin-set via Supabase
+  video_tip table) for members with video access, and a free
+  Beginner channel card for others.
+- A "Videos" card links to the Wix Video page in the web view.
+- video-library.js and the Videos screen code remain in the repo
+  but are switched off (not routed, not called).
+
 ## Style
 - UK English. No em dashes. Plain language.

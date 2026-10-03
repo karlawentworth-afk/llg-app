@@ -288,15 +288,10 @@
     <!-- Account screen -->
     <div id="accountScreen" class="screen card-screen"></div>
 
-    <!-- Videos screen -->
-    <div id="videosScreen" class="screen card-screen"></div>
-
     <!-- Error -->
     <div id="error" style="display:none"></div>
   </div>
 
-  <!-- HLS.js for non-Safari browsers -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js" defer></script>
 
   <script>
     var USE_APP_BOOK = false;
@@ -408,7 +403,7 @@
         }
 
         DATA = await res.json();
-        var validScreens = ["home","card","videos","allTrips","account"];
+        var validScreens = ["home","card","allTrips","account"];
         showScreen(startScreen && validScreens.indexOf(startScreen) !== -1 ? startScreen : "home");
       } catch (err) {
         showError(err.name === "AbortError" ? "Request timed out. Please try again." : "Could not connect. Please try again.");
@@ -424,7 +419,7 @@
 
     function showScreen(name, extra) {
       if (window.hideHomeLoader) window.hideHomeLoader();
-      ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen","videosScreen"].forEach(function(id) {
+      ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen"].forEach(function(id) {
         document.getElementById(id).classList.remove("active");
       });
 
@@ -450,10 +445,6 @@
       } else if (name === "trip") {
         renderTrip(extra);
         document.getElementById("tripScreen").classList.add("active");
-      } else if (name === "videos") {
-        renderVideos();
-        document.getElementById("videosScreen").classList.add("active");
-        trackEvent("videos_opened");
       }
     }
 
@@ -542,7 +533,7 @@
         '</div>' +
       '</div>';
 
-      // Video card on Home
+      // Video tip + Videos link
       h += '<div id="homeVideoCard"></div>';
 
       // Book at venue
@@ -1427,382 +1418,74 @@
       try { await fetch("/.netlify/functions/track", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ pass: PASS, action: "feedback", message: t, screen: "home" }) }); closeFeedback(); trackEvent("feedback_sent"); } catch(e) {}
     }
 
-    // === VIDEO LIBRARY ===
-    var VIDEO_DATA = null; // cached video list
-    var VIDEO_FILTER = "All";
-    var VIDEO_ON_COURSE = false;
-    var VIDEO_SEARCH = "";
-    var VIDEO_PLAYING = null; // { id, title, wix_file_id, ... }
+    // === VIDEO CARDS ON HOME ===
+    // Wix runs the video library and programmes. We show:
+    // - "This week's tip" card (admin-set, Supabase video_tip table)
+    // - "Videos" link card opening Wix Video page
+    // - For non-video members: free Beginner channel card instead of tip
 
+    var WIX_VIDEO_URL = "https://www.ladieslovegolf.com/video-channel";
+    var WIX_BEGINNER_URL = "https://www.ladieslovegolf.com/video-channel/beginner-new-to-golf";
     var PLAY_SVG = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-    var LOCK_SVG = '<svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>';
 
     function hasVideoAccess() {
       return DATA && DATA.plan && DATA.plan.hasVideoAccess === true;
     }
 
-    async function loadVideos() {
-      if (VIDEO_DATA) return VIDEO_DATA;
-      try {
-        var res = await fetch("/.netlify/functions/video-library?action=list", {
-          credentials: "same-origin",
-        });
-        if (res.ok) {
-          VIDEO_DATA = await res.json();
-          return VIDEO_DATA;
-        }
-      } catch (e) { console.error("loadVideos", e.message); }
-      return { videos: [], categories: [], featured: [] };
-    }
-
-    function filterVideos(videos) {
-      var result = videos;
-      if (VIDEO_FILTER !== "All" && VIDEO_FILTER !== "Free") {
-        result = result.filter(function(v) { return v.category === VIDEO_FILTER; });
-      }
-      if (VIDEO_FILTER === "Free") {
-        result = result.filter(function(v) { return v.is_free; });
-      }
-      if (VIDEO_ON_COURSE) {
-        result = result.filter(function(v) { return v.on_course; });
-      }
-      if (VIDEO_SEARCH) {
-        var q = VIDEO_SEARCH.toLowerCase();
-        result = result.filter(function(v) {
-          return (v.title || "").toLowerCase().indexOf(q) !== -1 ||
-                 (v.category || "").toLowerCase().indexOf(q) !== -1 ||
-                 (v.description || "").toLowerCase().indexOf(q) !== -1;
-        });
-      }
-      return result;
-    }
-
-    async function renderVideos() {
-      var el = document.getElementById("videosScreen");
-      el.innerHTML = '<div style="text-align:center;padding:3rem 0"><p class="small">Loading videos...</p></div>';
-
-      var vdata = await loadVideos();
-      var videos = vdata.videos || [];
-      var categories = vdata.categories || [];
-      var featured = vdata.featured || [];
-      var access = hasVideoAccess();
-
-      var h = '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>';
-
-      // Title
-      h += '<h1 style="font-size:1.4rem;margin-bottom:0.15rem">Videos</h1>';
-      h += '<p class="small" style="margin-bottom:0.75rem">' +
-        (access ? 'Your coaching library' : 'Free videos, plus more with a Digital plan') +
-      '</p>';
-
-      // Search
-      h += '<input class="vid-search" type="search" placeholder="Search videos, e.g. bunkers" value="' + esc(VIDEO_SEARCH) + '" id="vidSearchInput">';
-      h += '<div style="height:0.75rem"></div>';
-
-      // This week's tip (featured)
-      var tip = featured[0];
-      if (tip) {
-        var tipLocked = !access && !tip.is_free;
-        h += '<div class="vid-featured" data-vid-play="' + tip.id + '">' +
-          '<img src="' + esc(tip.thumbnail_url || "") + '" alt="">' +
-          '<div class="vid-featured-overlay">' +
-            '<div class="vid-featured-label">This week\'s tip</div>' +
-            '<div class="vid-featured-title">' + esc(tip.title) + '</div>' +
-            '<div class="vid-featured-meta">' + esc(tip.category || "") + '</div>' +
-          '</div>' +
-          '<div class="vid-play-btn">' + PLAY_SVG + '</div>' +
-          (tipLocked ? '<div class="vid-lock">' + LOCK_SVG + '</div>' : '') +
-        '</div>';
-      }
-
-      // Continue watching
-      var continuing = videos.filter(function(v) {
-        return v.progress && v.progress.position_seconds > 0 && !v.progress.completed;
-      });
-      if (continuing.length > 0) {
-        h += '<h2 style="font-size:1rem;margin-bottom:0.4rem">Continue watching</h2>';
-        h += '<div class="vid-cw-scroll">';
-        continuing.forEach(function(v) {
-          var pct = v.progress ? Math.min(100, Math.round(v.progress.position_seconds / 3)) : 0; // rough estimate
-          h += '<div class="vid-cw-item" data-vid-play="' + v.id + '">' +
-            '<div class="vid-thumb">' +
-              '<img src="' + esc(v.thumbnail_url || "") + '" alt="" loading="lazy">' +
-              '<div class="vid-play-sm">' + PLAY_SVG + '</div>' +
-              '<div class="vid-progress"><div class="vid-progress-bar" style="width:' + pct + '%"></div></div>' +
-            '</div>' +
-            '<div class="vid-title">' + esc(v.title) + '</div>' +
-          '</div>';
-        });
-        h += '</div>';
-      }
-
-      // Filter chips (using data attributes, not onclick with escaped strings)
-      h += '<div class="vid-chips" id="vidChips">';
-      var allCats = ["All", "Free"].concat(categories);
-      allCats.forEach(function(cat) {
-        h += '<div class="vid-chip' + (VIDEO_FILTER === cat ? ' active' : '') + '" data-vid-cat="' + esc(cat) + '">' + esc(cat) + '</div>';
-      });
-      h += '<div class="vid-chip' + (VIDEO_ON_COURSE ? ' active' : '') + '" data-vid-oncourse="1">\u26f3 On the course</div>';
-      h += '</div>';
-
-      // Video grid
-      var filtered = filterVideos(videos);
-      if (filtered.length === 0) {
-        h += '<p class="small" style="text-align:center;padding:1.5rem 0">No videos match your search</p>';
-      } else {
-        h += '<div class="vid-grid">';
-        filtered.forEach(function(v) {
-          var locked = !access && !v.is_free;
-          var pct = v.progress && v.progress.position_seconds > 0 ? Math.min(100, Math.round(v.progress.position_seconds / 3)) : 0;
-          h += '<div data-vid-play="' + v.id + '">' +
-            '<div class="vid-thumb">' +
-              '<img src="' + esc(v.thumbnail_url || "") + '" alt="" loading="lazy">' +
-              '<div class="vid-play-sm">' + PLAY_SVG + '</div>' +
-              (locked ? '<div class="vid-lock">' + LOCK_SVG + '</div>' : '') +
-              (pct > 0 ? '<div class="vid-progress"><div class="vid-progress-bar" style="width:' + pct + '%"></div></div>' : '') +
-            '</div>' +
-            '<div class="vid-title">' + esc(v.title) + '</div>' +
-            '<div class="vid-cat">' + esc(v.category || "") + '</div>' +
-          '</div>';
-        });
-        h += '</div>';
-      }
-
-      el.innerHTML = h;
-      wireVideoEvents(el);
-    }
-
-    var _vidSearchTimer = null;
-    var _vidEventsWired = false;
-    function wireVideoEvents(el) {
-      // Search with debounce
-      var searchInput = document.getElementById("vidSearchInput");
-      if (searchInput) {
-        searchInput.addEventListener("input", function() {
-          var val = this.value.trim();
-          clearTimeout(_vidSearchTimer);
-          _vidSearchTimer = setTimeout(function() {
-            VIDEO_SEARCH = val;
-            renderVideos();
-          }, 300);
-        });
-      }
-
-      // Event delegation: wire once on the screen container
-      if (_vidEventsWired) return;
-      _vidEventsWired = true;
-      el.addEventListener("click", function(e) {
-        var catChip = e.target.closest("[data-vid-cat]");
-        if (catChip) {
-          VIDEO_FILTER = catChip.getAttribute("data-vid-cat");
-          renderVideos();
-          return;
-        }
-        var ocChip = e.target.closest("[data-vid-oncourse]");
-        if (ocChip) {
-          VIDEO_ON_COURSE = !VIDEO_ON_COURSE;
-          renderVideos();
-          return;
-        }
-        var playEl = e.target.closest("[data-vid-play]");
-        if (playEl) {
-          playVideo(playEl.getAttribute("data-vid-play"));
-          return;
-        }
-      });
-    }
-
-    function setVideoFilter(cat) {
-      VIDEO_FILTER = cat;
-      renderVideos();
-    }
-
-    function toggleOnCourse() {
-      VIDEO_ON_COURSE = !VIDEO_ON_COURSE;
-      renderVideos();
-    }
-
-    async function playVideo(videoId) {
-      if (!VIDEO_DATA) return;
-      var v = (VIDEO_DATA.videos || []).find(function(v) { return v.id === videoId; });
-      if (!v) return;
-
-      var access = hasVideoAccess();
-      var locked = !access && !v.is_free;
-
-      // Show upsell if locked
-      if (locked) {
-        showVideoUpsell(v);
-        return;
-      }
-
-      // Switch to player view
-      var el = document.getElementById("videosScreen");
-      var h = '<button class="back" onclick="renderVideos()">\u2190 Videos</button>';
-      h += '<div class="vid-player-wrap">' +
-        '<video id="vidPlayer" controls playsinline preload="none" poster="' + esc(v.thumbnail_url || "") + '"' +
-        ' style="width:100%;border-radius:var(--r)"></video>' +
-      '</div>';
-      h += '<h2 style="font-size:1.1rem;margin-bottom:0.2rem">' + esc(v.title) + '</h2>';
-      h += '<p class="small">' + esc(v.category || "") + (v.on_course ? ' \u00b7 On the course' : '') + '</p>';
-      if (v.description) {
-        h += '<p class="small" style="margin-top:0.5rem">' + esc(v.description) + '</p>';
-      }
-
-      // Up next
-      var others = (VIDEO_DATA.videos || []).filter(function(o) {
-        return o.id !== v.id && o.category === v.category && o.active !== false;
-      }).slice(0, 4);
-      if (others.length > 0) {
-        h += '<h2 style="font-size:1rem;margin:1rem 0 0.4rem">Up next</h2>';
-        h += '<div class="vid-grid">';
-        others.forEach(function(o) {
-          var oLocked = !access && !o.is_free;
-          h += '<div data-vid-play="' + o.id + '">' +
-            '<div class="vid-thumb">' +
-              '<img src="' + esc(o.thumbnail_url || "") + '" alt="" loading="lazy">' +
-              '<div class="vid-play-sm">' + PLAY_SVG + '</div>' +
-              (oLocked ? '<div class="vid-lock">' + LOCK_SVG + '</div>' : '') +
-            '</div>' +
-            '<div class="vid-title">' + esc(o.title) + '</div>' +
-            '<div class="vid-cat">' + esc(o.category || "") + '</div>' +
-          '</div>';
-        });
-        h += '</div>';
-      }
-
-      el.innerHTML = h;
-      VIDEO_PLAYING = v;
-      wireVideoEvents(el);
-
-      // Load stream
-      var player = document.getElementById("vidPlayer");
-      try {
-        var sRes = await fetch("/.netlify/functions/video-library?action=stream&id=" + videoId, {
-          credentials: "same-origin",
-        });
-        if (!sRes.ok) throw new Error("Stream failed");
-        var sData = await sRes.json();
-        if (!sData.streamUrl) throw new Error("No stream URL");
-
-        // Try native HLS (Safari) or fall back to direct source
-        if (player.canPlayType("application/vnd.apple.mpegurl")) {
-          player.src = sData.streamUrl;
-        } else if (window.Hls && Hls.isSupported()) {
-          var hls = new Hls();
-          hls.loadSource(sData.streamUrl);
-          hls.attachMedia(player);
-        } else {
-          // Fallback: try setting source directly
-          player.src = sData.streamUrl;
-        }
-        player.play().catch(function() {});
-      } catch (e) {
-        console.error("playVideo stream error:", e.message);
-      }
-
-      // Save progress periodically
-      var progressTimer = setInterval(function() {
-        if (!player || player.paused || !player.currentTime) return;
-        var completed = player.duration > 0 && player.currentTime / player.duration > 0.9;
-        fetch("/.netlify/functions/video-library", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({
-            action: "progress",
-            videoId: videoId,
-            position: Math.floor(player.currentTime),
-            completed: completed,
-          }),
-        }).catch(function() {});
-        // Update local cache
-        if (VIDEO_DATA) {
-          var found = (VIDEO_DATA.videos || []).find(function(fv) { return fv.id === videoId; });
-          if (found) {
-            found.progress = { position_seconds: Math.floor(player.currentTime), completed: completed };
-          }
-        }
-      }, 10000);
-
-      // Clean up on navigate away
-      player.addEventListener("ended", function() { clearInterval(progressTimer); });
-    }
-
-    function showVideoUpsell(v) {
-      var el = document.getElementById("videosScreen");
-      var memberType = DATA.plan.memberType || "non_member";
-      var isPhysical = memberType === "physical";
-
-      var h = '<button class="back" onclick="renderVideos()">\u2190 Videos</button>';
-      h += '<div class="vid-thumb" style="margin-bottom:1rem">' +
-        '<img src="' + esc(v.thumbnail_url || "") + '" alt="" style="width:100%;border-radius:var(--r)">' +
-        '<div class="vid-lock" style="top:50%;left:50%;right:auto;transform:translate(-50%,-50%);width:48px;height:48px">' + LOCK_SVG + '</div>' +
-      '</div>';
-
-      h += '<div class="vid-upsell">';
-      if (isPhysical) {
-        h += '<h3>Add the video library</h3>' +
-          '<p>Get access to all coaching videos for \u00a350 a year, added to your Physical membership.</p>' +
-          '<a class="btn" href="https://www.ladieslovegolf.com/plans-pricing">Add video library</a>';
-      } else {
-        h += '<h3>Join Digital</h3>' +
-          '<p>Get access to all coaching videos with a Digital membership, \u00a38.99 a month.</p>' +
-          '<a class="btn" href="https://www.ladieslovegolf.com/plans-pricing">Join Digital</a>';
-      }
-      h += '<div style="margin-top:0.75rem"><button class="more-btn" style="margin:0 auto" onclick="renderVideos()">Not now</button></div>';
-      h += '</div>';
-
-      el.innerHTML = h;
-    }
-
-    // Load home video card (async, fills in after Home renders)
     function loadHomeVideoCard() {
       var container = document.getElementById("homeVideoCard");
       if (!container) return;
-      loadVideos().then(function(vdata) {
-        if (!vdata || !vdata.featured || vdata.featured.length === 0) {
-          // Try to show any free video
-          var freeVid = (vdata.videos || []).find(function(v) { return v.is_free; });
-          if (freeVid) {
-            container.innerHTML = '<div class="vid-featured" onclick="showScreen(\'videos\')" style="margin-bottom:0.75rem">' +
-              '<img src="' + esc(freeVid.thumbnail_url || "") + '" alt="" style="height:160px">' +
-              '<div class="vid-featured-overlay">' +
-                '<div class="vid-featured-label">Free video</div>' +
-                '<div class="vid-featured-title">' + esc(freeVid.title) + '</div>' +
+      fetch("/.netlify/functions/video-tip", { credentials: "same-origin" })
+        .then(function(r) { return r.ok ? r.json() : { tip: null }; })
+        .then(function(data) {
+          var tip = data.tip;
+          var access = hasVideoAccess();
+          var h = "";
+
+          // This week's tip (for video members, if admin has set one)
+          if (access && tip && tip.video_url && tip.title) {
+            h += '<a href="' + esc(tip.video_url) + '" style="display:block;text-decoration:none" onclick="tapNav(this)">' +
+              '<div class="vid-featured" style="margin-bottom:0.75rem">' +
+                (tip.thumbnail_url ? '<img src="' + esc(tip.thumbnail_url) + '" alt="" style="height:160px">' : '<div style="height:160px;background:var(--charcoal)"></div>') +
+                '<div class="vid-featured-overlay">' +
+                  '<div class="vid-featured-label">This week\'s tip</div>' +
+                  '<div class="vid-featured-title">' + esc(tip.title) + '</div>' +
+                '</div>' +
+                '<div class="vid-play-btn">' + PLAY_SVG + '</div>' +
               '</div>' +
-              '<div class="vid-play-btn">' + PLAY_SVG + '</div>' +
-            '</div>';
+            '</a>';
+          } else if (!access) {
+            // Non-video members: free Beginner channel card
+            h += '<a href="' + WIX_BEGINNER_URL + '" style="display:block;text-decoration:none" onclick="tapNav(this)">' +
+              '<div class="card" style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem">' +
+                '<div style="width:44px;height:44px;border-radius:12px;background:var(--mg);display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+                  '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M8 5v14l11-7z"/></svg>' +
+                '</div>' +
+                '<div>' +
+                  '<div style="font-weight:700;font-size:0.95rem">Free beginner videos</div>' +
+                  '<div class="small">Watch and learn at your own pace</div>' +
+                '</div>' +
+              '</div>' +
+            '</a>';
           }
-          return;
-        }
-        var tip = vdata.featured[0];
-        var access = hasVideoAccess();
-        if (access) {
-          container.innerHTML = '<div class="vid-featured" onclick="showScreen(\'videos\')" style="margin-bottom:0.75rem">' +
-            '<img src="' + esc(tip.thumbnail_url || "") + '" alt="" style="height:160px">' +
-            '<div class="vid-featured-overlay">' +
-              '<div class="vid-featured-label">This week\'s tip</div>' +
-              '<div class="vid-featured-title">' + esc(tip.title) + '</div>' +
-              '<div class="vid-featured-meta">' + esc(tip.category || "") + '</div>' +
+
+          // "Videos" link card (all members)
+          h += '<a href="' + WIX_VIDEO_URL + '" style="display:block;text-decoration:none" onclick="tapNav(this)">' +
+            '<div class="card" style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem">' +
+              '<div style="width:44px;height:44px;border-radius:12px;background:var(--charcoal);display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+                '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M8 5v14l11-7z"/></svg>' +
+              '</div>' +
+              '<div>' +
+                '<div style="font-weight:700;font-size:0.95rem">Videos</div>' +
+                '<div class="small">' + (access ? 'Your coaching library' : 'Browse coaching videos') + '</div>' +
+              '</div>' +
+              '<span class="mg" style="margin-left:auto;font-size:0.85rem">\u203a</span>' +
             '</div>' +
-            '<div class="vid-play-btn">' + PLAY_SVG + '</div>' +
-          '</div>';
-        } else {
-          // Show a free video card for non-video members
-          var freeVid = (vdata.videos || []).find(function(v) { return v.is_free; });
-          if (freeVid) {
-            container.innerHTML = '<div class="vid-featured" onclick="showScreen(\'videos\')" style="margin-bottom:0.75rem">' +
-              '<img src="' + esc(freeVid.thumbnail_url || "") + '" alt="" style="height:160px">' +
-              '<div class="vid-featured-overlay">' +
-                '<div class="vid-featured-label">Free video</div>' +
-                '<div class="vid-featured-title">' + esc(freeVid.title) + '</div>' +
-              '</div>' +
-              '<div class="vid-play-btn">' + PLAY_SVG + '</div>' +
-            '</div>';
-          }
-        }
-      });
+          '</a>';
+
+          container.innerHTML = h;
+        })
+        .catch(function() {});
     }
 
     function timeGreeting() { var h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; }
