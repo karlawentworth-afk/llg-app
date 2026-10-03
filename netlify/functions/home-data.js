@@ -13,6 +13,12 @@ const ELIGIBLE_PLAN_IDS = [
   "00478766-f484-40f0-9d4a-1fb329b54da5", // Complete
 ];
 
+const DIGITAL_PLAN_ID = "8324fc1b-c344-454c-af4d-eed9639b7222";
+const VIDEO_ACCESS_PLAN_IDS = [
+  DIGITAL_PLAN_ID,                          // Digital
+  "00478766-f484-40f0-9d4a-1fb329b54da5",  // Complete
+];
+
 // --- Pass verification (shared logic) ---
 
 function base64urlDecode(str) {
@@ -142,8 +148,12 @@ async function fetchPlan(memberId, headers) {
         const isEligible = ELIGIBLE_PLAN_IDS.includes(active.planId);
         const planKey = active.planId === ELIGIBLE_PLAN_IDS[0] ? "physical"
           : active.planId === ELIGIBLE_PLAN_IDS[1] ? "complete"
-          : active.planId === "8324fc1b-c344-454c-af4d-eed9639b7222" ? "digital"
+          : active.planId === DIGITAL_PLAN_ID ? "digital"
           : "other";
+        // Check ALL active orders for video access (handles Physical + Digital add-on)
+        const hasVideoAccess = (activeData.orders || []).some(o =>
+          o.status === "ACTIVE" && VIDEO_ACCESS_PLAN_IDS.includes(o.planId)
+        );
         return {
           name: active.planName || "Unknown Plan",
           status: "active",
@@ -151,6 +161,7 @@ async function fetchPlan(memberId, headers) {
           planKey,
           eligible: isEligible,
           memberType: planKey,
+          hasVideoAccess,
           startDate: active.startDate || null,
           endDate: active.endDate || null,
           autoRenewing: active.autoRenewCanceled === false,
@@ -173,7 +184,7 @@ async function fetchPlan(memberId, headers) {
         const last = past[0];
         const planKey = last.planId === ELIGIBLE_PLAN_IDS[0] ? "physical"
           : last.planId === ELIGIBLE_PLAN_IDS[1] ? "complete"
-          : last.planId === "8324fc1b-c344-454c-af4d-eed9639b7222" ? "digital"
+          : last.planId === DIGITAL_PLAN_ID ? "digital"
           : "other";
         return {
           name: last.planName || "Unknown Plan",
@@ -181,6 +192,7 @@ async function fetchPlan(memberId, headers) {
           planId: last.planId,
           planKey,
           eligible: false,
+          hasVideoAccess: false,
           memberType: `lapsed_${planKey}`,
           startDate: last.startDate || null,
           endDate: last.endDate || null,
@@ -190,8 +202,8 @@ async function fetchPlan(memberId, headers) {
     }
 
     // No plans at all
-    return { name: null, status: "none", planId: null, planKey: null, eligible: false, memberType: "non_member", startDate: null, endDate: null, autoRenewing: false };
-  } catch { return { name: null, status: "none", planId: null, planKey: null, eligible: false, memberType: "non_member", startDate: null, endDate: null, autoRenewing: false }; }
+    return { name: null, status: "none", planId: null, planKey: null, eligible: false, hasVideoAccess: false, memberType: "non_member", startDate: null, endDate: null, autoRenewing: false };
+  } catch { return { name: null, status: "none", planId: null, planKey: null, eligible: false, hasVideoAccess: false, memberType: "non_member", startDate: null, endDate: null, autoRenewing: false }; }
 }
 
 async function fetchBookings(contactId, headers) {

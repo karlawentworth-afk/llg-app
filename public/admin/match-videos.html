@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Channel Videos to File IDs</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #F7F4F0; margin: 0; padding: 1rem; }
+  h1 { font-size: 1.3rem; color: #1a1a1a; }
+  p { font-size: 0.9rem; color: #5E5D5B; max-width: 700px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .card { background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #E6E1DA; }
+  .card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+  .card .info { padding: 0.6rem 0.8rem; }
+  .card .title { font-size: 0.85rem; font-weight: 600; color: #1a1a1a; margin-bottom: 0.3rem; }
+  .card .id { font-size: 0.7rem; color: #999; font-family: monospace; word-break: break-all; }
+  .card select { width: 100%; margin-top: 0.4rem; font-size: 0.8rem; padding: 0.3rem; border-radius: 6px; border: 1px solid #ccc; }
+  .card.matched { border-color: #2ecc71; border-width: 2px; }
+  .export-btn { background: #DE0082; color: #fff; border: none; border-radius: 10px; padding: 0.7rem 1.5rem; font-size: 1rem; font-weight: 600; cursor: pointer; margin: 1rem 0; }
+  .export-btn:hover { opacity: 0.9; }
+  .stats { font-size: 0.9rem; color: #333; margin: 0.5rem 0; }
+  pre { background: #fff; padding: 1rem; border-radius: 8px; font-size: 0.75rem; max-height: 400px; overflow: auto; display: none; }
+</style>
+</head>
+<body>
+<h1>Match Channel Videos to Media Manager File IDs</h1>
+<p>Each card shows a Media Manager video thumbnail. Use the dropdown to assign which channel video it matches.
+Compare thumbnails with what you see in the Wix Video editor.</p>
+<p class="stats" id="stats">Matched: 0 / 40</p>
+<button class="export-btn" onclick="exportMatches()">Export matches</button>
+<pre id="output"></pre>
+<div class="grid" id="grid"></div>
+
+<script>
+var MEDIA_VIDEOS = [
+  { id: '3fcc04_478a3c560256407ba7c233f7dbd03f83', title: 'Lag putting' },
+  { id: '3fcc04_d584646521ae46f0b34cfb456c5b3766', title: 'The Bump & Run' },
+  { id: '3fcc04_bb4e54caf1514336bad4356b5de1f517', title: 'The Texas Wedge' },
+  { id: '3fcc04_7b015e6fa9a547fda4623508172d81c0', title: 'Iron Striking - The Divot' },
+  { id: '3fcc04_9f11cbaf27d749b6b5a94ebca24d2d0a', title: 'Tee shot strategy' },
+  { id: '3fcc04_ee9cafad2df74232925036597538f86b', title: 'European Golf School' },
+  { id: '3fcc04_0a5aeed112ee48bf81c65c8e22ea988e', title: 'Sloping lies' },
+  { id: '3fcc04_097ca3c2193c4127b8a70389a401f608', title: 'Hitting from the rough' },
+  { id: '3fcc04_6224e53572354b16a4425ab53c53f502', title: 'Etiquette and Pace of Play' },
+  { id: '3fcc04_31992cdc526e454fa048c352c279f84d', title: 'Video 10-08-2025, 09 36 34 (1)' },
+  { id: '3fcc04_ee5351fbb5f64bd2aace53266694fc3b', title: 'Online plans' },
+  { id: '3fcc04_a029dceedc004e86b019d26892a7f51a', title: 'Pre Shot Routine Final' },
+  { id: '3fcc04_868acf4a4302428b90f8a640f4f4762e', title: 'Pre Shot Routine Final (2)' },
+  { id: '3fcc04_793c741c1a8a4d44a9c8763aeb11f305', title: 'Smart Course Management for Beginners' },
+  { id: '3fcc04_c1dc88aece3748bca80934424d85ecda', title: 'Sloping lies in the Bunker - Final' },
+  { id: '3fcc04_b45599c7ccea4e5fb9dc50dfeef5435b', title: 'The Hybrid, Your Secret Weapon' },
+  { id: '3fcc04_dfc116347c8040b0a1ada22fecbe1441', title: 'Dealing with 1st Tee Nerves - Final' },
+  { id: '3fcc04_a14e734e3ec746799a9bef5c6c127069', title: 'Long Shots From the Fairway' },
+  { id: '3fcc04_647bd47cf93c428981caf94ce6e9e77f', title: 'The Half Swing - Final' },
+  { id: '3fcc04_032349633a5d48238bdfc5f77696e010', title: 'How to complete a scorecard' },
+  { id: '3fcc04_09e323e497b148619f498826ca506071', title: "What's in the Bag Final" },
+  { id: '3fcc04_59cdf209e73f40cbacb6de3c521da917', title: 'Playing in the Wind Final' },
+  { id: '3fcc04_bdfa97a0b1644bc6a49daceb0e5f7861', title: 'Driver Consistancy Final' },
+  { id: '3fcc04_248ca93297e2410eb952591607790ace', title: 'Fairway Woods - Setup Differences Final' },
+  { id: '3fcc04_8e3ed40685cd4466bd0476c8f1473f34', title: 'Punch Shot from Under Trees final' },
+  { id: '3fcc04_728ffff5e3214b008c9404e10c8b8e38', title: 'Escaping Bunkers with Confidence Final' },
+  { id: '3fcc04_2aa60fa0842345e4afabc9b794df709a', title: 'Distance Control in Chipping' },
+  { id: '3fcc04_fc2eb83e31124725af2696c49ea3af7c', title: 'The 3 Foot Putt - Never miss a short Putt again Final' },
+  { id: '3fcc04_8c5e836abf8b468a9afa97cff08155bc', title: 'Putting Fundamentals - Grip, Stance, Stroke Final' },
+  { id: '3fcc04_9d5a9f8385e64278aa41fb495ed2cf19', title: 'Reading the Green - Simple Stratagies Final' },
+  { id: '3fcc04_9fc9ae8940634f30a4821c3ea22cf2c8', title: 'Chipping Technique - Get it up and down Final' },
+  { id: '3fcc04_92b0a21c231b49f0a40440bb0be89828', title: 'Warm up routine for the driving range' },
+  { id: '3fcc04_3beff0fc5de646f19cf49869f096e002', title: 'The Pitch Shot' },
+  { id: '3fcc04_ed885b94a07c45ab8d8a336a10fdfe1a', title: 'Understanding your club distances' },
+  { id: '3fcc04_9b0dff8464204895aa12898988fc43cd', title: 'xmas 22' },
+  { id: '3fcc04_a8008022d63346f78d3c81ee1582e8ec', title: 'bunker vid' },
+  { id: 'e38d12_df83c502f48c4eb3828c832064c045b9', title: 'THIS WEEKS SESSIONS AT LLG 2103' },
+  { id: 'e38d12_9120ee9654eb47fea8f77ad33156423d', title: 'W&G partner with LLG' },
+  { id: 'e38d12_78abe359203144f4908e7196244acb0e', title: '2023 Solheim Cup' },
+  { id: '3fcc04_0ff44165df4541b1b243a3bf0fb3423f', title: 'IMG_9247' },
+  { id: '3fcc04_4b6f57ce30b74810992605669813d9ca', title: 'WhatsApp Video 2021-07-05' },
+  { id: '3fcc04_91a5357a7ac04aeaa0816a25093be807', title: 'WhatsApp Video 2021-06-01' },
+  { id: '8aab4f_828eba86313c4860b6189d0afed2c7db', title: 'First week back' },
+  { id: '8aab4f_007493853c6e4351b1d45448594ae153', title: 'New site video clip' },
+  { id: '3fcc04_2d553aae96cb416cba608cc63f8f1af8', title: 'LLG Main Intro RC01' },
+  { id: '8aab4f_f6d7a0d5c20041ca82dc878bd39e97d3', title: 'Analysis Example - putting' },
+  { id: '8aab4f_23568454cf01483e859b45765c3ec208', title: 'Chipping' },
+  { id: '3fcc04_d173d635314f4799892aaddfe7e6e090', title: 'IMG_3740' },
+  { id: '8aab4f_d38a6305018346c294cee378dae93528', title: 'FREE Analysis' },
+  { id: '8aab4f_ed9bb852e2d348b880936881fa0536ab', title: 'Putting clip - short' },
+  { id: '8aab4f_c1bbb00a66064b4c9ec3e31e7c2175c4', title: 'Intro Video' },
+  { id: '3fcc04_6ec453348bea478dad0276f2ae6e82b5', title: 'IMG_1612' },
+];
+
+var CHANNEL_VIDEOS = [
+  { ch: 'Putting', order: 1, title: 'Master 8-Foot Putts: Two Essential...', cat: 'Putting', onCourse: false },
+  { ch: 'Putting', order: 2, title: 'Pace Control Secrets: The Low Tak...', cat: 'Putting', onCourse: false },
+  { ch: 'Putting', order: 3, title: 'The Head Position That Ruins Sho...', cat: 'Putting', onCourse: false },
+  { ch: 'Putting', order: 4, title: "Why You're Missing Short Putts (A...", cat: 'Putting', onCourse: false },
+  { ch: 'Putting', order: 5, title: 'Why Your Legs Are Ruining Your S...', cat: 'Putting', onCourse: false },
+  { ch: 'Putting', order: 6, title: 'Perfect Putting Pace: The Practice...', cat: 'Putting', onCourse: false },
+  { ch: 'Putting', order: 7, title: 'Stop Looking Too Early: The Black ...', cat: 'Putting', onCourse: false },
+  { ch: 'Putting', order: 8, title: 'The Triangle Technique That Squa...', cat: 'Putting', onCourse: false },
+  { ch: 'Pitching & Chipping', order: 1, title: 'The Key to Consistent Pitch Shots:...', cat: 'Chipping and pitching', onCourse: false },
+  { ch: 'Pitching & Chipping', order: 2, title: 'The Hybrid Putt: Your New Secret ...', cat: 'Chipping and pitching', onCourse: false },
+  { ch: 'Pitching & Chipping', order: 3, title: 'Why Your Legs Are Ruining Your C...', cat: 'Chipping and pitching', onCourse: false },
+  { ch: 'Pitching & Chipping', order: 4, title: 'The Simple Math That Fixes Your ...', cat: 'Chipping and pitching', onCourse: false },
+  { ch: 'Pitching & Chipping', order: 5, title: 'Perfect Pitching Technique: The L ...', cat: 'Chipping and pitching', onCourse: false },
+  { ch: 'Pitching & Chipping', order: 6, title: 'Why Your Chipping Setup Is Wron...', cat: 'Chipping and pitching', onCourse: false },
+  { ch: 'Fairway', order: 1, title: 'Stop Topping Fairway Woods: For...', cat: 'Woods and hybrids', onCourse: false },
+  { ch: 'Fairway', order: 2, title: 'Fairway Wood Success: Force Bett...', cat: 'Woods and hybrids', onCourse: false },
+  { ch: 'Fairway', order: 3, title: 'Crisp Iron Contact: Set Your Wrist...', cat: 'Irons', onCourse: false },
+  { ch: 'On Course', order: 1, title: 'Uneven Lies Made Simple: Ball Ab...', cat: 'Course management', onCourse: true },
+  { ch: 'On Course', order: 2, title: 'The Posture Drill That Fixes Comm...', cat: 'Full swing', onCourse: true },
+  { ch: 'On Course', order: 3, title: 'Pre-Round Warmup: Get Ready fo...', cat: 'Practice and warm up', onCourse: true },
+  { ch: 'On Course', order: 4, title: 'Ball Above Your Feet: The Two Adj...', cat: 'Course management', onCourse: true },
+  { ch: 'On Course', order: 5, title: 'The Secret Short Game Club Nob...', cat: 'Chipping and pitching', onCourse: true },
+  { ch: 'On Course', order: 6, title: 'The Steep Swing Technique for Bu...', cat: 'Bunkers', onCourse: true },
+  { ch: 'On Course', order: 7, title: 'Never Top a Drive Again: Simple F...', cat: 'Driving', onCourse: true },
+  { ch: 'On Course', order: 8, title: 'The Tee Box Position That Saves S...', cat: 'Course management', onCourse: true },
+  { ch: 'On Course', order: 9, title: 'Course Strategy: Split Big Numbe...', cat: 'Course management', onCourse: true },
+  { ch: 'On Course', order: 10, title: 'Bunker Carry Made Easy: Focus o...', cat: 'Bunkers', onCourse: true },
+  { ch: 'Driver', order: 1, title: 'Anti-Slice Setup: Change Your Bo...', cat: 'Driving', onCourse: false },
+  { ch: 'Driver', order: 2, title: 'The Range Drill That Fixes Driver ...', cat: 'Driving', onCourse: false },
+  { ch: 'Driver', order: 3, title: 'Add 20 Yards: The Simple Width D...', cat: 'Driving', onCourse: false },
+  { ch: 'Driver', order: 4, title: 'Why Your Head Position Kills Driv...', cat: 'Driving', onCourse: false },
+  { ch: 'Driver', order: 5, title: 'Unlock Driver Speed: Light Grip, B...', cat: 'Driving', onCourse: false },
+  { ch: 'Driver', order: 6, title: 'Perfect Driver Setup: The Step-by-...', cat: 'Driving', onCourse: false },
+  { ch: 'Bunker', order: 1, title: 'The Key Difference: Fairway vs Gr...', cat: 'Bunkers', onCourse: false },
+  { ch: 'Bunker', order: 2, title: 'Perfect Bunker Contact: The Phan...', cat: 'Bunkers', onCourse: false },
+  { ch: 'Bunker', order: 3, title: 'Perfect Your Bunker Contact: The ...', cat: 'Bunkers', onCourse: false },
+  { ch: 'Bunker', order: 4, title: 'Plugged Lies Made Simple: Chang...', cat: 'Bunkers', onCourse: false },
+  { ch: 'Bunker', order: 5, title: 'Steep Bunker Lips Made Easy: Us...', cat: 'Bunkers', onCourse: false },
+  { ch: 'Bunker', order: 6, title: 'When You Need Maximum Loft: T...', cat: 'Bunkers', onCourse: false },
+  { ch: 'Bunker', order: 7, title: 'Perfect Bunker Setup: 3 Key Positi...', cat: 'Bunkers', onCourse: false },
+];
+
+var grid = document.getElementById('grid');
+
+MEDIA_VIDEOS.forEach(function(v) {
+  var card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.fileId = v.id;
+  var thumb = 'https://static.wixstatic.com/media/' + v.id + 'f002.jpg';
+  card.innerHTML = '<img src="' + thumb + '" alt="' + v.title + '" loading="lazy">' +
+    '<div class="info">' +
+    '<div class="title">' + v.title + '</div>' +
+    '<div class="id">' + v.id + '</div>' +
+    '<select onchange="onMatch(this)">' +
+    '<option value="">-- Not a channel video --</option>' +
+    CHANNEL_VIDEOS.map(function(cv, i) {
+      return '<option value="' + i + '">[' + cv.ch + ' #' + cv.order + '] ' + cv.title + '</option>';
+    }).join('') +
+    '</select>' +
+    '</div>';
+  grid.appendChild(card);
+});
+
+function onMatch(sel) {
+  var card = sel.closest('.card');
+  card.classList.toggle('matched', sel.value !== '');
+  updateStats();
+}
+
+function updateStats() {
+  var matched = document.querySelectorAll('.card.matched').length;
+  document.getElementById('stats').textContent = 'Matched: ' + matched + ' / 40';
+}
+
+function exportMatches() {
+  var results = [];
+  document.querySelectorAll('.card').forEach(function(card) {
+    var sel = card.querySelector('select');
+    if (sel.value === '') return;
+    var cv = CHANNEL_VIDEOS[parseInt(sel.value)];
+    results.push({
+      wix_file_id: card.dataset.fileId,
+      channel: cv.ch,
+      channel_order: cv.order,
+      channel_title: cv.title,
+      category: cv.cat,
+      on_course: cv.onCourse,
+      media_title: card.querySelector('.title').textContent,
+    });
+  });
+
+  // Generate SQL
+  var sql = '-- Matched channel videos\\n';
+  results.forEach(function(r) {
+    var t = r.channel_title.replace(/'/g, "''");
+    sql += "UPDATE videos SET title = '" + t + "', category = '" + r.category + "', " +
+      "on_course = " + r.on_course + ", sort_order = " + r.channel_order +
+      " WHERE wix_file_id = '" + r.wix_file_id + "';\\n";
+  });
+
+  var output = document.getElementById('output');
+  output.style.display = 'block';
+  output.textContent = JSON.stringify(results, null, 2) + '\\n\\n-- SQL --\\n' + sql;
+}
+</script>
+</body>
+</html>
