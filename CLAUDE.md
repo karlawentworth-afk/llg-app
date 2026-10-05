@@ -64,10 +64,12 @@
 
 ## Go-live checklist
 - Replace WIX_CONTACTS_WRITE_KEY with a key that has only:
-  Contacts (manage custom fields) and Calendar (manage events).
-  During testing the key is broader than needed. Code uses it for:
+  Contacts (manage custom fields), Calendar (manage events),
+  and Loyalty (manage). During testing the key is broader than
+  needed. Code uses it for:
   (1) update-member-details: member's own handicap and golf club
   (2) planner cancelSession: cancel single calendar occurrences
+  (3) admin-points: earnPoints and adjustPoints for admin use
   Never use it for anything else.
 
 ## Known limitations (parked)

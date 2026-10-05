@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Give or take points</title>
+<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --mg: #DE0082; --charcoal: #2B2A29; --bg: #F7F4F0; --card: #fff; --border: #E6E1DA; --muted: #5E5D5B; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Mulish', sans-serif; background: var(--bg); color: var(--charcoal); padding: 1rem; max-width: 480px; margin: 0 auto; }
+  h1 { font-family: 'Poppins', sans-serif; font-size: 1.3rem; margin-bottom: 0.75rem; }
+  h2 { font-family: 'Poppins', sans-serif; font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1rem; margin-bottom: 0.75rem; }
+  .small { font-size: 0.85rem; color: var(--muted); }
+  input, select, textarea { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 1rem; margin-top: 0.3rem; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--mg); color: #fff; border: none; border-radius: 12px; padding: 0 1.25rem; font-family: 'Mulish', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; min-height: 44px; }
+  .btn:active { opacity: 0.85; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn-outline { background: transparent; border: 2px solid var(--mg); color: var(--mg); }
+  .btn-dark { background: var(--charcoal); }
+  .member-row { padding: 0.6rem 0; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .member-row:last-child { border-bottom: none; }
+  .member-row:active { opacity: 0.7; }
+  .confirm-box { background: #fff8e1; border: 1px solid #ffe082; border-radius: 12px; padding: 1rem; margin: 0.75rem 0; }
+  .confirm-box .big { font-family: 'Poppins', sans-serif; font-size: 1.3rem; font-weight: 700; }
+  .success { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 12px; padding: 1rem; margin: 0.75rem 0; }
+  .error { color: #c0392b; font-weight: 600; margin: 0.5rem 0; }
+  .radio-row { display: flex; gap: 0.5rem; margin: 0.4rem 0; }
+  .radio-row label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.95rem; cursor: pointer; padding: 0.4rem 0.7rem; border: 1px solid var(--border); border-radius: 10px; }
+  .radio-row input[type=radio] { width: auto; margin: 0; }
+  .radio-row label:has(input:checked) { border-color: var(--mg); background: #fdf0f7; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<h1>Give or take points</h1>
+
+<!-- Step 1: Search -->
+<div id="step1">
+  <div class="card">
+    <label class="small">Search member by name or email</label>
+    <input type="text" id="searchInput" placeholder="e.g. Jane or jane@..." autofocus>
+    <div style="margin-top:0.5rem">
+      <button class="btn btn-sm" id="searchBtn" onclick="searchMember()">Search</button>
+    </div>
+    <div id="searchResults" style="margin-top:0.5rem"></div>
+  </div>
+</div>
+
+<!-- Step 2: Adjust -->
+<div id="step2" hidden>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700;font-size:1.05rem" id="selName"></div>
+        <div class="small" id="selEmail"></div>
+      </div>
+      <button class="btn-outline btn" style="min-height:36px;padding:0 0.75rem;font-size:0.8rem" onclick="resetForm()">Change</button>
+    </div>
+    <div style="margin-top:0.5rem">
+      <span class="small">Current balance:</span>
+      <span style="font-weight:700" id="selBalance"></span>
+      <span class="small" id="selMoney"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Add or remove</h2>
+    <div class="radio-row">
+      <label><input type="radio" name="direction" value="add" checked> Add</label>
+      <label><input type="radio" name="direction" value="remove"> Remove</label>
+    </div>
+
+    <label class="small" style="margin-top:0.5rem;display:block">Amount</label>
+    <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.3rem">
+      <input type="number" id="amountInput" min="1" style="flex:1" placeholder="0">
+      <div class="radio-row" style="margin:0">
+        <label><input type="radio" name="unit" value="points" checked> Points</label>
+        <label><input type="radio" name="unit" value="pounds"> Pounds</label>
+      </div>
+    </div>
+    <div class="small" id="amountPreview" style="margin-top:0.3rem"></div>
+
+    <label class="small" style="margin-top:0.75rem;display:block">Reason</label>
+    <select id="reasonSelect">
+      <option value="">Choose a reason</option>
+      <option value="Golf Breaks trip">Golf Breaks trip</option>
+      <option value="Goodwill">Goodwill</option>
+      <option value="Correction">Correction</option>
+      <option value="Event">Event</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <label class="small" style="margin-top:0.5rem;display:block">Note (optional)</label>
+    <input type="text" id="noteInput" placeholder="e.g. Costa Navarino Oct 2026">
+
+    <div style="margin-top:0.75rem">
+      <button class="btn" id="previewBtn" onclick="showPreview()">Preview</button>
+    </div>
+  </div>
+
+  <!-- Confirm -->
+  <div id="confirmBox" hidden>
+    <div class="confirm-box">
+      <div class="small" id="confirmDir"></div>
+      <div class="big" id="confirmAmount"></div>
+      <div class="small" id="confirmDesc"></div>
+      <div style="margin-top:0.5rem">
+        <span class="small">Current: <strong id="confirmOld"></strong></span>
+        <span style="margin:0 0.3rem">\u2192</span>
+        <span class="small">New: <strong id="confirmNew"></strong></span>
+      </div>
+      <div style="margin-top:0.75rem;display:flex;gap:0.5rem">
+        <button class="btn" id="confirmBtn" onclick="doAdjust()">Confirm</button>
+        <button class="btn btn-outline" onclick="document.getElementById('confirmBox').hidden=true">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="resultBox" hidden></div>
+</div>
+
+<div id="errorMsg" class="error" hidden></div>
+
+<script>
+var PASSWORD = sessionStorage.getItem("adminPassword") || "";
+var SELECTED = null; // { contactId, memberId, name, email, balance, revision }
+
+function headers() {
+  var h = { "Content-Type": "application/json" };
+  if (PASSWORD) h["X-Admin-Password"] = PASSWORD;
+  return h;
+}
+
+async function api(body) {
+  var res = await fetch("/.netlify/functions/admin-points", {
+    method: "POST",
+    headers: headers(),
+    credentials: "same-origin",
+    body: JSON.stringify(body),
+  });
+  var data = await res.json();
+  if (!res.ok && data.error === "not_admin") {
+    PASSWORD = prompt("Admin password:");
+    if (PASSWORD) { sessionStorage.setItem("adminPassword", PASSWORD); return api(body); }
+    throw new Error("Not authorised");
+  }
+  if (!res.ok) throw new Error(data.error + (data.detail ? ": " + data.detail : ""));
+  return data;
+}
+
+async function searchMember() {
+  var q = document.getElementById("searchInput").value.trim();
+  if (!q || q.length < 2) return;
+  var btn = document.getElementById("searchBtn");
+  var results = document.getElementById("searchResults");
+  btn.textContent = "Searching..."; btn.disabled = true;
+  showError("");
+  try {
+    var data = await api({ action: "search", query: q });
+    if (!data.members || data.members.length === 0) {
+      results.innerHTML = '<p class="small">No members found</p>';
+    } else {
+      results.innerHTML = data.members.map(function(m) {
+        return '<div class="member-row" onclick="selectMember(' + JSON.stringify(JSON.stringify(m)) + ')">' +
+          '<div><div style="font-weight:600">' + esc(m.name) + '</div><div class="small">' + esc(m.email) + '</div></div>' +
+          '<span style="color:var(--mg);font-weight:600;font-size:0.85rem">Select</span>' +
+        '</div>';
+      }).join("");
+    }
+  } catch(e) { showError(e.message); }
+  btn.textContent = "Search"; btn.disabled = false;
+}
+
+async function selectMember(json) {
+  var m = JSON.parse(json);
+  showError("");
+  document.getElementById("selName").textContent = m.name;
+  document.getElementById("selEmail").textContent = m.email;
+  document.getElementById("selBalance").textContent = "Loading...";
+  document.getElementById("selMoney").textContent = "";
+  document.getElementById("step1").hidden = true;
+  document.getElementById("step2").hidden = false;
+  document.getElementById("confirmBox").hidden = true;
+  document.getElementById("resultBox").hidden = true;
+
+  try {
+    var bal = await api({ action: "balance", contactId: m.contactId });
+    SELECTED = {
+      contactId: m.contactId,
+      memberId: m.memberId,
+      name: m.name,
+      email: m.email,
+      balance: bal.balance || 0,
+      revision: bal.revision,
+    };
+    document.getElementById("selBalance").textContent = pts(SELECTED.balance) + " pts";
+    document.getElementById("selMoney").textContent = "(\u00a3" + (SELECTED.balance / 100).toFixed(2) + ")";
+  } catch(e) {
+    showError(e.message);
+    SELECTED = { contactId: m.contactId, memberId: m.memberId, name: m.name, email: m.email, balance: 0 };
+    document.getElementById("selBalance").textContent = "Could not load";
+  }
+}
+
+function showPreview() {
+  if (!SELECTED) return;
+  var rawAmount = parseInt(document.getElementById("amountInput").value, 10);
+  if (!rawAmount || rawAmount <= 0) { showError("Enter a positive amount"); return; }
+  var unit = document.querySelector('input[name=unit]:checked').value;
+  var dir = document.querySelector('input[name=direction]:checked').value;
+  var reason = document.getElementById("reasonSelect").value;
+  if (!reason) { showError("Choose a reason"); return; }
+  showError("");
+
+  var pointsAmount = unit === "pounds" ? rawAmount * 100 : rawAmount;
+  var signed = dir === "add" ? pointsAmount : -pointsAmount;
+  var note = document.getElementById("noteInput").value.trim();
+  var description = note ? reason + ": " + note : reason;
+
+  document.getElementById("confirmDir").textContent = dir === "add" ? "Adding to " + SELECTED.name : "Removing from " + SELECTED.name;
+  document.getElementById("confirmAmount").textContent = (dir === "add" ? "+" : "-") + pts(pointsAmount) + " pts (\u00a3" + (pointsAmount / 100).toFixed(2) + ")";
+  document.getElementById("confirmDesc").textContent = description;
+  document.getElementById("confirmOld").textContent = pts(SELECTED.balance) + " pts";
+  document.getElementById("confirmNew").textContent = pts(SELECTED.balance + signed) + " pts";
+  document.getElementById("confirmBox").hidden = false;
+  document.getElementById("confirmBox")._signed = signed;
+  document.getElementById("confirmBox")._reason = reason;
+  document.getElementById("confirmBox")._note = note;
+}
+
+async function doAdjust() {
+  var box = document.getElementById("confirmBox");
+  var signed = box._signed;
+  var reason = box._reason;
+  var note = box._note;
+  var btn = document.getElementById("confirmBtn");
+  btn.textContent = "Saving..."; btn.disabled = true;
+  showError("");
+
+  try {
+    var data = await api({
+      action: "adjust",
+      contactId: SELECTED.contactId,
+      memberId: SELECTED.memberId,
+      memberName: SELECTED.name,
+      memberEmail: SELECTED.email,
+      amount: signed,
+      reason: reason,
+      note: note,
+    });
+    box.hidden = true;
+    var resultBox = document.getElementById("resultBox");
+    resultBox.hidden = false;
+    resultBox.innerHTML = '<div class="success">' +
+      '<div style="font-weight:700;margin-bottom:0.3rem">Done</div>' +
+      '<div class="small">' + esc(SELECTED.name) + ': ' + pts(data.oldBalance) + ' \u2192 ' + pts(data.newBalance) + ' pts</div>' +
+      '<div class="small">' + esc(data.description) + '</div>' +
+      '<div style="margin-top:0.75rem"><button class="btn" onclick="resetForm()">Adjust another</button></div>' +
+    '</div>';
+    SELECTED.balance = data.newBalance;
+    document.getElementById("selBalance").textContent = pts(data.newBalance) + " pts";
+    document.getElementById("selMoney").textContent = "(\u00a3" + (data.newBalance / 100).toFixed(2) + ")";
+  } catch(e) { showError(e.message); }
+  btn.textContent = "Confirm"; btn.disabled = false;
+}
+
+function resetForm() {
+  SELECTED = null;
+  document.getElementById("step1").hidden = false;
+  document.getElementById("step2").hidden = true;
+  document.getElementById("confirmBox").hidden = true;
+  document.getElementById("resultBox").hidden = true;
+  document.getElementById("searchResults").innerHTML = "";
+  document.getElementById("searchInput").value = "";
+  document.getElementById("amountInput").value = "";
+  document.getElementById("noteInput").value = "";
+  document.getElementById("reasonSelect").value = "";
+  showError("");
+}
+
+// Amount preview
+document.getElementById("amountInput").addEventListener("input", function() {
+  var raw = parseInt(this.value, 10);
+  var unit = document.querySelector('input[name=unit]:checked').value;
+  var el = document.getElementById("amountPreview");
+  if (!raw || raw <= 0) { el.textContent = ""; return; }
+  if (unit === "pounds") {
+    el.textContent = "\u00a3" + raw + " = " + (raw * 100).toLocaleString() + " points";
+  } else {
+    el.textContent = raw.toLocaleString() + " points = \u00a3" + (raw / 100).toFixed(2);
+  }
+});
+document.querySelectorAll('input[name=unit]').forEach(function(r) {
+  r.addEventListener("change", function() { document.getElementById("amountInput").dispatchEvent(new Event("input")); });
+});
+
+// Enter to search
+document.getElementById("searchInput").addEventListener("keydown", function(e) { if (e.key === "Enter") searchMember(); });
+
+function showError(msg) {
+  var el = document.getElementById("errorMsg");
+  el.hidden = !msg;
+  el.textContent = msg || "";
+}
+
+function pts(n) { return Number(n).toLocaleString(); }
+function esc(s) { var d = document.createElement("div"); d.textContent = String(s || ""); return d.innerHTML; }
+</script>
+</body>
+</html>
