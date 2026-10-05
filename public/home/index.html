@@ -360,7 +360,8 @@
       var params = new URLSearchParams(hash);
       PASS = params.get("p") || null;
       var justBooked = params.get("booked") === "1";
-      var startScreen = params.get("screen") || null; // e.g. #screen=videos
+      var autoPortal = params.get("portal") === "1";
+      var startScreen = params.get("screen") || null;
       if (PASS && window.history.replaceState) {
         window.history.replaceState(null, "", window.location.pathname);
       }
@@ -400,8 +401,15 @@
 
         DATA = await res.json();
         sessionStorage.removeItem("llg_tried_wix");
-        var validScreens = ["home","card","allTrips","account"];
-        showScreen(startScreen && validScreens.indexOf(startScreen) !== -1 ? startScreen : "home");
+
+        // Auto-open portal if ?portal=1 was passed
+        if (autoPortal) {
+          showScreen("home");
+          autoOpenPortal();
+        } else {
+          var validScreens = ["home","card","allTrips","account"];
+          showScreen(startScreen && validScreens.indexOf(startScreen) !== -1 ? startScreen : "home");
+        }
       } catch (err) {
         showError(err.name === "AbortError" ? "Request timed out. Please try again." : "Could not connect. Please try again.");
       }
@@ -1334,6 +1342,32 @@
         el.style.opacity = "1";
       }
     }
+    async function autoOpenPortal() {
+      // Find the member's first upcoming booked trip and open its portal
+      var trip = (DATA.yourTrips || [])[0];
+      if (!trip) {
+        // No booked trips: just show Home
+        return;
+      }
+      try {
+        var res = await fetch("/.netlify/functions/get-portal-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ eventId: trip.id || "", eventName: trip.title || "" }),
+        });
+        var data = await res.json();
+        var url = data.portalUrl || (data.links && data.links.length > 0 ? data.links[0].portalUrl : null);
+        if (url) {
+          window.location.href = url;
+          return;
+        }
+      } catch (e) {
+        console.error("autoOpenPortal:", e.message);
+      }
+      // Failed: stay on Home, member can tap the trip manually
+    }
+
     async function openPortal(el) {
       var eventId = el.getAttribute("data-portal-event");
       var eventName = el.getAttribute("data-portal-name") || "";
