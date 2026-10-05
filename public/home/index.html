@@ -383,26 +383,23 @@
         if (!res.ok) {
           var err = await res.json().catch(function() { return {}; });
 
-          // No session and no pass: redirect to Wix to get a pass
+          // No session and no pass: try Wix redirect once, then show message
           if (err.error === "no_session" || err.error === "pass_expired" || err.error === "invalid_signature") {
-            // Only redirect once — prevent loops
-            if (!PASS && !window.location.hash.includes("retry")) {
+            if (!PASS && !sessionStorage.getItem("llg_tried_wix")) {
+              sessionStorage.setItem("llg_tried_wix", "1");
               window.location.href = WIX_PASS_URL;
               return;
             }
+            // Redirect already tried or failed: show friendly message
+            sessionStorage.removeItem("llg_tried_wix");
           }
 
-          var msgs = {
-            invalid_signature: "Access denied.",
-            pass_expired: "Session expired. Redirecting...",
-            no_session: "Please open this page from the LLG app.",
-            server_config: "Server configuration error. Please contact LLG.",
-          };
-          showError(msgs[err.error] || "Something went wrong. Please try again.");
+          showError("Your session has ended. Please close the app completely and reopen it.");
           return;
         }
 
         DATA = await res.json();
+        sessionStorage.removeItem("llg_tried_wix");
         var validScreens = ["home","card","allTrips","account"];
         showScreen(startScreen && validScreens.indexOf(startScreen) !== -1 ? startScreen : "home");
       } catch (err) {

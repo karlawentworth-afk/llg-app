@@ -5,7 +5,7 @@ const TIMEOUT_MS = 9000;
 const CACHE_TTL_MS = 60_000;
 const cache = new Map();
 
-const SESSION_TTL_SECS = 7 * 24 * 60 * 60; // 7 days
+const SESSION_TTL_SECS = 30 * 24 * 60 * 60; // 30 days
 const COOKIE_NAME = "llg_session";
 
 const ELIGIBLE_PLAN_IDS = [
