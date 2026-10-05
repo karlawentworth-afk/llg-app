@@ -368,7 +368,7 @@
       // Try loading data: with pass if we have one, or with session cookie
       try {
         var controller = new AbortController();
-        var timer = setTimeout(function() { controller.abort(); }, 9000);
+        var timer = setTimeout(function() { controller.abort(); }, 15000);
         var fetchBody = PASS ? { pass: PASS } : {};
         if (justBooked) fetchBody.skipCache = true;
         var res = await fetch("/.netlify/functions/home-data", {
