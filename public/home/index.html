@@ -1357,7 +1357,7 @@
           el.style.opacity = "1";
           return;
         }
-        el.textContent = "Could not open portal. Try again.";
+        el.textContent = "Could not open portal: " + (data.error || "unknown") + (data.detail ? " - " + data.detail : "") + (data.host ? " (" + data.host + ")" : "");
         el.style.opacity = "1"; el.disabled = false;
       } catch (err) {
         el.textContent = "Could not connect. Try again.";

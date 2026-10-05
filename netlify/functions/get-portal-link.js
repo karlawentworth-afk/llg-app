@@ -55,7 +55,10 @@ exports.handler = async (event) => {
 
   // Verify member session
   var session = verifySession(event.headers.cookie || event.headers.Cookie || "", secret);
-  if (!session) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "no_session" }) };
+  if (!session) {
+    console.error("get-portal-link: no valid session cookie");
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "no_session" }) };
+  }
 
   var memberId = session.memberId;
   var contactId = session.contactId;
@@ -98,8 +101,9 @@ exports.handler = async (event) => {
     });
 
     if (!res.ok) {
-      console.error("get-portal-link: portal call failed", res.status);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "portal_error" }) };
+      var errBody = await res.text().catch(function() { return ""; });
+      console.error("get-portal-link: portal call failed", res.status, portalHost, errBody.slice(0, 200));
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "portal_error", status: res.status, host: portalHost }) };
     }
 
     var data = await res.json();
@@ -154,6 +158,6 @@ exports.handler = async (event) => {
 
   } catch (err) {
     console.error("get-portal-link error:", err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "server_error" }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "server_error", detail: err.message }) };
   }
 };
