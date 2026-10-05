@@ -164,19 +164,23 @@ async function searchMember() {
     if (!data.members || data.members.length === 0) {
       results.innerHTML = '<p class="small">No members found</p>';
     } else {
-      results.innerHTML = data.members.map(function(m) {
-        return '<div class="member-row" onclick="selectMember(' + JSON.stringify(JSON.stringify(m)) + ')">' +
+      window._searchResults = data.members;
+      results.innerHTML = data.members.map(function(m, i) {
+        return '<div class="member-row" data-member-idx="' + i + '">' +
           '<div><div style="font-weight:600">' + esc(m.name) + '</div><div class="small">' + esc(m.email) + '</div></div>' +
           '<span style="color:var(--mg);font-weight:600;font-size:0.85rem">Select</span>' +
         '</div>';
       }).join("");
+      results.onclick = function(e) {
+        var row = e.target.closest("[data-member-idx]");
+        if (row) selectMember(window._searchResults[parseInt(row.getAttribute("data-member-idx"), 10)]);
+      };
     }
   } catch(e) { showError(e.message); }
   btn.textContent = "Search"; btn.disabled = false;
 }
 
-async function selectMember(json) {
-  var m = JSON.parse(json);
+async function selectMember(m) {
   showError("");
   document.getElementById("selName").textContent = m.name;
   document.getElementById("selEmail").textContent = m.email;
