@@ -1352,12 +1352,17 @@
           window.location.href = data.portalUrl;
           return;
         }
+        // Multiple links returned: use the first one
+        if (data.links && data.links.length > 0 && data.links[0].portalUrl) {
+          window.location.href = data.links[0].portalUrl;
+          return;
+        }
         if (data.error === "no_match") {
           el.textContent = "We couldn't find your trip. We'll sort it.";
           el.style.opacity = "1";
           return;
         }
-        el.textContent = "Debug: " + JSON.stringify(data).slice(0, 200);
+        el.textContent = "Could not open portal. Try again.";
         el.style.opacity = "1"; el.disabled = false;
       } catch (err) {
         el.textContent = "Could not connect. Try again.";
