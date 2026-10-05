@@ -1455,19 +1455,6 @@
                 '<div class="vid-play-btn">' + PLAY_SVG + '</div>' +
               '</div>' +
             '</a>';
-          } else if (!access) {
-            // Non-video members: free Beginner channel card
-            h += '<a href="' + WIX_BEGINNER_URL + '" style="display:block;text-decoration:none" onclick="tapNav(this)">' +
-              '<div class="card" style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem">' +
-                '<div style="width:44px;height:44px;border-radius:12px;background:var(--mg);display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
-                  '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M8 5v14l11-7z"/></svg>' +
-                '</div>' +
-                '<div>' +
-                  '<div style="font-weight:700;font-size:0.95rem">Free beginner videos</div>' +
-                  '<div class="small">Watch and learn at your own pace</div>' +
-                '</div>' +
-              '</div>' +
-            '</a>';
           }
 
           // "Videos" link card (all members)
