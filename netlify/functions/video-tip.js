@@ -23,11 +23,15 @@ exports.handler = async (event) => {
 
   // GET: return current tip
   if (event.httpMethod === "GET") {
-    var { data } = await supabase.from("video_tip").select("video_url, title, thumbnail_url, updated_at").eq("id", 1).single();
-    return {
-      statusCode: 200, headers: CORS,
-      body: JSON.stringify({ tip: data || { video_url: "", title: "", thumbnail_url: "" } }),
-    };
+    try {
+      var { data } = await supabase.from("video_tip").select("video_url, title, thumbnail_url, updated_at").eq("id", 1).single();
+      return {
+        statusCode: 200, headers: CORS,
+        body: JSON.stringify({ tip: data || { video_url: "", title: "", thumbnail_url: "" } }),
+      };
+    } catch {
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ tip: { video_url: "", title: "", thumbnail_url: "" } }) };
+    }
   }
 
   // POST: admin update
