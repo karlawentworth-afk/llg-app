@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Prize draw admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --mg: #DE0082; --charcoal: #2B2A29; --bg: #F7F4F0; --card: #fff; --border: #E6E1DA; --muted: #4A4947; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Mulish', sans-serif; background: var(--bg); color: var(--charcoal); padding: 1rem; max-width: 480px; margin: 0 auto; font-size: 1rem; }
+  h1 { font-family: 'Poppins', sans-serif; font-size: 1.3rem; margin-bottom: 0.75rem; }
+  h2 { font-family: 'Poppins', sans-serif; font-size: 1.05rem; margin: 0 0 0.5rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1rem; margin-bottom: 0.75rem; }
+  .small { font-size: 0.875rem; color: var(--muted); }
+  label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; margin-top: 0.75rem; }
+  label:first-child { margin-top: 0; }
+  input, select, textarea { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.625rem; font-family: inherit; font-size: 1rem; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--mg); color: #fff; border: none; border-radius: 0.75rem; padding: 0 1.25rem; font-family: inherit; font-size: 1rem; font-weight: 600; cursor: pointer; min-height: 3.25rem; }
+  .btn:disabled { opacity: 0.5; }
+  .btn-sm { min-height: 2.75rem; padding: 0 1rem; font-size: 0.9375rem; }
+  .btn-outline { background: transparent; border: 2px solid var(--mg); color: var(--mg); }
+  .btn-dark { background: var(--charcoal); }
+  .msg { font-size: 0.875rem; margin-top: 0.5rem; }
+  .msg.ok { color: #2e7d32; }
+  .msg.err { color: #c0392b; }
+  .past-row { padding: 0.5rem 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .past-row:last-child { border-bottom: none; }
+  .search-result { padding: 0.4rem 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .search-result:hover { background: #f0ede8; }
+  progress { width: 100%; height: 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; }
+  progress::-webkit-progress-bar { background: var(--border); border-radius: 0.25rem; }
+  progress::-webkit-progress-value { background: var(--mg); border-radius: 0.25rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<h1>Prize draw</h1>
+
+<!-- Card 1: This month's prize -->
+<div class="card">
+  <h2>1. This month's prize</h2>
+  <label>Month</label>
+  <input type="month" id="drawMonth">
+  <label>Prize</label>
+  <input type="text" id="drawPrize" placeholder="e.g. £100 Golfbreaks voucher">
+  <label>Live draw date and time (optional)</label>
+  <input type="datetime-local" id="drawAt">
+  <div style="margin-top:0.75rem">
+    <button class="btn btn-sm" id="saveBtn">Save</button>
+    <span class="msg" id="saveMsg"></span>
+  </div>
+</div>
+
+<!-- Card 2: After the draw -->
+<div class="card">
+  <h2>2. After the draw</h2>
+
+  <label>Winner</label>
+  <input type="text" id="winnerSearch" placeholder="Search member name...">
+  <div id="winnerResults"></div>
+  <div style="margin-top:0.3rem">
+    <span class="small">Shown as:</span>
+    <input type="text" id="winnerDisplay" placeholder="e.g. Jill K." style="width:auto;display:inline-block;max-width:12rem">
+  </div>
+
+  <label>Paste the link to the draw video (Instagram, Facebook or YouTube)</label>
+  <input type="url" id="videoUrl" placeholder="https://www.instagram.com/reel/...">
+  <p class="small" style="margin-top:0.2rem">Only Instagram, Facebook and YouTube links accepted</p>
+
+  <div style="margin-top:0.75rem">
+    <p class="small" style="margin-bottom:0.3rem">Or upload from my phone</p>
+    <input type="file" id="videoFile" accept="video/mp4,video/quicktime" style="font-size:0.875rem">
+    <progress id="uploadProgress" value="0" max="100" hidden></progress>
+    <span class="msg" id="uploadMsg"></span>
+  </div>
+
+  <div style="margin-top:0.75rem;display:flex;gap:0.5rem">
+    <button class="btn btn-sm" id="saveWinnerBtn">Save winner</button>
+    <button class="btn btn-sm btn-dark" id="publishBtn">Publish winner</button>
+  </div>
+  <span class="msg" id="winnerMsg"></span>
+</div>
+
+<!-- Card 3: Download entrants -->
+<div class="card">
+  <h2>3. This month's entrants</h2>
+  <p class="small" style="margin-bottom:0.5rem">First names of all active Digital and Complete members, for loading into the wheel.</p>
+  <a class="btn btn-sm btn-outline" id="entrantsLink" href="#">Download CSV</a>
+</div>
+
+<!-- Past draws -->
+<div class="card">
+  <h2>Past draws</h2>
+  <div id="pastDraws"></div>
+</div>
+
+<script>
+var ADMIN_EMAIL = localStorage.getItem("adminEmail") || "";
+var CURRENT_DRAW = null;
+
+function headers() {
+  var h = { "Content-Type": "application/json" };
+  if (ADMIN_EMAIL) h["X-Admin-Email"] = ADMIN_EMAIL;
+  return h;
+}
+
+async function api(body) {
+  var res = await fetch("/.netlify/functions/prize-draw", {
+    method: "POST", headers: headers(), credentials: "same-origin",
+    body: JSON.stringify(body),
+  });
+  var data = await res.json();
+  if (!res.ok && data.error === "not_admin") {
+    ADMIN_EMAIL = prompt("Enter your admin email:");
+    if (ADMIN_EMAIL) { ADMIN_EMAIL = ADMIN_EMAIL.trim().toLowerCase(); localStorage.setItem("adminEmail", ADMIN_EMAIL); return api(body); }
+    throw new Error("Not authorised");
+  }
+  if (!res.ok) throw new Error(data.error || "Failed");
+  return data;
+}
+
+// Set default month to this month
+var now = new Date();
+var thisMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+document.getElementById("drawMonth").value = thisMonth;
+
+// Entrants link
+document.getElementById("entrantsLink").href = "/.netlify/functions/prize-draw?action=entrants&email=" + encodeURIComponent(ADMIN_EMAIL);
+
+// Load existing data
+async function loadDraws() {
+  try {
+    var res = await fetch("/.netlify/functions/prize-draw?action=list");
+    var data = await res.json();
+    var draws = data.draws || [];
+
+    // Find this month's draw
+    var thisMonthStr = thisMonth + "-01";
+    CURRENT_DRAW = draws.find(function(d) { return d.month === thisMonthStr; });
+    if (CURRENT_DRAW) {
+      document.getElementById("drawPrize").value = CURRENT_DRAW.prize || "";
+      if (CURRENT_DRAW.draw_at) {
+        document.getElementById("drawAt").value = CURRENT_DRAW.draw_at.substring(0, 16);
+      }
+      if (CURRENT_DRAW.winner_display) {
+        document.getElementById("winnerDisplay").value = CURRENT_DRAW.winner_display;
+      }
+      if (CURRENT_DRAW.video_url) {
+        document.getElementById("videoUrl").value = CURRENT_DRAW.video_url;
+      }
+    }
+
+    // Past draws list
+    var past = draws.filter(function(d) { return d.published && d.winner_display; });
+    var pastEl = document.getElementById("pastDraws");
+    if (past.length === 0) {
+      pastEl.innerHTML = '<p class="small">No published draws yet</p>';
+    } else {
+      pastEl.innerHTML = past.map(function(d) {
+        var m = new Date(d.month + "T12:00:00");
+        var monthName = m.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+        return '<div class="past-row">' +
+          '<div><span style="font-weight:600">' + monthName + '</span><br>' +
+          '<span class="small">' + esc(d.winner_display) + ' — ' + esc(d.prize) + '</span></div>' +
+          '<button class="btn-sm btn-outline" style="border:1px solid var(--border);background:none;color:var(--charcoal);border-radius:0.5rem;padding:0.3rem 0.6rem;font-size:0.8rem;cursor:pointer" data-edit-month="' + d.month + '">Edit</button>' +
+        '</div>';
+      }).join("");
+    }
+  } catch (e) {
+    console.error("loadDraws", e);
+  }
+}
+loadDraws();
+
+// Save prize
+document.getElementById("saveBtn").addEventListener("click", async function() {
+  var btn = this;
+  var msg = document.getElementById("saveMsg");
+  btn.disabled = true; btn.textContent = "Saving..."; msg.textContent = "";
+  try {
+    var month = document.getElementById("drawMonth").value + "-01";
+    var prize = document.getElementById("drawPrize").value.trim();
+    var drawAt = document.getElementById("drawAt").value || null;
+    var data = await api({ action: "save", month: month, prize: prize, draw_at: drawAt ? new Date(drawAt).toISOString() : null });
+    CURRENT_DRAW = data.draw;
+    msg.className = "msg ok"; msg.textContent = "Saved";
+  } catch (e) { msg.className = "msg err"; msg.textContent = e.message; }
+  btn.disabled = false; btn.textContent = "Save";
+});
+
+// Winner search
+var searchTimer;
+document.getElementById("winnerSearch").addEventListener("input", function() {
+  var q = this.value.trim();
+  clearTimeout(searchTimer);
+  if (q.length < 2) { document.getElementById("winnerResults").innerHTML = ""; return; }
+  searchTimer = setTimeout(async function() {
+    try {
+      var data = await api({ action: "search-member", query: q });
+      var el = document.getElementById("winnerResults");
+      el.innerHTML = (data.contacts || []).map(function(c) {
+        return '<div class="search-result" data-contact-id="' + c.contactId + '" data-display="' + esc(c.display) + '">' +
+          '<span style="font-weight:600">' + esc(c.name) + '</span> <span class="small">(' + esc(c.display) + ')</span></div>';
+      }).join("");
+    } catch (e) { console.error(e); }
+  }, 300);
+});
+
+// Click on search result
+document.getElementById("winnerResults").addEventListener("click", function(e) {
+  var row = e.target.closest("[data-contact-id]");
+  if (!row) return;
+  document.getElementById("winnerDisplay").value = row.getAttribute("data-display");
+  document.getElementById("winnerSearch").value = row.querySelector("span").textContent;
+  document.getElementById("winnerResults").innerHTML = "";
+  if (CURRENT_DRAW) CURRENT_DRAW._selectedContactId = row.getAttribute("data-contact-id");
+});
+
+// Save winner
+document.getElementById("saveWinnerBtn").addEventListener("click", async function() {
+  var btn = this;
+  var msg = document.getElementById("winnerMsg");
+  btn.disabled = true; msg.textContent = "";
+  try {
+    var month = document.getElementById("drawMonth").value + "-01";
+    var data = await api({
+      action: "save", month: month,
+      winner_display: document.getElementById("winnerDisplay").value.trim(),
+      winner_contact_id: CURRENT_DRAW && CURRENT_DRAW._selectedContactId || null,
+      video_url: document.getElementById("videoUrl").value.trim(),
+    });
+    CURRENT_DRAW = data.draw;
+    msg.className = "msg ok"; msg.textContent = "Winner saved";
+  } catch (e) { msg.className = "msg err"; msg.textContent = e.message; }
+  btn.disabled = false;
+});
+
+// Publish
+document.getElementById("publishBtn").addEventListener("click", async function() {
+  if (!CURRENT_DRAW || !CURRENT_DRAW.id) { alert("Save the draw first"); return; }
+  if (!confirm("Publish this winner? Members will see it.")) return;
+  var btn = this;
+  var msg = document.getElementById("winnerMsg");
+  btn.disabled = true; msg.textContent = "";
+  try {
+    await api({ action: "publish", id: CURRENT_DRAW.id });
+    msg.className = "msg ok"; msg.textContent = "Published";
+    loadDraws();
+  } catch (e) { msg.className = "msg err"; msg.textContent = e.message; }
+  btn.disabled = false;
+});
+
+// Upload video
+document.getElementById("videoFile").addEventListener("change", async function() {
+  var file = this.files[0];
+  if (!file) return;
+  if (!CURRENT_DRAW || !CURRENT_DRAW.id) { alert("Save the draw first"); return; }
+  if (file.size > 300 * 1024 * 1024) { alert("File too large (max 300MB)"); return; }
+
+  var progress = document.getElementById("uploadProgress");
+  var msg = document.getElementById("uploadMsg");
+  progress.hidden = false; progress.value = 0; msg.textContent = "";
+
+  try {
+    // Get signed upload URL
+    var data = await api({ action: "upload-url", id: CURRENT_DRAW.id, contentType: file.type });
+    if (!data.uploadUrl) throw new Error("No upload URL");
+
+    // Upload with XHR for progress
+    await new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("PUT", data.uploadUrl);
+      xhr.setRequestHeader("Content-Type", file.type);
+      if (data.token) xhr.setRequestHeader("x-upsert", "true");
+      xhr.upload.addEventListener("progress", function(e) {
+        if (e.lengthComputable) progress.value = Math.round(e.loaded / e.total * 100);
+      });
+      xhr.addEventListener("load", function() {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error("Upload failed: " + xhr.status));
+      });
+      xhr.addEventListener("error", function() { reject(new Error("Upload error")); });
+      xhr.send(file);
+    });
+
+    msg.className = "msg ok"; msg.textContent = "Uploaded";
+    progress.value = 100;
+  } catch (e) {
+    msg.className = "msg err"; msg.textContent = e.message;
+  }
+});
+
+// Edit past draw
+document.getElementById("pastDraws").addEventListener("click", function(e) {
+  var btn = e.target.closest("[data-edit-month]");
+  if (!btn) return;
+  var month = btn.getAttribute("data-edit-month");
+  document.getElementById("drawMonth").value = month.substring(0, 7);
+  loadDraws(); // reload to populate fields
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function esc(s) { var d = document.createElement("div"); d.textContent = String(s || ""); return d.innerHTML; }
+</script>
+</body>
+</html>

@@ -264,6 +264,19 @@
     .skel-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
     .skel-tile { height: 5rem; border-radius: var(--r); background: #e0ddd8; animation: pulse 1.5s ease-in-out infinite; }
 
+    /* Prize draw */
+    .pd-hero { background: var(--charcoal); border-radius: var(--r); padding: 1.5rem; margin-bottom: 0.75rem; text-align: center; color: #fff; position: relative; overflow: hidden; }
+    .pd-wheel { width: 5rem; height: 5rem; margin: 0 auto 0.75rem; border-radius: 50%; border: 3px solid var(--mg); border-top-color: transparent; animation: pdSpin 3s linear infinite; }
+    @keyframes pdSpin { to { transform: rotate(360deg); } }
+    .pd-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: #1b5e20; color: #fff; padding: 0.3rem 0.75rem; border-radius: 1rem; font-size: 0.8125rem; font-weight: 700; margin-top: 0.75rem; }
+    .pd-video { position: relative; border-radius: var(--r); overflow: hidden; margin-bottom: 0.75rem; background: var(--mg); aspect-ratio: 9/16; max-height: 24rem; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .pd-video img, .pd-video iframe { width: 100%; height: 100%; object-fit: cover; border: none; }
+    .pd-play { width: 3.5rem; height: 3.5rem; border-radius: 50%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; }
+    .pd-play svg { width: 1.5rem; height: 1.5rem; fill: var(--mg); margin-left: 0.15rem; }
+    .pd-winner-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+    .pd-winner-row:last-child { border-bottom: none; }
+    .pd-month-tile { width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; background: var(--charcoal); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.6875rem; font-weight: 700; line-height: 1.1; }
+
     .error-msg { color: #c0392b; font-weight: 600; padding: 2rem 0; text-align: center; }
   </style>
 </head>
@@ -329,6 +342,9 @@
 
     <!-- Check and book screen -->
     <div id="checkBookScreen" class="screen card-screen"></div>
+
+    <!-- Prize draw screen -->
+    <div id="prizeDrawScreen" class="screen card-screen"></div>
 
     <!-- Booked confirmation screen -->
     <div id="bookedScreen" class="screen"></div>
@@ -427,6 +443,8 @@
         } else if (act === "change-venue-home") {
           changeVenue();
           showScreen("home");
+        } else if (act === "open-prize-draw") {
+          showScreen("prizeDraw");
         }
         return;
       }
@@ -527,7 +545,7 @@
 
     function showScreen(name, extra) {
       if (window.hideHomeLoader) window.hideHomeLoader();
-      ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen","checkBookScreen","bookedScreen"].forEach(function(id) {
+      ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen","checkBookScreen","bookedScreen","prizeDrawScreen"].forEach(function(id) {
         document.getElementById(id).classList.remove("active");
       });
 
@@ -560,6 +578,10 @@
         renderBooked(extra);
         document.getElementById("bookedScreen").classList.add("active");
         trackEvent("booked_shown");
+      } else if (name === "prizeDraw") {
+        renderPrizeDraw();
+        document.getElementById("prizeDrawScreen").classList.add("active");
+        trackEvent("prize_draw_opened");
       }
     }
 
@@ -740,8 +762,18 @@
         '</div>';
       }
 
+      // Prize draw card (Digital/Complete: here, others: after book section)
+      if (memberIs("digital") || memberIs("complete")) {
+        h += '<div id="prizeDrawCard"></div>';
+      }
+
       // Book at venue
       h += renderBookSection();
+
+      // Prize draw card (Physical/Non/Lapsed: after book)
+      if (!memberIs("digital") && !memberIs("complete")) {
+        h += '<div id="prizeDrawCard"></div>';
+      }
 
       // Perks (members only, collapsed by default)
       if ((memberIs("physical") || memberIs("complete")) && DATA.perks && DATA.perks.length > 0) {
@@ -820,6 +852,7 @@
 
       el.innerHTML = h;
       loadHomeVideoCard();
+      loadPrizeDrawCard();
     }
 
     function renderBookSection() {
@@ -1365,6 +1398,176 @@
       // Only show on justBooked flag
     }
 
+    // --- PRIZE DRAW PAGE ---
+    var PRIZE_DRAW_DATA = null;
+
+    async function renderPrizeDraw() {
+      var el = document.getElementById("prizeDrawScreen");
+      el.innerHTML = '<div style="text-align:center;padding:2rem 0"><p class="small">Loading...</p></div>';
+
+      try {
+        var res = await fetch("/.netlify/functions/prize-draw?action=list", { credentials: "same-origin" });
+        PRIZE_DRAW_DATA = await res.json();
+      } catch { PRIZE_DRAW_DATA = { draws: [] }; }
+
+      var draws = PRIZE_DRAW_DATA.draws || [];
+      var now = new Date();
+      var thisMonthStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-01";
+      var current = draws.find(function(d) { return d.month === thisMonthStr; });
+      var published = draws.filter(function(d) { return d.published && d.winner_display; });
+      var latest = published[0]; // newest first
+      var isInDraw = memberIs("digital") || memberIs("complete");
+      var monthName = now.toLocaleDateString("en-GB", { month: "long" });
+
+      var h = '<button class="back" data-screen="home">\u2190 Home</button>';
+
+      // Hero
+      h += '<div class="pd-hero">';
+      h += '<div class="pd-wheel" aria-hidden="true"></div>';
+      h += '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.25rem">' + monthName + '\'s prize draw</div>';
+      if (current && current.prize) {
+        h += '<p style="font-size:0.9375rem;opacity:0.8;margin-top:0.3rem">' + esc(current.prize) + '</p>';
+      }
+      if (current && current.draw_at) {
+        var drawDate = new Date(current.draw_at);
+        h += '<p style="font-size:0.875rem;opacity:0.7;margin-top:0.2rem">We spin the wheel live on ' + drawDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) + '</p>';
+      }
+      h += '<p style="font-size:0.8125rem;opacity:0.6;margin-top:0.3rem">Every Digital and Complete member is in, automatically.</p>';
+      if (isInDraw) {
+        h += '<div class="pd-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg> You\'re in this month\'s draw</div>';
+      }
+      h += '</div>';
+
+      // Latest draw video
+      if (latest) {
+        h += '<h2 style="font-size:1.05rem;margin-bottom:0.5rem">This month\'s draw video</h2>';
+        if (latest.video_url && latest.videoSource === "youtube" && latest.youtubeId) {
+          h += '<div class="pd-video">' +
+            '<iframe src="https://www.youtube-nocookie.com/embed/' + esc(latest.youtubeId) + '?rel=0" allow="accelerometer;autoplay;encrypted-media;gyroscope" allowfullscreen></iframe>' +
+          '</div>';
+        } else if (latest.video_url && (latest.videoSource === "instagram" || latest.videoSource === "facebook")) {
+          var platform = latest.videoSource === "instagram" ? "Instagram" : "Facebook";
+          h += '<a href="' + esc(latest.video_url) + '" target="_blank" rel="noopener" class="pd-video" style="text-decoration:none;color:#fff">' +
+            '<div style="text-align:center">' +
+              '<div class="pd-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' +
+              '<div style="font-weight:700;margin-top:0.5rem">' + esc(latest.winner_display) + ' wins!</div>' +
+              '<div style="font-size:0.875rem;opacity:0.7">' + esc(latest.prize) + '</div>' +
+            '</div>' +
+          '</a>' +
+          '<p class="small" style="text-align:center;margin-top:-0.5rem;margin-bottom:0.75rem">Opens in ' + platform + '</p>';
+        } else if (latest.hasUploadedVideo) {
+          h += '<div class="pd-video" data-action="play-draw-video" data-draw-id="' + latest.id + '">' +
+            '<div class="pd-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' +
+          '</div>';
+        }
+      }
+
+      // Upsell
+      if (!isInDraw) {
+        h += '<div class="card" style="background:#fdf0f7;border-color:var(--mg);margin-bottom:0.75rem">';
+        if (memberIs("physical")) {
+          h += '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">Want to be in the next draw?</div>' +
+            '<p class="small" style="margin-bottom:0.75rem">Complete members are in every month, automatically. Go Complete for \u00a350 more a year and you get the full video library too.</p>' +
+            '<a class="btn" style="width:100%" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.complete || "https://www.ladieslovegolf.com/plans-pricing") + '">Go Complete and get in the draw</a>' +
+            '<p class="small" style="margin-top:0.5rem;text-align:center">Your sessions, perks and points all stay as they are.</p>';
+        } else {
+          h += '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">Fancy being our next winner?</div>' +
+            '<p class="small" style="margin-bottom:0.75rem">Every Digital member is in the draw every month. That\'s 12 chances a year, plus the full video library and a new tip every week.</p>' +
+            '<a class="btn" style="width:100%" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.digital || "https://www.ladieslovegolf.com/plans-pricing") + '">Join Digital, \u00a38.99 a month</a>' +
+            '<p class="small" style="margin-top:0.5rem;text-align:center">Cancel any time.</p>';
+        }
+        h += '</div>';
+      }
+
+      // Winners list
+      if (published.length > 0) {
+        h += '<h2 style="font-size:1.05rem;margin-bottom:0.5rem">Our winners</h2>';
+        h += '<div class="card">';
+        published.forEach(function(d) {
+          var m = new Date(d.month + "T12:00:00");
+          var mShort = m.toLocaleDateString("en-GB", { month: "short" });
+          var mYear = String(m.getFullYear()).slice(2);
+          var hasVideo = d.video_url || d.hasUploadedVideo;
+          h += '<div class="pd-winner-row">' +
+            '<div class="pd-month-tile"><span>' + mShort + '</span><span>' + mYear + '</span></div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-weight:600">' + esc(d.winner_display) + '</div>' +
+              '<div class="small">' + esc(d.prize) + '</div>' +
+            '</div>';
+          if (hasVideo) {
+            if (d.video_url && (d.videoSource === "instagram" || d.videoSource === "facebook")) {
+              h += '<a href="' + esc(d.video_url) + '" target="_blank" rel="noopener" style="flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:var(--mg);display:flex;align-items:center;justify-content:center">' +
+                '<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M8 5v14l11-7z"/></svg></a>';
+            } else if (d.video_url && d.videoSource === "youtube" && d.youtubeId) {
+              h += '<a href="' + esc(d.video_url) + '" target="_blank" rel="noopener" style="flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:var(--mg);display:flex;align-items:center;justify-content:center">' +
+                '<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M8 5v14l11-7z"/></svg></a>';
+            } else if (d.hasUploadedVideo) {
+              h += '<div style="flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:var(--mg);display:flex;align-items:center;justify-content:center;cursor:pointer" data-action="play-draw-video" data-draw-id="' + d.id + '">' +
+                '<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>';
+            }
+          }
+          h += '</div>';
+        });
+        h += '</div>';
+      }
+
+      // Draw rules link
+      h += '<p class="small" style="margin-top:1rem;text-align:center"><a href="#" style="color:var(--muted)">Prize draw rules</a></p>';
+
+      el.innerHTML = h;
+    }
+
+    // Load prize draw data for Home cards
+    function loadPrizeDrawCard() {
+      var container = document.getElementById("prizeDrawCard");
+      if (!container) return;
+      fetch("/.netlify/functions/prize-draw?action=list", { credentials: "same-origin" })
+        .then(function(r) { return r.ok ? r.json() : { draws: [] }; })
+        .then(function(data) {
+          var draws = data.draws || [];
+          var now = new Date();
+          var thisMonthStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-01";
+          var current = draws.find(function(d) { return d.month === thisMonthStr; });
+          var published = draws.filter(function(d) { return d.published && d.winner_display; });
+          var latest = published[0];
+          var monthName = now.toLocaleDateString("en-GB", { month: "long" });
+          var isInDraw = memberIs("digital") || memberIs("complete");
+          var h = "";
+
+          if (isInDraw && current && current.prize) {
+            // Digital/Complete: dark card, "You're in"
+            h += '<div class="card card-dark" style="cursor:pointer;margin-bottom:0.75rem" data-action="open-prize-draw">' +
+              '<div style="color:#4caf50;font-weight:700;font-size:0.875rem;margin-bottom:0.3rem">\u2713 You\'re in ' + monthName + '\'s prize draw</div>' +
+              '<div style="font-weight:600">' + esc(current.prize) + '</div>';
+            if (current.draw_at) {
+              var dd = new Date(current.draw_at);
+              h += '<div style="font-size:0.875rem;opacity:0.7">Live draw ' + dd.toLocaleDateString("en-GB", { day: "numeric", month: "long" }) + ' \u00b7 See past winners</div>';
+            }
+            h += '</div>';
+          } else if (latest) {
+            // Physical/Non/Lapsed: upsell card
+            h += '<div class="card card-dark" style="margin-bottom:0.75rem">' +
+              '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">Monthly prize draw</div>' +
+              '<div style="font-size:0.875rem;opacity:0.8;margin-bottom:0.5rem">' + esc(latest.winner_display) + ' won ' + esc(latest.prize) + '</div>';
+            if (memberIs("physical")) {
+              h += '<p style="font-size:0.8125rem;opacity:0.7;margin-bottom:0.75rem">Complete members are in every month, automatically. It\'s \u00a350 more a year and you get the full video library too.</p>' +
+                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.complete || "#") + '">Go Complete, \u00a350 more a year</a>';
+            } else if (memberIs("non")) {
+              h += '<p style="font-size:0.8125rem;opacity:0.7;margin-bottom:0.75rem">Every Digital and Complete member is in, every month. 12 chances a year to win.</p>' +
+                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.digital || "#") + '">Join Digital, \u00a38.99 a month</a>';
+            } else if (memberIs("lapsed")) {
+              h += '<p style="font-size:0.8125rem;opacity:0.7;margin-bottom:0.75rem">Rejoin as Digital or Complete and you\'re straight into next month\'s draw.</p>' +
+                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.digital || "#") + '">Rejoin and get in the draw</a>';
+            }
+            h += '<div style="margin-top:0.5rem;text-align:center"><button class="more-btn" style="color:rgba(255,255,255,0.7);margin:0 auto" data-action="open-prize-draw">See all ' + published.length + ' winners and the draw videos</button></div>';
+            h += '</div>';
+          }
+
+          container.innerHTML = h;
+        })
+        .catch(function() {});
+    }
+
     function renderAccount() {
       var el = document.getElementById("accountScreen");
       var h = '<button class="back" data-screen="home">\u2190 Home</button>';
@@ -1541,6 +1744,7 @@
           '<a class="mg" style="font-size:0.95rem" href="/admin/planner.html">Session planner</a><br>' +
           '<a class="mg" style="font-size:0.95rem;margin-top:0.3rem;display:inline-block" href="/admin/posters.html">Monthly posters</a><br>' +
           '<a class="mg" style="font-size:0.95rem;margin-top:0.3rem;display:inline-block" href="/admin/points.html">Give or take points</a><br>' +
+          '<a class="mg" style="font-size:0.95rem;margin-top:0.3rem;display:inline-block" href="/admin/prize-draw.html">Prize draw</a><br>' +
           '<a class="mg" style="font-size:0.95rem;margin-top:0.3rem;display:inline-block" href="/admin/">Upload topics</a>' +
         '</div>';
       }
