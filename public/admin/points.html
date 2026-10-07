@@ -126,7 +126,7 @@
 <div id="errorMsg" class="error" hidden></div>
 
 <script>
-var PASSWORD = sessionStorage.getItem("adminPassword") || "";
+var PASSWORD = localStorage.getItem("adminPassword") || "";
 var SELECTED = null; // { contactId, memberId, name, email, balance, revision }
 
 function headers() {
@@ -145,7 +145,7 @@ async function api(body) {
   var data = await res.json();
   if (!res.ok && data.error === "not_admin") {
     PASSWORD = prompt("Admin password:");
-    if (PASSWORD) { sessionStorage.setItem("adminPassword", PASSWORD); return api(body); }
+    if (PASSWORD) { localStorage.setItem("adminPassword", PASSWORD); return api(body); }
     throw new Error("Not authorised");
   }
   if (!res.ok) throw new Error(data.error + (data.detail ? ": " + data.detail : ""));
