@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>LLG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,29 +15,32 @@
       --bg: #F7F4F0;
       --card: #fff;
       --border: #E6E1DA;
-      --muted: #5E5D5B;
-      --r: 18px;
+      --muted: #4A4947;
+      --r: 1.125rem;
+      --focus: 0 0 0 3px #DE0082;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
-    body { min-height: 100vh; font-family: 'Mulish','Segoe UI',sans-serif; background: var(--bg); color: var(--charcoal); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
-    input, select, textarea { font-size: 16px; }
+    body { min-height: 100vh; font-family: 'Mulish','Segoe UI',sans-serif; background: var(--bg); color: var(--charcoal); font-size: 1.0625rem; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    input, select, textarea { font-size: 1rem; }
     h1,h2,h3 { font-family: 'Poppins','Segoe UI',sans-serif; }
     a { text-decoration: none; color: inherit; }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 0.5rem; }
     .wrap { max-width: 480px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
     .small { font-size: 0.875rem; color: var(--muted); }
     .mg { color: var(--mg-dark); font-weight: 700; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 
     /* Cards */
     .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 1.1rem; margin-bottom: 0.75rem; }
     .card-dark { background: var(--charcoal); color: #fff; border: none; }
 
     /* Buttons */
-    .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--mg); color: #fff; border: none; border-radius: 12px; padding: 0 1.25rem; font-family: 'Mulish',sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; min-height: 44px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--mg); color: #fff; border: none; border-radius: 0.75rem; padding: 0 1.25rem; font-family: 'Mulish',sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; min-height: 3.25rem; }
     .btn:active { opacity: 0.85; }
-    .btn-sm { min-height: 40px; padding: 0 1rem; font-size: 0.875rem; }
+    .btn-sm { min-height: 2.75rem; padding: 0 1rem; font-size: 0.9375rem; }
     .btn-dark { background: var(--charcoal); }
     .btn-outline { background: transparent; border: 2px solid var(--mg); color: var(--mg); }
-    .pill { display: inline-flex; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 0.35rem 0.85rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; min-height: 36px; color: var(--charcoal); text-decoration: none; }
+    .pill { display: inline-flex; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 1.25rem; padding: 0.35rem 0.85rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; min-height: 2.75rem; color: var(--charcoal); text-decoration: none; }
 
     /* Trip banner */
     .trip-banner { background: var(--mg); color: #fff; border-radius: 14px; padding: 0.7rem 1rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; min-height: 44px; text-decoration: none; }
@@ -45,25 +48,27 @@
 
     /* Next session card */
     .next-sess { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 1rem; margin-bottom: 0.75rem; }
-    .next-sess-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.4rem; }
+    .next-sess-label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); margin-bottom: 0.4rem; }
 
     /* Tiles */
-    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.75rem; }
-    .tile { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 1rem; cursor: pointer; min-height: 44px; text-decoration: none; display: block; }
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .tile { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 0.875rem; cursor: pointer; min-height: 2.75rem; text-decoration: none; display: block; }
     .tile:active { background: #f0ede8; }
-    .tile-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.3rem; }
+    .tile-label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); margin-bottom: 0.2rem; }
     .tile-value { font-family: 'Poppins',sans-serif; font-size: 1.3rem; font-weight: 700; }
-    .tile-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.1rem; }
+    .tile-sub { font-size: 0.8125rem; color: var(--muted); margin-top: 0.1rem; }
 
     /* Day strip */
     .day-strip { display: flex; gap: 0.35rem; overflow-x: auto; margin-bottom: 0.75rem; padding-bottom: 0.2rem; -webkit-overflow-scrolling: touch; }
     .day-strip::-webkit-scrollbar { display: none; }
-    .day-chip { flex-shrink: 0; padding: 0.4rem 0.6rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; background: var(--card); border: 1px solid var(--border); cursor: pointer; text-align: center; min-width: 52px; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .day-chip.active { background: var(--mg); color: #fff; border-color: var(--mg); }
+    .day-chip { flex-shrink: 0; padding: 0.4rem 0.5rem; border-radius: 0.75rem; font-size: 0.9375rem; font-weight: 600; background: var(--card); border: 1px solid var(--border); cursor: pointer; text-align: center; width: 4.5rem; min-height: 5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; }
+    .day-chip[aria-pressed="true"] { background: var(--mg); color: #fff; border-color: var(--mg); }
     .day-chip.empty { background: #eae7e3; border-color: #ddd9d4; color: var(--muted); }
-    .day-chip .dn { font-size: 0.7rem; font-weight: 400; }
+    .day-chip .dn { font-size: 0.75rem; font-weight: 400; }
+    .day-chip .dc { font-size: 0.6875rem; color: var(--muted); }
+    .day-chip[aria-pressed="true"] .dc { color: rgba(255,255,255,0.7); }
     .day-dot { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--mg); margin: 0.1rem auto 0; }
-    .day-chip.active .day-dot { background: #fff; }
+    .day-chip[aria-pressed="true"] .day-dot { background: #fff; }
 
     /* Session rows */
     .sess { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 0.9rem 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem; }
@@ -224,8 +229,42 @@
     .vid-upsell h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
     .vid-upsell p { font-size: 0.9rem; color: var(--muted); margin-bottom: 1rem; }
 
+    /* Up next card */
+    .up-next { background: var(--card); border: 2px solid #a5d6a7; border-radius: var(--r); padding: 1rem; margin-bottom: 0.75rem; }
+    .up-next-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: #e8f5e9; color: #2e7d32; font-weight: 700; font-size: 0.875rem; padding: 0.25rem 0.6rem; border-radius: 0.5rem; margin-bottom: 0.5rem; }
+    .up-next-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+    .up-next-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; width: 4rem; height: 4rem; border-radius: 0.75rem; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-family: inherit; font-size: 0.6875rem; font-weight: 600; color: var(--charcoal); }
+    .up-next-btn:active { background: #f0ede8; }
+    .up-next-btn svg { width: 1.25rem; height: 1.25rem; }
+
+    /* Points strip */
+    .pts-strip { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 0.875rem 1rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .pts-strip:active { background: #f0ede8; }
+    .pts-big { font-family: 'Poppins',sans-serif; font-size: 1.25rem; font-weight: 700; }
+
+    /* Lapsed card */
+    .lapsed-card { background: linear-gradient(135deg, #DE0082 0%, #B8006B 100%); color: #fff; border-radius: var(--r); padding: 1.25rem; margin-bottom: 0.75rem; }
+
+    /* Check and book */
+    .pay-choice { border: 2px solid var(--border); border-radius: var(--r); padding: 1rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: flex-start; gap: 0.75rem; }
+    .pay-choice[aria-checked="true"] { border-color: var(--mg); background: #fdf0f7; }
+    .pay-choice-radio { width: 1.25rem; height: 1.25rem; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; margin-top: 0.1rem; display: flex; align-items: center; justify-content: center; }
+    .pay-choice[aria-checked="true"] .pay-choice-radio { border-color: var(--mg); }
+    .pay-choice[aria-checked="true"] .pay-choice-radio::after { content: ''; width: 0.625rem; height: 0.625rem; border-radius: 50%; background: var(--mg); }
+
+    /* Booked confirmation */
+    .booked-screen { text-align: center; padding: 2rem 0; }
+    .booked-tick { width: 4rem; height: 4rem; border-radius: 50%; background: #e8f5e9; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+    .booked-tick svg { width: 2rem; height: 2rem; fill: #2e7d32; }
+
+    /* Skeleton loader */
+    .skel-home { padding-top: 1rem; }
+    .skel-bar { height: 1.5rem; border-radius: 0.5rem; background: #e0ddd8; margin-bottom: 0.5rem; animation: pulse 1.5s ease-in-out infinite; }
+    .skel-card { height: 6rem; border-radius: var(--r); background: #e0ddd8; margin-bottom: 0.75rem; animation: pulse 1.5s ease-in-out infinite; }
+    .skel-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .skel-tile { height: 5rem; border-radius: var(--r); background: #e0ddd8; animation: pulse 1.5s ease-in-out infinite; }
+
     .error-msg { color: #c0392b; font-weight: 600; padding: 2rem 0; text-align: center; }
-    .holding { text-align: center; padding: 2rem 0; }
   </style>
 </head>
 <body>
@@ -287,6 +326,12 @@
 
     <!-- Account screen -->
     <div id="accountScreen" class="screen card-screen"></div>
+
+    <!-- Check and book screen -->
+    <div id="checkBookScreen" class="screen card-screen"></div>
+
+    <!-- Booked confirmation screen -->
+    <div id="bookedScreen" class="screen"></div>
 
     <!-- Error -->
     <div id="error" style="display:none"></div>
@@ -424,14 +469,13 @@
 
     function showScreen(name, extra) {
       if (window.hideHomeLoader) window.hideHomeLoader();
-      ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen"].forEach(function(id) {
+      ["homeScreen","cardScreen","tripScreen","allTripsScreen","accountScreen","checkBookScreen","bookedScreen"].forEach(function(id) {
         document.getElementById(id).classList.remove("active");
       });
 
       currentScreen = name;
 
       if (name === "home") {
-        if (!DATA.plan.eligible) { renderHolding(); return; }
         renderHome();
         document.getElementById("homeScreen").classList.add("active");
         trackEvent("home_opened");
@@ -450,24 +494,41 @@
       } else if (name === "trip") {
         renderTrip(extra);
         document.getElementById("tripScreen").classList.add("active");
+      } else if (name === "checkBook") {
+        renderCheckBook(extra);
+        document.getElementById("checkBookScreen").classList.add("active");
+        trackEvent("check_book_opened");
+      } else if (name === "booked") {
+        renderBooked(extra);
+        document.getElementById("bookedScreen").classList.add("active");
+        trackEvent("booked_shown");
       }
     }
 
-    // --- HOLDING ---
-    function renderHolding() {
-      var el = document.getElementById("homeScreen");
-      var planText = DATA.plan.name ? esc(DATA.plan.name) + " (" + esc(DATA.plan.status) + ")" : "No active plan";
-      var money = (DATA.points / 100).toFixed(2);
-      el.innerHTML = '<div class="holding">' +
-        '<h1>' + timeGreeting() + firstName() + '</h1>' +
-        '<p class="small">' + planText + '</p>' +
-        '<p style="margin-top:1rem;font-size:1.1rem"><strong>' + pts(DATA.points) + ' points</strong></p>' +
-        '<p class="small">Worth \u00a3' + money + '</p>' +
-      '</div>';
-      el.classList.add("active");
+    // --- HOME (unified for all member types) ---
+    function memberIs(type) {
+      var mt = (DATA.plan.memberType || "non_member").toLowerCase();
+      if (type === "physical") return mt === "physical";
+      if (type === "complete") return mt === "complete";
+      if (type === "digital") return mt === "digital";
+      if (type === "lapsed") return mt.indexOf("lapsed") === 0;
+      if (type === "non") return mt === "non_member" || mt === "none" || mt === "other";
+      return false;
     }
 
-    // --- HOME ---
+    function greetingSub() {
+      var nextBooked = (DATA.bookings || []).find(function(b) { return b.startDate; });
+      if ((memberIs("physical") || memberIs("complete")) && nextBooked) {
+        var diff = (new Date(nextBooked.startDate) - new Date()) / 36e5;
+        if (diff > 0 && diff <= 24) return "You've got golf today.";
+        if (diff > 0 && diff <= 48) return "You've got golf tomorrow.";
+      }
+      if (memberIs("digital")) return "Your new tip is in.";
+      if (memberIs("lapsed")) return "Lovely to see you back.";
+      if (memberIs("non")) return "Golf coaching made for women, by women.";
+      return "";
+    }
+
     function renderHome() {
       var el = document.getElementById("homeScreen");
       var h = "";
@@ -493,72 +554,138 @@
         '</div>';
       }
 
-      // Greeting with avatar
-      var now = new Date();
-      var dateStr = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-      var initials = getInitials(DATA.fullName || DATA.firstName || "");
-      var avatarContent = DATA.profilePhoto
-        ? '<img src="' + esc(DATA.profilePhoto) + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer" data-screen="account">'
-        : '<div class="avatar" data-screen="account">' + esc(initials) + '</div>';
+      // Greeting with card chip (members only)
+      var isMember = memberIs("physical") || memberIs("complete") || memberIs("digital");
+      var cardChip = isMember ? '<button class="pill" data-screen="card" style="flex-shrink:0">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--charcoal)" style="margin-right:0.25rem"><rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/></svg>' +
+        'Card</button>' : '';
+      var sub = greetingSub();
       h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">' +
         '<div>' +
           '<h1 style="font-size:1.4rem;margin-bottom:0.15rem">' + timeGreeting() + firstName() + '</h1>' +
-          '<p class="small">' + dateStr + ' \u00b7 Here\'s your golf week</p>' +
+          (sub ? '<p class="small">' + esc(sub) + '</p>' : '') +
         '</div>' +
-        avatarContent +
+        cardChip +
       '</div>';
 
-      // Your next session (only when booked)
+      // Up next card (physical/complete with a booking)
       var nextBooked = (DATA.bookings || []).find(function(b) { return b.startDate; });
-      if (nextBooked) {
+      if (nextBooked && (memberIs("physical") || memberIs("complete"))) {
         var nbStart = nextBooked.startDate;
         var nbEnd = nextBooked.endDate || null;
-        h += '<div class="next-sess">' +
-          '<div class="next-sess-label">Your next session</div>' +
-          '<div style="font-weight:700;font-size:1rem">' + fmtLong(nbStart) + '</div>' +
-          '<div style="font-size:0.95rem">' + fmtTime(nbStart) + (nbEnd ? ' to ' + fmtTime(nbEnd) : '') + '</div>' +
-          '<div class="small">' + esc(nextBooked.title) + (nextBooked.locationName ? ' \u00b7 ' + esc(nextBooked.locationName) : '') + '</div>' +
-          '<div style="margin-top:0.5rem"><a class="mg" style="font-size:0.85rem" href="https://www.ladieslovegolf.com/account/my-bookings" onclick="tapNav(this)">Manage</a></div>' +
+        var nbDay = fmtDayWord(nbStart);
+        var topic = nextBooked.title || "";
+        var mapsUrl = DATA.homeVenue && DATA.homeVenue.address
+          ? "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(DATA.homeVenue.address)
+          : "#";
+        var icsUrl = nextBooked.bookingId
+          ? "/.netlify/functions/ics?booking=" + encodeURIComponent(nextBooked.bookingId)
+          : "#";
+        h += '<div class="up-next">' +
+          '<div class="up-next-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="#2e7d32"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg> You\'re booked</div>' +
+          '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.0625rem">' + esc(nbDay) + '</div>' +
+          (topic ? '<div style="font-size:0.9375rem">' + esc(topic) + '</div>' : '') +
+          '<div class="small">' + fmtLong(nbStart) + ', ' + fmtTime(nbStart) + (nbEnd ? ' to ' + fmtTime(nbEnd) : '') + '</div>' +
+          (nextBooked.locationName ? '<div class="small">' + esc(nextBooked.locationName) + '</div>' : '') +
+          '<div class="up-next-actions">' +
+            '<a class="up-next-btn" href="' + esc(mapsUrl) + '" target="_blank" rel="noopener">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>' +
+              'Directions</a>' +
+            '<a class="up-next-btn" href="' + esc(icsUrl) + '">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+              'Calendar</a>' +
+            '<a class="up-next-btn" href="https://www.ladieslovegolf.com/account/my-bookings">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>' +
+              'Move it</a>' +
+          '</div>' +
+          '<p class="small" style="margin-top:0.5rem">Plans change. You can move it up to 24 hours before.</p>' +
         '</div>';
       }
 
-      // Tiles
-      var money = (DATA.points / 100).toFixed(2);
-      var planShort = (DATA.plan.name || "").replace(/\s*membership\s*/i, "");
-      h += '<div class="tiles">' +
-        '<div class="tile" data-screen="card">' +
-          '<div class="tile-label">Points</div>' +
-          '<div class="tile-value">\u00a3' + money + '</div>' +
-          '<div class="tile-sub">to spend \u00b7 ' + pts(DATA.points) + ' pts</div>' +
-        '</div>' +
-        '<div class="tile" data-screen="account">' +
-          '<div class="tile-label">Member</div>' +
-          '<div class="tile-value" style="font-size:1.1rem">' + esc(planShort) + '</div>' +
-          '<div class="tile-sub"><span class="mg">Show my card \u203a</span></div>' +
-        '</div>' +
-      '</div>';
+      // Digital/Complete: This week's tip and programme cards
+      if (memberIs("digital") || memberIs("complete")) {
+        h += '<div id="homeVideoCard"></div>';
+      }
 
-      // Video tip + Videos link
-      h += '<div id="homeVideoCard"></div>';
+      // Lapsed card
+      if (memberIs("lapsed")) {
+        var money = (DATA.points / 100).toFixed(2);
+        var endStr = DATA.plan.endDate ? fmtLong(new Date(DATA.plan.endDate)) : "";
+        h += '<div class="lapsed-card">' +
+          '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.1rem;margin-bottom:0.3rem">We\'ve missed you</div>' +
+          (endStr ? '<p style="font-size:0.875rem;opacity:0.85;margin-bottom:0.3rem">Your membership ended ' + endStr + '</p>' : '') +
+          (DATA.points > 0 ? '<p style="font-size:0.875rem;opacity:0.85;margin-bottom:0.75rem">You still have \u00a3' + money + ' in points waiting for you.</p>' : '') +
+          '<a class="btn" style="background:#fff;color:var(--mg);width:100%" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.physical || "https://www.ladieslovegolf.com/plans-pricing") + '">Rejoin Physical, \u00a3149 a year</a>' +
+          '<p style="font-size:0.8125rem;opacity:0.7;margin-top:0.5rem;text-align:center">Pays for itself after about 20 sessions.</p>' +
+        '</div>';
+      }
+
+      // Non-member welcome card
+      if (memberIs("non")) {
+        h += '<div class="card" style="margin-bottom:0.75rem">' +
+          '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">Never been? Start with one session.</div>' +
+          '<p class="small" style="margin-bottom:0.5rem">No membership needed. Book a taster and see what you think.</p>' +
+          '<button class="btn btn-sm" data-action="scroll-book">See sessions</button>' +
+        '</div>';
+      }
+
+      // 2x2 tile grid (varies by member type)
+      h += '<div class="tiles">';
+      if (memberIs("physical")) {
+        h += tile("Book", "Book a session", "scroll-book") +
+             tile("My card", "Show my card", "card") +
+             tile("Videos", "Watch and learn", "wix-video") +
+             tile("Trips", "Golf breaks", "allTrips");
+      } else if (memberIs("complete")) {
+        h += tile("Book", "Book a session", "scroll-book") +
+             tile("Videos", "Watch and learn", "wix-video") +
+             tile("Programme", "Your programme", "wix-programme") +
+             tile("Community", "The group", "wix-community");
+      } else if (memberIs("digital")) {
+        h += tile("Videos", "Watch and learn", "wix-video") +
+             tile("Community", "The group", "wix-community") +
+             tile("My card", "Show my card", "card") +
+             tile("Trips", "Golf breaks", "allTrips");
+      } else if (memberIs("lapsed")) {
+        h += tile("Book", "Pay as you go", "scroll-book") +
+             tile("Videos", "Free videos", "wix-video") +
+             tile("Trips", "Golf breaks", "allTrips") +
+             tile("Rejoin", "\u00a3149/year", "wix-rejoin");
+      } else {
+        h += tile("Free videos", "Watch and learn", "wix-video") +
+             tile("Trips", "Golf breaks", "allTrips") +
+             tile("Memberships", "Join the club", "wix-memberships") +
+             tile("Meet us", "Come to a session", "scroll-book");
+      }
+      h += '</div>';
+
+      // Points strip (members and digital)
+      if (memberIs("physical") || memberIs("complete") || memberIs("digital")) {
+        var money = (DATA.points / 100).toFixed(2);
+        var ptsLine = DATA.points > 0
+          ? "Earn 15 per session, spend on coaching."
+          : "Earn 15 points every time you come to a session.";
+        h += '<div class="pts-strip" data-screen="account">' +
+          '<div>' +
+            '<div class="pts-big">\u00a3' + money + ' to spend</div>' +
+            '<div class="small">' + ptsLine + '</div>' +
+          '</div>' +
+          '<span class="mg" style="font-size:0.875rem">\u203a</span>' +
+        '</div>';
+      }
 
       // Book at venue
       h += renderBookSection();
 
-      // Perks
-      if (DATA.perks && DATA.perks.length > 0) {
-        var vn = dropThe(DATA.homeVenue ? DATA.homeVenue.name || "" : "your venue");
-        var showAll = DATA.perks.length > 3;
-        h += '<h2 style="font-size:1.1rem;margin:0.75rem 0 0.5rem">Your ' + esc(vn) + ' perks</h2>';
-        h += '<div class="card">';
-        DATA.perks.slice(0, 3).forEach(function(p) { h += '<div class="perk">' + esc(p) + '</div>'; });
-        if (showAll) {
-          h += '<div id="perksExtra" style="display:none">';
-          DATA.perks.slice(3).forEach(function(p) { h += '<div class="perk">' + esc(p) + '</div>'; });
-          h += '</div>';
-        }
-        h += '<div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap">';
-        if (showAll) h += '<button class="btn btn-sm btn-outline" id="perksToggle" onclick="togglePerks()">See all ' + DATA.perks.length + '</button>';
-        h += '<button class="btn btn-sm btn-dark" onclick="showScreen(\'card\')">Show my card</button>';
+      // Perks (members only, collapsed by default)
+      if ((memberIs("physical") || memberIs("complete")) && DATA.perks && DATA.perks.length > 0) {
+        h += '<div class="card" style="margin-bottom:0.75rem">' +
+          '<button class="more-btn" style="width:100%;justify-content:space-between;min-height:2.75rem" id="perksToggle" data-action="toggle-perks">' +
+            '<span>' + DATA.perks.length + ' ways your membership saves you money</span>' +
+            '<span id="perksArrow">\u25bc</span>' +
+          '</button>' +
+          '<div id="perksContent" style="display:none;margin-top:0.5rem">';
+        DATA.perks.forEach(function(p) { h += '<div class="perk">' + esc(p) + '</div>'; });
         h += '</div></div>';
       }
 
@@ -607,15 +734,15 @@
         '</div>';
       }
 
-      // Feedback
+      // Footer
       h += '<div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">' +
-        '<button class="more-btn" style="margin:0 auto;color:var(--muted);font-weight:400" onclick="openFeedback()">Something not right? Tell us</button>' +
+        '<button class="more-btn" style="margin:0 auto;color:var(--muted);font-weight:400" data-action="feedback">Need a hand? Message us</button>' +
       '</div>';
       h += '<div id="feedbackBox" style="display:none;margin-top:0.5rem">' +
-        '<textarea id="feedbackText" rows="3" style="width:100%;font-size:1rem;padding:0.6rem;border:1px solid var(--border);border-radius:10px;font-family:inherit;resize:vertical" placeholder="What happened?"></textarea>' +
+        '<textarea id="feedbackText" rows="3" style="width:100%;font-size:1rem;padding:0.6rem;border:1px solid var(--border);border-radius:0.625rem;font-family:inherit;resize:vertical" placeholder="What can we help with?"></textarea>' +
         '<div style="margin-top:0.5rem;display:flex;gap:0.5rem;justify-content:flex-end">' +
-          '<button class="btn btn-sm btn-outline" onclick="closeFeedback()">Cancel</button>' +
-          '<button class="btn btn-sm" onclick="sendFeedback()">Send</button>' +
+          '<button class="btn btn-sm btn-outline" data-action="close-feedback">Cancel</button>' +
+          '<button class="btn btn-sm" data-action="send-feedback">Send</button>' +
         '</div>' +
       '</div>';
 
@@ -624,10 +751,19 @@
     }
 
     function renderBookSection() {
+      // Digital members get "Fancy meeting the group?" instead of book
+      if (memberIs("digital")) {
+        return '<div class="card" style="margin-bottom:0.75rem">' +
+          '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">Fancy meeting the group?</div>' +
+          '<p class="small" style="margin-bottom:0.5rem">Our coaching sessions run at venues across the Midlands. Add Physical to your Digital plan and join us on the course.</p>' +
+          '<a class="btn btn-sm" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.complete || "https://www.ladieslovegolf.com/plans-pricing") + '">Upgrade to Complete</a>' +
+        '</div>';
+      }
+
       if (!DATA.homeVenue) {
         var h = '<h2 style="font-size:1.1rem;margin-bottom:0.5rem">Where do you usually play?</h2>';
         (DATA.allVenues || []).forEach(function(v) {
-          h += '<button class="card" style="width:100%;text-align:left;cursor:pointer;border:2px solid var(--border);font-size:1rem;font-weight:600;font-family:inherit;color:var(--charcoal);min-height:44px;margin-bottom:0.4rem" onclick="pickVenue(\'' + v.id + '\')">' +
+          h += '<button class="card" style="width:100%;text-align:left;cursor:pointer;border:2px solid var(--border);font-size:1rem;font-weight:600;font-family:inherit;color:var(--charcoal);min-height:2.75rem;margin-bottom:0.4rem" data-action="pick-venue" data-venue-id="' + v.id + '">' +
             esc(v.name) + ' <span class="small">' + (v.town ? esc(v.town) : "") + '</span>' +
           '</button>';
         });
@@ -635,34 +771,43 @@
       }
 
       var days = [];
-      for (var i = 0; i < 7; i++) { var d = new Date(); d.setDate(d.getDate() + i); days.push(d); }
+      for (var i = 0; i < 14; i++) { var d = new Date(); d.setDate(d.getDate() + i); days.push(d); }
 
-      var sessionDates = new Set((DATA.sessions || []).map(function(s) { return s.startDate ? s.startDate.substring(0, 10) : ""; }).filter(Boolean));
+      // Count sessions per day
+      var sessionsByDate = {};
+      (DATA.sessions || []).forEach(function(s) {
+        if (!s.startDate) return;
+        var ds = s.startDate.substring(0, 10);
+        sessionsByDate[ds] = (sessionsByDate[ds] || 0) + 1;
+      });
 
       // Auto-select first day with sessions
       if (selectedDay < 0) {
         selectedDay = 0;
         for (var i = 0; i < days.length; i++) {
-          if (sessionDates.has(days[i].toISOString().substring(0, 10))) { selectedDay = i; break; }
+          var ds = days[i].toISOString().substring(0, 10);
+          if (sessionsByDate[ds]) { selectedDay = i; break; }
         }
       }
 
       var vn = dropThe(DATA.homeVenue ? DATA.homeVenue.name || "" : "venue");
-      var h = '<div class="hrow">' +
-        '<h2>Book at ' + esc(vn) + '</h2>' +
-        '<button class="pill" onclick="changeVenue()">Change venue</button>' +
+      var h = '<div id="bookSection"></div>'; // scroll target
+      h += '<div class="hrow">' +
+        '<h2>Book a session</h2>' +
+        '<button class="pill" data-action="change-venue">' + esc(vn) + ' \u00b7 change</button>' +
       '</div>';
 
-      // Day strip
-      h += '<div class="day-strip">';
+      // Day strip with session counts
+      h += '<div class="day-strip" role="radiogroup" aria-label="Choose a day">';
       days.forEach(function(d, i) {
         var dn = i === 0 ? "Today" : d.toLocaleDateString("en-GB", { weekday: "short" });
         var num = d.getDate();
         var ds = d.toISOString().substring(0, 10);
-        var has = sessionDates.has(ds);
-        h += '<div class="day-chip ' + (i === selectedDay ? "active" : "") + ' ' + (!has ? "empty" : "") + '" onclick="selectDay(' + i + ')">' +
+        var count = sessionsByDate[ds] || 0;
+        var countText = count === 0 ? "none" : count + " session" + (count !== 1 ? "s" : "");
+        h += '<div class="day-chip' + (count === 0 ? " empty" : "") + '" role="radio" aria-pressed="' + (i === selectedDay ? "true" : "false") + '" aria-label="' + dn + ' ' + num + ', ' + countText + '" data-action="select-day" data-day="' + i + '">' +
           '<span class="dn">' + dn + '</span><span>' + num + '</span>' +
-          (has ? '<span class="day-dot"></span>' : "") +
+          '<span class="dc">' + (count === 0 ? "none" : count + (count === 1 ? " session" : " sessions")) + '</span>' +
         '</div>';
       });
       h += '</div>';
@@ -1510,6 +1655,48 @@
           container.innerHTML = h;
         })
         .catch(function() {});
+    }
+
+    function tile(label, sub, action) {
+      // action: "card", "allTrips", "account" = data-screen; "scroll-book" = scroll; "wix-*" = external link
+      var wixUrls = {
+        "wix-video": "https://www.ladieslovegolf.com/video",
+        "wix-programme": "https://www.ladieslovegolf.com/online-programs",
+        "wix-community": "https://www.ladieslovegolf.com/forum",
+        "wix-memberships": "https://www.ladieslovegolf.com/plans-pricing",
+        "wix-rejoin": DATA.planCheckoutUrls && DATA.planCheckoutUrls.physical || "https://www.ladieslovegolf.com/plans-pricing",
+      };
+      if (wixUrls[action]) {
+        return '<a class="tile" href="' + esc(wixUrls[action]) + '" style="text-decoration:none">' +
+          '<div class="tile-label">' + esc(label) + '</div>' +
+          '<div class="tile-sub">' + esc(sub) + '</div>' +
+        '</a>';
+      }
+      if (action === "scroll-book") {
+        return '<div class="tile" data-action="scroll-book">' +
+          '<div class="tile-label">' + esc(label) + '</div>' +
+          '<div class="tile-sub">' + esc(sub) + '</div>' +
+        '</div>';
+      }
+      return '<div class="tile" data-screen="' + esc(action) + '">' +
+        '<div class="tile-label">' + esc(label) + '</div>' +
+        '<div class="tile-sub">' + esc(sub) + '</div>' +
+      '</div>';
+    }
+
+    function fmtDayWord(dateStr) {
+      if (!dateStr) return "";
+      var d;
+      if (typeof dateStr === "string" && dateStr.indexOf("T") !== -1) {
+        var parts = dateStr.split("T")[0].split("-");
+        d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      } else { d = new Date(dateStr); }
+      var now = new Date(); now.setHours(0,0,0,0);
+      var target = new Date(d); target.setHours(0,0,0,0);
+      var diff = Math.round((target - now) / 864e5);
+      if (diff === 0) return "Today";
+      if (diff === 1) return "Tomorrow";
+      return d.toLocaleDateString("en-GB", { weekday: "long" });
     }
 
     function timeGreeting() { var h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; }
