@@ -444,6 +444,22 @@
         window.history.replaceState(null, "", window.location.pathname);
       }
 
+      // Repeat visit (no pass, has cookie): show skeleton instead of ball animation
+      if (!PASS && document.cookie.indexOf("llg_session=") !== -1) {
+        var loader = document.getElementById("llg-home-loader");
+        if (loader) { loader.remove(); }
+        var homeEl = document.getElementById("homeScreen");
+        homeEl.classList.add("active");
+        homeEl.innerHTML = '<div class="skel-home">' +
+          '<div class="skel-bar" style="width:60%"></div>' +
+          '<div class="skel-bar" style="width:40%;height:1rem"></div>' +
+          '<div class="skel-card" style="margin-top:0.75rem"></div>' +
+          '<div class="skel-tiles"><div class="skel-tile"></div><div class="skel-tile"></div></div>' +
+          '<div class="skel-tiles"><div class="skel-tile"></div><div class="skel-tile"></div></div>' +
+          '<div class="skel-card"></div>' +
+        '</div>';
+      }
+
       // Try loading data: with pass if we have one, or with session cookie
       try {
         var controller = new AbortController();
@@ -484,6 +500,9 @@
         if (autoPortal) {
           showScreen("home");
           autoOpenPortal();
+        } else if (justBooked && DATA.bookings && DATA.bookings.length > 0) {
+          // Show "You're booked!" for the most recent booking
+          showScreen("booked", DATA.bookings[0]);
         } else {
           var validScreens = ["home","card","allTrips","account"];
           showScreen(startScreen && validScreens.indexOf(startScreen) !== -1 ? startScreen : "home");
@@ -569,21 +588,29 @@
       // Build trip lookup array (yourTrips first, then events)
       ALL_TRIPS = [].concat(DATA.yourTrips || [], DATA.events || []);
 
-      // Imminent trip banner (within 14 days or happening now)
+      // Trip card (booked trip within 30 days, dark card with countdown)
       var imminent = (DATA.yourTrips || []).find(function(t) {
         if (!t.startDate) return false;
         var s = new Date(t.startDate);
         var e = t.endDate ? new Date(t.endDate) : s;
         var now = new Date();
-        return (s - now) / 864e5 <= 14 || now <= e;
+        return (s - now) / 864e5 <= 30 || now <= e;
       });
       if (imminent) {
         var cd = countdown(imminent);
         var imIdx = ALL_TRIPS.indexOf(imminent);
-        h += '<div class="trip-banner" data-trip-idx="' + imIdx + '">' +
-          '<div><div style="font-weight:700;font-size:0.95rem">' + esc(imminent.title) + '</div>' +
-          '<div style="font-size:0.8rem;opacity:0.8">' + esc(imminent.location) + '</div></div>' +
-          '<span style="background:rgba(255,255,255,0.2);padding:0.3rem 0.7rem;border-radius:20px;font-size:0.8rem;font-weight:700;white-space:nowrap">' + cd + '</span>' +
+        var daysUntil = Math.ceil((new Date(imminent.startDate) - new Date()) / 864e5);
+        h += '<div class="card card-dark" style="cursor:pointer;margin-bottom:0.75rem" data-trip-idx="' + imIdx + '">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<div>' +
+              '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem">' + esc(imminent.title) + '</div>' +
+              '<div style="font-size:0.875rem;opacity:0.7">' + esc(imminent.location) + '</div>' +
+            '</div>' +
+            '<div style="text-align:center;flex-shrink:0;margin-left:0.75rem">' +
+              '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.5rem;line-height:1">' + (daysUntil > 0 ? daysUntil : '') + '</div>' +
+              '<div style="font-size:0.75rem;opacity:0.7">' + (cd || '') + '</div>' +
+            '</div>' +
+          '</div>' +
         '</div>';
       }
 
@@ -737,20 +764,26 @@
         });
       }
 
-      // Trips worth a look
+      // Trips coming up
       if (DATA.events && DATA.events.length > 0) {
-        h += '<div class="hrow" style="margin:0.75rem 0 0.5rem"><h2>Trips worth a look</h2><button class="pill" onclick="showScreen(\'allTrips\')">See all trips</button></div>';
+        h += '<div class="hrow" style="margin:0.75rem 0 0.5rem"><h2>Trips coming up</h2><button class="pill" data-screen="allTrips">See all</button></div>';
         h += '<div class="trips-scroll">';
         DATA.events.forEach(function(e) {
           var eIdx = ALL_TRIPS.indexOf(e);
+          var placesChip = "";
+          if (e.remainingPlaces != null && e.remainingPlaces <= 5 && e.remainingPlaces > 0) {
+            placesChip = '<div style="position:absolute;top:0.5rem;right:0.5rem;background:var(--mg);color:#fff;font-size:0.75rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:0.375rem">' + e.remainingPlaces + ' place' + (e.remainingPlaces !== 1 ? 's' : '') + ' left</div>';
+          }
           h += '<div class="trip-card" data-trip-idx="' + eIdx + '">' +
-            (e.imageUrl ? '<img src="' + esc(e.imageUrl) + '" alt="">' : '<div style="height:120px;background:#e0ddd8"></div>') +
+            '<div style="position:relative">' +
+              (e.imageUrl ? '<img src="' + esc(e.imageUrl) + '" alt="">' : '<div style="height:120px;background:#e0ddd8"></div>') +
+              placesChip +
+            '</div>' +
             '<div class="trip-card-body">' +
               '<div class="trip-card-title">' + esc(e.title) + '</div>' +
               '<div class="trip-card-meta">' + (e.startDate ? fmtLong(new Date(e.startDate)) : "") + '</div>' +
               '<div class="trip-card-meta">' + esc(e.location) + '</div>' +
               (e.price ? '<div class="trip-card-price">' + esc(e.price) + ' to secure your place</div>' : "") +
-              '<div class="trip-card-view mg">View \u203a</div>' +
             '</div>' +
           '</div>';
         });
@@ -855,9 +888,23 @@
           var ns = DATA.sessions[j];
           if (ns.startDate && new Date(ns.startDate) > days[selectedDay]) { nextAvail = ns; break; }
         }
-        h += '<p class="small" style="padding:0.75rem 0">' + (nextAvail
-          ? 'No sessions this day. Next: ' + fmtLong(new Date(nextAvail.startDate)) + ' at ' + fmtTime(new Date(nextAvail.startDate)) + '.'
-          : 'No sessions that day. Days with a dot have sessions.') + '</p>';
+        var vn2 = dropThe(DATA.homeVenue ? DATA.homeVenue.name || "" : "your venue");
+        h += '<div style="padding:1rem 0;text-align:center">' +
+          '<p class="small">Nothing at ' + esc(vn2) + ' on this day.</p>';
+        if (nextAvail) {
+          // Find which day index the next session is on
+          var nextDateStr = nextAvail.startDate.substring(0, 10);
+          var nextDayIdx = -1;
+          for (var nd = 0; nd < days.length; nd++) {
+            if (days[nd].toISOString().substring(0, 10) === nextDateStr) { nextDayIdx = nd; break; }
+          }
+          if (nextDayIdx >= 0) {
+            h += '<button class="btn btn-sm btn-outline" style="margin-top:0.5rem" data-action="select-day" data-day="' + nextDayIdx + '">Show ' + fmtDayWord(nextAvail.startDate) + '</button>';
+          } else {
+            h += '<p class="small" style="margin-top:0.3rem">Next: ' + fmtLong(nextAvail.startDate) + '</p>';
+          }
+        }
+        h += '</div>';
       } else {
         daySess.forEach(function(s) {
           var start = s.startDate;
