@@ -956,7 +956,9 @@
             h += '<a class="btn btn-sm btn-outline" href="' + waitlistUrl + '">Waitlist</a>';
           } else {
             h += '<button class="btn" data-action="book-session" data-session=\'' + esc(JSON.stringify({
-              serviceId: s.serviceId, startDate: s.startDate, endDate: s.endDate,
+              serviceId: s.serviceId, scheduleId: s.scheduleId, resourceId: s.resourceId,
+              eventId: s.eventId, timeZone: s.timeZone || "Europe/London",
+              startDate: s.startDate, endDate: s.endDate,
               title: topic || s.title, locationName: s.locationName || "",
               price: isMember ? memberPrice : servicePrice, memberPrice: memberPrice
             })) + '\'>Book</button>';
