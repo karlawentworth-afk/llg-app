@@ -1550,12 +1550,14 @@
           h += '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">Want to be in the next draw?</div>' +
             '<p class="small" style="margin-bottom:0.75rem">Complete members are in every month, automatically. Go Complete for \u00a350 more a year and you get the full video library too.</p>' +
             '<a class="btn" style="width:100%" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.complete || "https://www.ladieslovegolf.com/plans-pricing") + '">Go Complete and get in the draw</a>' +
-            '<p class="small" style="margin-top:0.5rem;text-align:center">Your sessions, perks and points all stay as they are.</p>';
+            '<p class="small" style="margin-top:0.5rem;text-align:center">Your sessions, perks and points all stay as they are.</p>' +
+            '<p class="small" style="margin-top:0.3rem;text-align:center">Or enter free: <a href="mailto:info@ladieslovegolf.com?subject=Prize%20draw" style="color:var(--mg-dark)">email info@ladieslovegolf.com</a> with the subject Prize draw.</p>';
         } else {
           h += '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">Fancy being our next winner?</div>' +
             '<p class="small" style="margin-bottom:0.75rem">Every Digital member is in the draw every month. That\'s 12 chances a year, plus the full video library and a new tip every week.</p>' +
             '<a class="btn" style="width:100%" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.digital || "https://www.ladieslovegolf.com/plans-pricing") + '">Join Digital, \u00a38.99 a month</a>' +
-            '<p class="small" style="margin-top:0.5rem;text-align:center">Cancel any time.</p>';
+            '<p class="small" style="margin-top:0.5rem;text-align:center">Cancel any time.</p>' +
+            '<p class="small" style="margin-top:0.3rem;text-align:center">Or enter free: <a href="mailto:info@ladieslovegolf.com?subject=Prize%20draw" style="color:var(--mg-dark)">email info@ladieslovegolf.com</a> with the subject Prize draw.</p>';
         }
         h += '</div>';
       }
@@ -1592,8 +1594,8 @@
         h += '</div>';
       }
 
-      // Draw rules link
-      h += '<p class="small" style="margin-top:1rem;text-align:center"><a href="#" style="color:var(--muted)">Prize draw rules</a></p>';
+      // Draw small print
+      h += '<p class="small" style="margin-top:1rem;text-align:center">Digital and Complete members are entered automatically. Anyone can also enter free by email. <a href="https://www.ladieslovegolf.com/prize-draw-rules" style="color:var(--muted);font-weight:600">Full rules</a></p>';
 
       el.innerHTML = h;
 
@@ -1645,15 +1647,16 @@
             h += '<div class="card card-dark" style="margin-bottom:0.75rem">' +
               '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">Monthly prize draw</div>' +
               '<div style="font-size:0.875rem;opacity:0.8;margin-bottom:0.5rem">' + esc(latest.winner_display) + ' won ' + esc(latest.prize) + '</div>';
+            var freeEntry = '<p style="font-size:0.8125rem;opacity:0.7;margin-top:0.4rem;text-align:center">Or enter free: <a href="mailto:info@ladieslovegolf.com?subject=Prize%20draw" style="color:#FFB3DC">email info@ladieslovegolf.com</a> with the subject Prize draw.</p>';
             if (memberIs("physical")) {
               h += '<p style="font-size:0.8125rem;opacity:0.7;margin-bottom:0.75rem">Complete members are in every month, automatically. It\'s \u00a350 more a year and you get the full video library too.</p>' +
-                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.complete || "#") + '">Go Complete, \u00a350 more a year</a>';
+                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.complete || "#") + '">Go Complete, \u00a350 more a year</a>' + freeEntry;
             } else if (memberIs("non")) {
               h += '<p style="font-size:0.8125rem;opacity:0.7;margin-bottom:0.75rem">Every Digital and Complete member is in, every month. 12 chances a year to win.</p>' +
-                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.digital || "#") + '">Join Digital, \u00a38.99 a month</a>';
+                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.digital || "#") + '">Join Digital, \u00a38.99 a month</a>' + freeEntry;
             } else if (memberIs("lapsed")) {
               h += '<p style="font-size:0.8125rem;opacity:0.7;margin-bottom:0.75rem">Rejoin as Digital or Complete and you\'re straight into next month\'s draw.</p>' +
-                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.digital || "#") + '">Rejoin and get in the draw</a>';
+                '<a class="btn" style="width:100%;background:var(--mg)" href="' + esc(DATA.planCheckoutUrls && DATA.planCheckoutUrls.digital || "#") + '">Rejoin and get in the draw</a>' + freeEntry;
             }
             h += '<div style="margin-top:0.5rem;text-align:center"><button class="more-btn" style="color:rgba(255,255,255,0.7);margin:0 auto" data-action="open-prize-draw">See all ' + published.length + ' winners and the draw videos</button></div>';
             h += '</div>';
