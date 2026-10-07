@@ -421,6 +421,12 @@
         } else if (act === "book-session") {
           var session = JSON.parse(actionEl.getAttribute("data-session"));
           showScreen("checkBook", session);
+        } else if (act === "tap-nav") {
+          actionEl.style.opacity = "0.6";
+          actionEl.style.pointerEvents = "none";
+        } else if (act === "change-venue-home") {
+          changeVenue();
+          showScreen("home");
         }
         return;
       }
@@ -796,7 +802,7 @@
         h += '<div class="card" style="margin-top:0.75rem">' +
           '<h2 style="font-size:1.05rem;margin-bottom:0.4rem">Planning your own golf trip?</h2>' +
           '<p class="small" style="margin-bottom:0.75rem">Every golf trip you book through us earns money off coaching. A \u00a31,500 break earns \u00a315, that\'s a session on us.</p>' +
-          '<a class="btn btn-sm" href="' + tripFormUrl + '" onclick="tapNav(this,\'Opening...\')">Get a quote from Golf Breaks</a>' +
+          '<a class="btn btn-sm" href="' + tripFormUrl + '" data-action="tap-nav">Get a quote from Golf Breaks</a>' +
         '</div>';
       }
 
@@ -973,7 +979,7 @@
       var vn = DATA.homeVenue ? DATA.homeVenue.name || "" : "";
       var rolling = !DATA.plan.endDate;
 
-      var h = '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>';
+      var h = '<button class="back" data-screen="home">\u2190 Home</button>';
 
       h += '<div class="member-card">' +
         '<div class="sheen"></div>' +
@@ -1038,7 +1044,7 @@
 
       var h = '<div class="trip-hero-wrap">' +
         (trip.imageUrl ? '<img class="trip-hero" src="' + esc(trip.imageUrl) + '" alt="">' : '<div class="trip-hero" style="background:#e0ddd8"></div>') +
-        '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>' +
+        '<button class="back" data-screen="home">\u2190 Home</button>' +
       '</div>';
 
       h += '<h1 style="font-size:1.3rem;margin-bottom:0.3rem">' + esc(trip.title) + '</h1>';
@@ -1081,7 +1087,7 @@
       } else {
         h += '<div class="trip-bar">' +
           (trip.price ? '<div class="trip-bar-price">' + esc(trip.price) + ' to secure your place</div>' : '<div></div>') +
-          '<a class="btn" href="' + ticketUrl + '" onclick="tapNav(this,\'Opening...\')">Secure your place</a>' +
+          '<a class="btn" href="' + ticketUrl + '" data-action="tap-nav">Secure your place</a>' +
         '</div>';
       }
 
@@ -1141,7 +1147,7 @@
       // Rebuild ALL_TRIPS to include allTrips for data-trip-idx
       ALL_TRIPS = trips;
 
-      var h = '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>';
+      var h = '<button class="back" data-screen="home">\u2190 Home</button>';
       h += '<h1 style="font-size:1.3rem;margin-bottom:0.75rem">All trips</h1>';
 
       // Filter chips
@@ -1359,7 +1365,7 @@
 
     function renderAccount() {
       var el = document.getElementById("accountScreen");
-      var h = '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>';
+      var h = '<button class="back" data-screen="home">\u2190 Home</button>';
 
       // Avatar + name header
       var initials = getInitials(DATA.fullName || DATA.firstName || "");
@@ -1523,7 +1529,7 @@
       h += '<h2 style="font-size:1.05rem;margin:0.75rem 0 0.5rem">Preferences</h2>';
       h += '<div class="card">' +
         '<div class="perk"><span class="small">Home venue</span><br><span style="font-weight:600">' + esc(vn) + '</span>' +
-        ' <button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.8rem" onclick="changeVenue();showScreen(\'home\')">Change</button></div>' +
+        ' <button class="more-btn" style="display:inline;min-height:auto;padding:0;font-size:0.8rem" data-action="change-venue-home">Change</button></div>' +
       '</div>';
 
       // --- Admin ---
@@ -1842,7 +1848,7 @@
 
           // This week's tip (for video members, if admin has set one)
           if (access && tip && tip.video_url && tip.title) {
-            h += '<a href="' + esc(tip.video_url) + '" style="display:block;text-decoration:none" onclick="tapNav(this)">' +
+            h += '<a href="' + esc(tip.video_url) + '" style="display:block;text-decoration:none" data-action="tap-nav">' +
               '<div class="vid-featured" style="margin-bottom:0.75rem">' +
                 (tip.thumbnail_url ? '<img src="' + esc(tip.thumbnail_url) + '" alt="" style="height:160px">' : '<div style="height:160px;background:var(--charcoal)"></div>') +
                 '<div class="vid-featured-overlay">' +
@@ -1855,7 +1861,7 @@
           }
 
           // "Videos" link card (all members)
-          h += '<a href="' + WIX_VIDEO_URL + '" style="display:block;text-decoration:none" onclick="tapNav(this)">' +
+          h += '<a href="' + WIX_VIDEO_URL + '" style="display:block;text-decoration:none" data-action="tap-nav">' +
             '<div class="card" style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem">' +
               '<div style="width:44px;height:44px;border-radius:12px;background:var(--charcoal);display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
                 '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M8 5v14l11-7z"/></svg>' +
