@@ -266,8 +266,19 @@
 
     /* Prize draw */
     .pd-hero { background: var(--charcoal); border-radius: var(--r); padding: 1.5rem; margin-bottom: 0.75rem; text-align: center; color: #fff; position: relative; overflow: hidden; }
-    .pd-wheel { width: 5rem; height: 5rem; margin: 0 auto 0.75rem; border-radius: 50%; border: 3px solid var(--mg); border-top-color: transparent; animation: pdSpin 3s linear infinite; }
-    @keyframes pdSpin { to { transform: rotate(360deg); } }
+    .llg-wheel-btn{background:none;border:none;padding:0;cursor:pointer;border-radius:999px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    .llg-wheel-btn:focus-visible{outline:3px solid #DE0082;outline-offset:4px}
+    .llg-wheel-btn svg{display:block;width:260px;height:270px;max-width:100%}
+    @keyframes llgWheelSpin{0%{transform:rotate(0deg)}100%{transform:rotate(1470deg)}}
+    @keyframes llgBulb{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes llgFlag{0%,100%{transform:skewY(0deg)}50%{transform:skewY(-8deg)}}
+    .llg-wheel-spin{transform-origin:130px 140px;transform:rotate(1470deg)}
+    .llg-wheel-spin.is-spinning{animation:llgWheelSpin 4.2s cubic-bezier(.12,.62,.16,1) both}
+    .llg-bulb-a{animation:llgBulb 1.2s ease-in-out infinite}
+    .llg-bulb-b{animation:llgBulb 1.2s ease-in-out .6s infinite}
+    .llg-pin-flag{animation:llgFlag 1.6s ease-in-out infinite;transform-origin:130px 14px}
+    .llg-wheel-hint{font-size:14px;color:#C9C6C2;margin-top:-6px}
+    @media (prefers-reduced-motion: reduce){.llg-wheel-spin.is-spinning,.llg-bulb-a,.llg-bulb-b,.llg-pin-flag{animation:none}}
     .pd-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: #1b5e20; color: #fff; padding: 0.3rem 0.75rem; border-radius: 1rem; font-size: 0.8125rem; font-weight: 700; margin-top: 0.75rem; }
     .pd-video { position: relative; border-radius: var(--r); overflow: hidden; margin-bottom: 0.75rem; background: var(--mg); aspect-ratio: 9/16; max-height: 24rem; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .pd-video img, .pd-video iframe { width: 100%; height: 100%; object-fit: cover; border: none; }
@@ -1429,8 +1440,70 @@
 
       // Hero
       h += '<div class="pd-hero">';
-      h += '<div class="pd-wheel" aria-hidden="true"></div>';
-      h += '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.25rem">' + monthName + '\'s prize draw</div>';
+      h += '<button type="button" class="llg-wheel-btn" data-wheel-btn aria-label="Give the wheel a spin">' +
+'<svg width="260" height="270" viewBox="0 0 260 270" aria-hidden="true" focusable="false">' +
+'<ellipse cx="130" cy="262" rx="70" ry="6" fill="#000000" opacity="0.35"></ellipse>' +
+'<circle cx="130" cy="140" r="122" fill="#1A1918"></circle>' +
+'<g class="llg-wheel-spin" data-wheel-spin>' +
+'<path d="M130 140 L102.31 36.65 A107 107 0 0 1 157.69 36.65 Z" fill="#DE0082" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(-90 130 140)" fill="#FFFFFF" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Jill</text>' +
+'<path d="M130 140 L157.69 36.65 A107 107 0 0 1 205.66 64.34 Z" fill="#FFFFFF" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(-60 130 140)" fill="#B8006B" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Helen</text>' +
+'<path d="M130 140 L205.66 64.34 A107 107 0 0 1 233.35 112.31 Z" fill="#FDE6F2" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(-30 130 140)" fill="#2B2A29" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Gerry</text>' +
+'<path d="M130 140 L233.35 112.31 A107 107 0 0 1 233.35 167.69 Z" fill="#8A0050" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(0 130 140)" fill="#FFFFFF" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Kim</text>' +
+'<path d="M130 140 L233.35 167.69 A107 107 0 0 1 205.66 215.66 Z" fill="#DE0082" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(30 130 140)" fill="#FFFFFF" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Jody</text>' +
+'<path d="M130 140 L205.66 215.66 A107 107 0 0 1 157.69 243.35 Z" fill="#FFFFFF" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(60 130 140)" fill="#B8006B" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Anna</text>' +
+'<path d="M130 140 L157.69 243.35 A107 107 0 0 1 102.31 243.35 Z" fill="#2B2A29" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(90 130 140)" fill="#FFB3DC" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">You?</text>' +
+'<path d="M130 140 L102.31 243.35 A107 107 0 0 1 54.34 215.66 Z" fill="#8A0050" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(120 130 140)" fill="#FFFFFF" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Amanda</text>' +
+'<path d="M130 140 L54.34 215.66 A107 107 0 0 1 26.65 167.69 Z" fill="#DE0082" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(150 130 140)" fill="#FFFFFF" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Denise</text>' +
+'<path d="M130 140 L26.65 167.69 A107 107 0 0 1 26.65 112.31 Z" fill="#FFFFFF" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(180 130 140)" fill="#B8006B" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Fiona</text>' +
+'<path d="M130 140 L26.65 112.31 A107 107 0 0 1 54.34 64.34 Z" fill="#FDE6F2" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(210 130 140)" fill="#2B2A29" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">Della</text>' +
+'<path d="M130 140 L54.34 64.34 A107 107 0 0 1 102.31 36.65 Z" fill="#2B2A29" stroke="#2B2A29" stroke-width="1.5"></path>' +
+'<text x="192" y="145" text-anchor="middle" transform="rotate(240 130 140)" fill="#FFB3DC" font-family="Poppins, Segoe UI, sans-serif" font-size="14" font-weight="700">You?</text>' +
+'</g>' +
+'<circle cx="130" cy="140" r="112" fill="none" stroke="#2B2A29" stroke-width="10"></circle>' +
+'<circle cx="242.00" cy="140.00" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="238.18" cy="168.99" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="226.99" cy="196.00" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="209.20" cy="219.20" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="186.00" cy="236.99" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="158.99" cy="248.18" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="130.00" cy="252.00" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="101.01" cy="248.18" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="74.00" cy="236.99" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="50.80" cy="219.20" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="33.01" cy="196.00" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="21.82" cy="168.99" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="18.00" cy="140.00" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="21.82" cy="111.01" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="33.01" cy="84.00" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="50.80" cy="60.80" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="74.00" cy="43.01" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="101.01" cy="31.82" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="130.00" cy="28.00" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="158.99" cy="31.82" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="186.00" cy="43.01" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="209.20" cy="60.80" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="226.99" cy="84.00" r="3.6" fill="#FFFFFF" class="llg-bulb-a"></circle>' +
+'<circle cx="238.18" cy="111.01" r="3.6" fill="#FFB3DC" class="llg-bulb-b"></circle>' +
+'<circle cx="130" cy="140" r="26" fill="#FFFFFF" stroke="#2B2A29" stroke-width="4"></circle>' +
+'<path d="M130 152s-9.5-5.8-12.2-11.7c-1.9-4.2.8-9.3 5.6-9.3 2.8 0 5 1.5 6.6 3.8 1.6-2.3 3.8-3.8 6.6-3.8 4.8 0 7.5 5.1 5.6 9.3C139.5 146.2 130 152 130 152z" fill="#DE0082"></path>' +
+'<line x1="130" y1="6" x2="130" y2="40" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"></line>' +
+'<g class="llg-pin-flag"><path d="M131 7 L156 14 L131 21 Z" fill="#DE0082"></path></g>' +
+'<path d="M120 34 L140 34 L130 52 Z" fill="#FFFFFF" stroke="#2B2A29" stroke-width="2" stroke-linejoin="round"></path>' +
+'</svg>' +
+'</button>' +
+'<div class="llg-wheel-hint">Tap the wheel for a spin</div>';
+      h += '<div style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.25rem;margin-top:0.75rem">' + monthName + '\'s prize draw</div>';
       if (current && current.prize) {
         h += '<p style="font-size:0.9375rem;opacity:0.8;margin-top:0.3rem">' + esc(current.prize) + '</p>';
       }
@@ -1523,6 +1596,21 @@
       h += '<p class="small" style="margin-top:1rem;text-align:center"><a href="#" style="color:var(--muted)">Prize draw rules</a></p>';
 
       el.innerHTML = h;
+
+      // Wheel spin JS (verbatim)
+      (function () {
+        var btn = document.querySelector('[data-wheel-btn]');
+        if (!btn) return;
+        var g = btn.querySelector('[data-wheel-spin]');
+        function spin() {
+          if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          g.classList.remove('is-spinning');
+          void g.getBoundingClientRect();
+          g.classList.add('is-spinning');
+        }
+        btn.addEventListener('click', spin);
+        spin();
+      })();
     }
 
     // Load prize draw data for Home cards
