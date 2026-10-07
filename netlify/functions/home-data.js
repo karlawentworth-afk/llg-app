@@ -806,7 +806,7 @@ exports.handler = async (event) => {
     pastBookings: bookingHistory.filter(b => b.startDate && new Date(b.startDate) < new Date() && b.status !== "CANCELED" && b.status !== "DECLINED").slice(0, 30),
     points,
     loyaltyTransactions,
-    homeVenue: homeVenue ? { id: homeVenue.id, name: homeVenue.name, town: homeVenue.town } : null,
+    homeVenue: homeVenue ? { id: homeVenue.id, name: homeVenue.name, town: homeVenue.town, address: homeVenue.address || null } : null,
     homeVenueSource: homeVenueResult.source,
     allVenues,
     sessions,
