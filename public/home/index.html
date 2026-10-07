@@ -391,6 +391,39 @@
         openPortal(portalEl);
         return;
       }
+      // Actions
+      var actionEl = e.target.closest("[data-action]");
+      if (actionEl) {
+        var act = actionEl.getAttribute("data-action");
+        if (act === "scroll-book") {
+          var bk = document.getElementById("bookSection");
+          if (bk) bk.scrollIntoView({ behavior: "smooth" });
+        } else if (act === "select-day") {
+          selectedDay = parseInt(actionEl.getAttribute("data-day"), 10);
+          renderHome();
+          var bk2 = document.getElementById("bookSection");
+          if (bk2) bk2.scrollIntoView({ behavior: "smooth" });
+        } else if (act === "change-venue") {
+          changeVenue();
+        } else if (act === "pick-venue") {
+          pickVenue(actionEl.getAttribute("data-venue-id"));
+        } else if (act === "toggle-perks") {
+          var pc = document.getElementById("perksContent");
+          var pa = document.getElementById("perksArrow");
+          if (pc) { pc.style.display = pc.style.display === "none" ? "block" : "none"; }
+          if (pa) { pa.textContent = pc && pc.style.display === "none" ? "\u25bc" : "\u25b2"; }
+        } else if (act === "feedback") {
+          openFeedback();
+        } else if (act === "close-feedback") {
+          closeFeedback();
+        } else if (act === "send-feedback") {
+          sendFeedback();
+        } else if (act === "book-session") {
+          var session = JSON.parse(actionEl.getAttribute("data-session"));
+          showScreen("checkBook", session);
+        }
+        return;
+      }
       // Screen navigation (avatar, tiles, etc.)
       var screenEl = e.target.closest("[data-screen]");
       if (screenEl) {
@@ -826,58 +859,57 @@
           ? 'No sessions this day. Next: ' + fmtLong(new Date(nextAvail.startDate)) + ' at ' + fmtTime(new Date(nextAvail.startDate)) + '.'
           : 'No sessions that day. Days with a dot have sessions.') + '</p>';
       } else {
-        daySess.forEach(function(s, i) {
+        daySess.forEach(function(s) {
           var start = s.startDate;
           var end = s.endDate || null;
           var topic = s.topic && s.topic.title ? sentenceCase(s.topic.title) : "";
+          var desc = s.topic && s.topic.description ? s.topic.description : "";
           var places = s.remainingCapacity;
           var full = places === 0;
           var lowPlaces = places > 0 && places <= 3;
-          var price = DATA.memberPrice || "12.50";
+          var memberPrice = DATA.memberPrice || "15";
+          var servicePrice = DATA.servicePrice || "22.50";
+          var isMember = memberIs("physical") || memberIs("complete");
 
-          var bookUrl = buildBookingUrl(s);
-          var priceNum = parseFloat(price);
-          var ptsNeeded = Math.ceil(priceNum * 100);
-          var canUsePoints = DATA.plan.eligible && !full && !s.isBooked && DATA.points >= ptsNeeded && priceNum > 0;
-
-          var action;
-          if (s.isBooked) {
-            action = '<div style="text-align:center"><span class="badge badge-booked">You\'re booked</span>' +
-              '<div style="margin-top:0.3rem"><a class="mg" style="font-size:0.8rem" href="https://www.ladieslovegolf.com/account/my-bookings" onclick="tapNav(this)">Manage</a></div></div>';
-          } else if (full && DATA.plan.eligible) {
-            var waitlistUrl = "https://www.ladieslovegolf.com/booking-calendar?bookings_serviceId=" + encodeURIComponent(s.serviceId);
-            action = '<a class="btn btn-sm" style="background:#fff;color:var(--mg-dark);border:1.5px solid var(--mg)" href="' + waitlistUrl + '" onclick="tapWaitlist(this)">Join waitlist</a>';
-          } else if (full) {
-            action = '<span class="badge badge-full">Full</span>';
+          var priceDisplay, priceNote;
+          if (isMember) {
+            priceDisplay = "\u00a3" + memberPrice;
+            priceNote = "Member price";
+          } else if (memberIs("lapsed") || memberIs("non")) {
+            priceDisplay = "\u00a3" + servicePrice;
+            priceNote = "Members pay \u00a3" + memberPrice;
           } else {
-            action = '<a class="btn btn-sm" href="' + bookUrl + '" onclick="tapBookBtn(this)">Book</a>';
+            priceDisplay = "\u00a3" + servicePrice;
+            priceNote = "Pay as you go";
           }
 
-          var pointsHtml = "";
-          if (canUsePoints) {
-            pointsHtml = '<div style="width:100%;margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid var(--border)">' +
-              '<button class="btn btn-sm btn-outline" style="width:100%;font-size:0.85rem" onclick="usePoints(\'' + s.serviceId + '\',\'' + (s.startDate || "") + '\',' + ptsNeeded + ',' + priceNum + ',\'' + bookUrl + '\',this)">Or use ' + pts(ptsNeeded) + ' points (\u00a3' + priceNum.toFixed(2) + ')</button>' +
-              '<div style="font-size:0.75rem;color:var(--muted);margin-top:0.3rem;line-height:1.4">Points work just like paying: you can move your session up to 24 hours before, but cancelled sessions aren\'t refunded.</div>' +
-            '</div>';
-          }
-
-          var descId = "d" + selectedDay + i;
-          var descHtml = "";
-          if (s.topic && s.topic.description) {
-            descHtml = '<div class="sess-desc" id="' + descId + '">' + esc(s.topic.description) + '</div>' +
-              '<button class="more-btn" id="' + descId + 'b" onclick="toggleDesc(\'' + descId + '\')">More</button>';
-          }
-
-          h += '<div class="sess" style="flex-wrap:wrap">' +
-            '<div class="sess-info">' +
-              '<div class="sess-time">' + fmtTime(start) + (end ? ' to ' + fmtTime(end) : '') + '</div>' +
-              (topic ? '<div class="sess-topic">' + esc(topic) + '</div>' : '') +
-              descHtml +
-              '<div class="sess-meta">' + (lowPlaces ? '<span class="low">' + places + ' place' + (places !== 1 ? 's' : '') + ' left</span>' : places + ' place' + (places !== 1 ? 's' : '') + ' left') + ' \u00b7 \u00a3' + price + ' member price</div>' +
+          h += '<div class="card" style="margin-bottom:0.5rem">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem">' +
+              '<span style="font-weight:700;font-size:0.9375rem">' + fmtTime(start) + (end ? ' \u2013 ' + fmtTime(end) : '') + '</span>' +
+              '<span class="small">' + (lowPlaces ? '<span style="color:var(--mg);font-weight:700">' + places + ' place' + (places !== 1 ? 's' : '') + ' left</span>' : places + ' places') + '</span>' +
             '</div>' +
-            '<div style="flex-shrink:0;margin-left:0.4rem">' + action + '</div>' +
-            pointsHtml +
-          '</div>';
+            (topic ? '<div style="font-weight:600;margin-bottom:0.2rem">' + esc(topic) + '</div>' : '') +
+            (desc ? '<p class="small" style="margin-bottom:0.5rem">' + esc(desc) + '</p>' : '') +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem">' +
+              '<div>' +
+                '<span style="font-family:Poppins,sans-serif;font-weight:700;font-size:1.125rem">' + priceDisplay + '</span>' +
+                '<span class="small" style="margin-left:0.3rem">' + priceNote + '</span>' +
+              '</div>';
+
+          if (s.isBooked) {
+            h += '<span class="badge badge-booked">Booked</span>';
+          } else if (full) {
+            var waitlistUrl = "https://www.ladieslovegolf.com/booking-calendar?bookings_serviceId=" + encodeURIComponent(s.serviceId);
+            h += '<a class="btn btn-sm btn-outline" href="' + waitlistUrl + '">Waitlist</a>';
+          } else {
+            h += '<button class="btn" data-action="book-session" data-session=\'' + esc(JSON.stringify({
+              serviceId: s.serviceId, startDate: s.startDate, endDate: s.endDate,
+              title: topic || s.title, locationName: s.locationName || "",
+              price: isMember ? memberPrice : servicePrice, memberPrice: memberPrice
+            })) + '\'>Book</button>';
+          }
+
+          h += '</div></div>';
         });
       }
 
@@ -1141,6 +1173,143 @@
     }
 
     // --- ACCOUNT SCREEN ---
+    // --- CHECK AND BOOK ---
+    function renderCheckBook(session) {
+      var el = document.getElementById("checkBookScreen");
+      if (!session) { showScreen("home"); return; }
+
+      var isMember = memberIs("physical") || memberIs("complete");
+      var price = parseFloat(session.price || "0");
+      var memberPrice = parseFloat(session.memberPrice || session.price || "0");
+      var ptsNeeded = Math.ceil(memberPrice * 100);
+      var canUsePoints = isMember && DATA.points >= ptsNeeded && memberPrice > 0;
+      var isWaitlist = session.isWaitlist;
+
+      var h = '<button class="back" data-screen="home">\u2190 Back</button>';
+
+      h += '<h1 style="font-size:1.3rem;margin-bottom:1rem">' + (isWaitlist ? 'Join the waitlist' : 'Check and book') + '</h1>';
+
+      // Session summary
+      h += '<div class="card" style="margin-bottom:1rem">' +
+        '<div style="font-weight:700">' + esc(session.title || "Golf session") + '</div>' +
+        '<div class="small">' + fmtLong(session.startDate) + ', ' + fmtTime(session.startDate) + '</div>' +
+        (session.locationName ? '<div class="small">' + esc(session.locationName) + '</div>' : '') +
+      '</div>';
+
+      if (!isWaitlist) {
+        // Pay choice
+        h += '<h2 style="font-size:1.05rem;margin-bottom:0.5rem">How would you like to pay?</h2>';
+        h += '<div role="radiogroup" aria-label="Payment method" id="payChoice">';
+
+        // Card option
+        h += '<div class="pay-choice" role="radio" aria-checked="true" data-pay="card" tabindex="0">' +
+          '<div class="pay-choice-radio"></div>' +
+          '<div>' +
+            '<div style="font-weight:700">Pay \u00a3' + price.toFixed(2) + ' by card</div>' +
+            '<div class="small">Apple Pay and Google Pay work too</div>' +
+          '</div>' +
+        '</div>';
+
+        // Points option (members only, if enough points)
+        if (canUsePoints) {
+          var remaining = ((DATA.points - ptsNeeded) / 100).toFixed(2);
+          h += '<div class="pay-choice" role="radio" aria-checked="false" data-pay="points" tabindex="0">' +
+            '<div class="pay-choice-radio"></div>' +
+            '<div>' +
+              '<div style="font-weight:700">Use \u00a3' + memberPrice.toFixed(2) + ' of my points</div>' +
+              '<div class="small">You\'ll have \u00a3' + remaining + ' left</div>' +
+            '</div>' +
+          '</div>';
+        }
+
+        h += '</div>';
+
+        // Non-member upsell
+        if (!isMember) {
+          h += '<div style="background:#fdf0f7;border-radius:0.75rem;padding:0.75rem;margin:0.75rem 0">' +
+            '<p style="font-size:0.875rem;color:var(--mg-dark)">Members pay \u00a3' + memberPrice.toFixed(2) + ' for this session. Physical membership pays for itself after about 20 sessions.</p>' +
+          '</div>';
+        }
+
+        // Info box
+        h += '<div class="card" style="background:var(--bg);border:none;margin:0.75rem 0;font-size:0.875rem;color:var(--muted)">' +
+          'You can move your session up to 24 hours before. Cancelled sessions aren\'t refunded, because your place could have gone to someone on the waitlist.' +
+        '</div>';
+      }
+
+      // Action button
+      var btnText = isWaitlist ? 'Put me on the waitlist' : 'Book and pay \u00a3' + price.toFixed(2);
+      h += '<button class="btn" style="width:100%;min-height:3.25rem;font-size:1rem" id="checkBookBtn">' + btnText + '</button>';
+
+      el.innerHTML = h;
+
+      // Wire pay choice toggling
+      var choices = el.querySelectorAll(".pay-choice");
+      choices.forEach(function(c) {
+        c.addEventListener("click", function() {
+          choices.forEach(function(cc) { cc.setAttribute("aria-checked", "false"); });
+          c.setAttribute("aria-checked", "true");
+          var isPoints = c.getAttribute("data-pay") === "points";
+          var btn = document.getElementById("checkBookBtn");
+          if (btn) btn.textContent = isPoints
+            ? "Book with my points"
+            : "Book and pay \u00a3" + price.toFixed(2);
+        });
+      });
+
+      // Wire book button
+      var bookBtn = document.getElementById("checkBookBtn");
+      if (bookBtn) {
+        bookBtn.addEventListener("click", function() {
+          var payMethod = "card";
+          var checked = el.querySelector('.pay-choice[aria-checked="true"]');
+          if (checked) payMethod = checked.getAttribute("data-pay") || "card";
+
+          if (payMethod === "points") {
+            // Use existing redeem-points flow
+            usePoints(session.serviceId, session.startDate, ptsNeeded, memberPrice, buildBookingUrl(session), bookBtn);
+          } else {
+            // Go to Wix checkout
+            bookBtn.textContent = "Opening...";
+            bookBtn.disabled = true;
+            window.showBookLoader();
+            window.location.href = buildBookingUrl(session);
+          }
+        });
+      }
+    }
+
+    // --- BOOKED CONFIRMATION ---
+    function renderBooked(booking) {
+      var el = document.getElementById("bookedScreen");
+      var h = '<div class="booked-screen">' +
+        '<div class="booked-tick"><svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg></div>' +
+        '<h1 style="font-size:1.4rem;margin-bottom:0.5rem">You\'re booked' + firstName() + '!</h1>';
+      if (booking) {
+        h += '<p style="margin-bottom:0.3rem">' + esc(booking.title || "") + '</p>' +
+          '<p class="small">' + (booking.startDate ? fmtLong(booking.startDate) + ', ' + fmtTime(booking.startDate) : '') + '</p>' +
+          (booking.locationName ? '<p class="small">' + esc(booking.locationName) + '</p>' : '');
+        if (booking.bookingId) {
+          h += '<a class="btn btn-sm btn-outline" style="margin-top:1rem" href="/.netlify/functions/ics?booking=' + encodeURIComponent(booking.bookingId) + '">Add to my calendar</a>';
+        }
+      }
+      h += '<div style="margin-top:1.5rem"><button class="btn" data-screen="home">Back to home</button></div>' +
+      '</div>';
+      el.innerHTML = h;
+    }
+
+    // --- Check for recent booking on return from Wix ---
+    function checkForRecentBooking() {
+      if (!DATA || !DATA.bookings) return;
+      var shown = sessionStorage.getItem("llg_booked_shown") || "";
+      var recent = DATA.bookings.find(function(b) {
+        if (!b.startDate || !b.bookingId) return false;
+        // Check if booking was created in the last 15 minutes (approximation: it's in bookings but not shown yet)
+        return shown.indexOf(b.bookingId) === -1;
+      });
+      // Only show on justBooked flag
+    }
+
     function renderAccount() {
       var el = document.getElementById("accountScreen");
       var h = '<button class="back" onclick="showScreen(\'home\')">\u2190 Home</button>';
