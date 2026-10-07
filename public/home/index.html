@@ -690,8 +690,8 @@
         '</div>';
       }
 
-      // Digital/Complete: This week's tip and programme cards
-      if (memberIs("digital") || memberIs("complete")) {
+      // Digital: tip + programme near the top
+      if (memberIs("digital")) {
         h += '<div id="homeVideoCard"></div>';
       }
 
@@ -762,16 +762,22 @@
         '</div>';
       }
 
-      // Prize draw card (Digital/Complete: here, others: after book section)
-      if (memberIs("digital") || memberIs("complete")) {
+      // Digital: prize draw after points strip
+      if (memberIs("digital")) {
         h += '<div id="prizeDrawCard"></div>';
       }
 
       // Book at venue
       h += renderBookSection();
 
-      // Prize draw card (Physical/Non/Lapsed: after book)
-      if (!memberIs("digital") && !memberIs("complete")) {
+      // Complete: programme card after book, then prize draw
+      if (memberIs("complete")) {
+        h += '<div id="homeVideoCard"></div>';
+        h += '<div id="prizeDrawCard"></div>';
+      }
+
+      // Physical/Non/Lapsed: prize draw after book
+      if (memberIs("physical") || memberIs("lapsed") || memberIs("non")) {
         h += '<div id="prizeDrawCard"></div>';
       }
 
