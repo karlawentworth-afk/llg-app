@@ -1447,16 +1447,18 @@
           '</div>';
         } else if (latest.video_url && (latest.videoSource === "instagram" || latest.videoSource === "facebook")) {
           var platform = latest.videoSource === "instagram" ? "Instagram" : "Facebook";
-          h += '<a href="' + esc(latest.video_url) + '" target="_blank" rel="noopener" class="pd-video" style="text-decoration:none;color:#fff">' +
-            '<div style="text-align:center">' +
+          var posterBg = latest.posterUrl ? 'background-image:url(' + esc(latest.posterUrl) + ');background-size:cover;background-position:center;' : '';
+          h += '<a href="' + esc(latest.video_url) + '" target="_blank" rel="noopener" class="pd-video" style="text-decoration:none;color:#fff;' + posterBg + '">' +
+            '<div style="text-align:center;position:relative;z-index:1">' +
               '<div class="pd-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' +
-              '<div style="font-weight:700;margin-top:0.5rem">' + esc(latest.winner_display) + ' wins!</div>' +
-              '<div style="font-size:0.875rem;opacity:0.7">' + esc(latest.prize) + '</div>' +
+              '<div style="font-weight:700;margin-top:0.5rem;text-shadow:0 1px 4px rgba(0,0,0,0.5)">' + esc(latest.winner_display) + ' wins!</div>' +
+              '<div style="font-size:0.875rem;opacity:0.8;text-shadow:0 1px 4px rgba(0,0,0,0.5)">' + esc(latest.prize) + '</div>' +
             '</div>' +
           '</a>' +
           '<p class="small" style="text-align:center;margin-top:-0.5rem;margin-bottom:0.75rem">Opens in ' + platform + '</p>';
         } else if (latest.hasUploadedVideo) {
-          h += '<div class="pd-video" data-action="play-draw-video" data-draw-id="' + latest.id + '">' +
+          var posterBg2 = latest.posterUrl ? 'background-image:url(' + esc(latest.posterUrl) + ');background-size:cover;background-position:center;' : '';
+          h += '<div class="pd-video" data-action="play-draw-video" data-draw-id="' + latest.id + '" style="' + posterBg2 + '">' +
             '<div class="pd-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' +
           '</div>';
         }

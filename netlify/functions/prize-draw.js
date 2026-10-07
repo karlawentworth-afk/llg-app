@@ -100,17 +100,26 @@ exports.handler = async (event) => {
 
     var { data: draws } = await supabase
       .from("prize_draws")
-      .select("id, month, prize, draw_at, winner_display, video_url, video_path, published")
+      .select("id, month, prize, draw_at, winner_display, video_url, video_path, poster_path, published")
       .or("published.eq.true,month.eq." + thisMonth)
       .order("month", { ascending: false });
 
-    // Don't expose video_path directly; indicate if an upload exists
-    (draws || []).forEach(function(d) {
+    // Generate signed poster URLs and don't expose raw paths
+    for (var di = 0; di < (draws || []).length; di++) {
+      var d = draws[di];
       d.hasUploadedVideo = !!d.video_path;
       d.videoSource = videoSource(d.video_url);
       d.youtubeId = youtubeEmbedId(d.video_url);
+      d.posterUrl = null;
+      if (d.poster_path) {
+        try {
+          var { data: pSigned } = await supabase.storage.from("prize-draw-posters").createSignedUrl(d.poster_path, 3600);
+          if (pSigned) d.posterUrl = pSigned.signedUrl;
+        } catch {}
+      }
       delete d.video_path;
-    });
+      delete d.poster_path;
+    }
 
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ draws: draws || [] }) };
   }
@@ -260,6 +269,35 @@ exports.handler = async (event) => {
     // Save the path to the draw record
     await supabase.from("prize_draws")
       .update({ video_path: path, updated_at: new Date().toISOString() })
+      .eq("id", drawId);
+
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ uploadUrl: uploadData.signedUrl, token: uploadData.token, path: path }) };
+  }
+
+  // UPLOAD-POSTER-URL: get a signed upload URL for poster image
+  if (action === "upload-poster-url") {
+    var admin = await verifyAdminMember(event);
+    if (!admin) {
+      var emailHeader = (event.headers["x-admin-email"] || "").trim().toLowerCase();
+      var adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(function(e) { return e.trim().toLowerCase(); }).filter(Boolean);
+      if (!emailHeader || !adminEmails.includes(emailHeader)) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "not_admin" }) };
+    }
+
+    var body = JSON.parse(event.body || "{}");
+    var drawId = body.id;
+    if (!drawId) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "missing_id" }) };
+
+    var path = drawId + "/poster.jpg";
+
+    var { data: uploadData, error: uploadError } = await supabase.storage
+      .from("prize-draw-posters")
+      .createSignedUploadUrl(path);
+
+    if (uploadError) return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: uploadError.message }) };
+
+    // Save the path to the draw record
+    await supabase.from("prize_draws")
+      .update({ poster_path: path, updated_at: new Date().toISOString() })
       .eq("id", drawId);
 
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ uploadUrl: uploadData.signedUrl, token: uploadData.token, path: path }) };

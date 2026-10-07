@@ -76,6 +76,14 @@
     <span class="msg" id="uploadMsg"></span>
   </div>
 
+  <label>Cover picture (optional)</label>
+  <p class="small" style="margin-bottom:0.3rem">Shows as the video tile background. Portrait works best.</p>
+  <input type="file" id="posterFile" accept="image/jpeg,image/png,image/heic" style="font-size:0.875rem">
+  <div id="posterPreview" style="margin-top:0.3rem" hidden>
+    <img id="posterImg" style="max-width:120px;border-radius:0.5rem">
+  </div>
+  <span class="msg" id="posterMsg"></span>
+
   <div style="margin-top:0.75rem;display:flex;gap:0.5rem">
     <button class="btn btn-sm" id="saveWinnerBtn">Save winner</button>
     <button class="btn btn-sm btn-dark" id="publishBtn">Publish winner</button>
@@ -300,6 +308,50 @@ document.getElementById("pastDraws").addEventListener("click", function(e) {
   document.getElementById("drawMonth").value = month.substring(0, 7);
   loadDraws(); // reload to populate fields
   window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// Poster upload with client-side resize to max 720px wide
+document.getElementById("posterFile").addEventListener("change", async function() {
+  var file = this.files[0];
+  if (!file) return;
+  if (!CURRENT_DRAW || !CURRENT_DRAW.id) { alert("Save the draw first"); return; }
+
+  var msg = document.getElementById("posterMsg");
+  var preview = document.getElementById("posterPreview");
+  msg.textContent = "Resizing..."; msg.className = "msg";
+
+  try {
+    // Read and resize
+    var bitmap = await createImageBitmap(file);
+    var maxW = 720;
+    var w = bitmap.width, h = bitmap.height;
+    if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+    var canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    var blob = await new Promise(function(resolve) { canvas.toBlob(resolve, "image/jpeg", 0.85); });
+
+    msg.textContent = "Uploading...";
+
+    // Get signed upload URL
+    var data = await api({ action: "upload-poster-url", id: CURRENT_DRAW.id });
+    if (!data.uploadUrl) throw new Error("No upload URL");
+
+    // Upload
+    var res = await fetch(data.uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": "image/jpeg", "x-upsert": "true" },
+      body: blob,
+    });
+    if (!res.ok) throw new Error("Upload failed: " + res.status);
+
+    msg.className = "msg ok"; msg.textContent = "Cover picture saved";
+    document.getElementById("posterImg").src = URL.createObjectURL(blob);
+    preview.hidden = false;
+  } catch (e) {
+    msg.className = "msg err"; msg.textContent = e.message;
+  }
 });
 
 function esc(s) { var d = document.createElement("div"); d.textContent = String(s || ""); return d.innerHTML; }
