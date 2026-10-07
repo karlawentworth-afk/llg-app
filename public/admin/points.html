@@ -126,12 +126,12 @@
 <div id="errorMsg" class="error" hidden></div>
 
 <script>
-var PASSWORD = localStorage.getItem("adminPassword") || "";
+var ADMIN_EMAIL = localStorage.getItem("adminEmail") || "";
 var SELECTED = null; // { contactId, memberId, name, email, balance, revision }
 
 function headers() {
   var h = { "Content-Type": "application/json" };
-  if (PASSWORD) h["X-Admin-Password"] = PASSWORD;
+  if (ADMIN_EMAIL) h["X-Admin-Email"] = ADMIN_EMAIL;
   return h;
 }
 
@@ -144,8 +144,8 @@ async function api(body) {
   });
   var data = await res.json();
   if (!res.ok && data.error === "not_admin") {
-    PASSWORD = prompt("Admin password:");
-    if (PASSWORD) { localStorage.setItem("adminPassword", PASSWORD); return api(body); }
+    ADMIN_EMAIL = prompt("Enter your admin email:");
+    if (ADMIN_EMAIL) { ADMIN_EMAIL = ADMIN_EMAIL.trim().toLowerCase(); localStorage.setItem("adminEmail", ADMIN_EMAIL); return api(body); }
     throw new Error("Not authorised");
   }
   if (!res.ok) throw new Error(data.error + (data.detail ? ": " + data.detail : ""));

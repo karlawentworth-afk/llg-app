@@ -33,8 +33,18 @@ exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: "method_not_allowed" }) };
 
+  // Auth: session cookie, admin password, or admin email header
   var admin = await verifyAdminMember(event);
-  if (!admin) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "not_admin" }) };
+  if (!admin) {
+    // Fall back to email-only check for browser access
+    var emailHeader = (event.headers["x-admin-email"] || "").trim().toLowerCase();
+    var adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(function(e) { return e.trim().toLowerCase(); }).filter(Boolean);
+    if (emailHeader && adminEmails.includes(emailHeader)) {
+      admin = { contactId: null, memberId: null, email: emailHeader };
+    } else {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "not_admin" }) };
+    }
+  }
 
   var body;
   try { body = JSON.parse(event.body || "{}"); } catch { return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "bad_json" }) }; }
